@@ -1,0 +1,16 @@
+{
+  "permission": {
+    "skill": {
+      "*": "allow"
+    }
+  },
+  "agent": {
+    "plan": {
+      "permission": {
+        "skill": {
+          "*": "allow"
+        }
+      }
+    }
+  }
+}
