@@ -1,46 +1,59 @@
 {
-    "mcpServers": {
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
         "shadcn": {
-            "command": "npx",
-            "args": [
+            "command": [
+                "npx",
                 "-y",
                 "shadcn@latest",
                 "mcp"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         },
         "context7": {
-            "command": "npx",
-            "args": [
+            "command": [
+                "npx",
                 "-y",
                 "@upstash/context7-mcp"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         },
         "sequentialthinking": {
-            "command": "npx",
-            "args": [
+            "command": [
+                "npx",
                 "-y",
                 "@modelcontextprotocol/server-sequential-thinking"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         },
         "time": {
-            "command": "uvx",
-            "args": [
+            "command": [
+                "uvx",
                 "mcp-server-time"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         },
         "chrome-devtools": {
-            "command": "npx",
-            "args": [
+            "command": [
+                "npx",
                 "-y",
                 "chrome-devtools-mcp@latest"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         },
         "next-devtools": {
-            "command": "npx",
-            "args": [
+            "command": [
+                "npx",
                 "-y",
                 "next-devtools-mcp@latest"
-            ]
+            ],
+            "type": "local",
+            "enabled": true
         }
     }
 }

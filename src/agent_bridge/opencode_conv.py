@@ -233,12 +233,44 @@ def copy_mcp_opencode(root_path: Path):
             content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
             mcp_data = json.loads(content)
             
+            # OpenCode uses ".opencode/mcp.json" (as we decided for manual import) or opencode.json
+            # Format: { "$schema": "...", "mcp": { "server": { "type": "local", "command": ..., "enabled": true } } }
+            # Our source data has "mcpServers" key. We'll map it to "mcp" key.
+            
+            opencode_data = {
+                "$schema": "https://opencode.ai/config.json",
+                "mcp": {}
+            }
+            
+            source_servers = mcp_data.get("mcpServers", {})
+            for name, config in source_servers.items():
+                new_config = config.copy()
+                
+                # Enhanced for OpenCode
+                if "type" not in new_config:
+                    new_config["type"] = "local" # Default to local stdio
+                if "enabled" not in new_config:
+                    new_config["enabled"] = True
+                
+                # OpenCode Schema Fix: "command" must be an array of strings, "args" is forbidden.
+                # If we have "command" as string and "args" as list, merge them.
+                if "command" in new_config and isinstance(new_config["command"], str):
+                    base_cmd = new_config["command"]
+                    args = new_config.get("args", [])
+                    # Merge into single list
+                    new_config["command"] = [base_cmd] + args
+                    # Remove args if present
+                    if "args" in new_config:
+                        del new_config["args"]
+                        
+                opencode_data["mcp"][name] = new_config
+
             opencode_dir = root_path / ".opencode"
             opencode_dir.mkdir(parents=True, exist_ok=True)
 
             with open(opencode_dir / "mcp.json", 'w', encoding='utf-8') as f:
-                json.dump(mcp_data, f, indent=4)
+                json.dump(opencode_data, f, indent=4)
                 
-            print(f"{Colors.BLUE}  🔌 Copied to .opencode/mcp.json{Colors.ENDC}")
+            print(f"{Colors.BLUE}  🔌 Copied to .opencode/mcp.json (Wrapped in 'mcp' key + schema fix){Colors.ENDC}")
         except Exception as e:
             print(f"{Colors.RED}  ❌ Failed to copy MCP config to OpenCode: {e}{Colors.ENDC}")
