@@ -1,11 +1,12 @@
 import argparse
 import sys
 from pathlib import Path
-from .kiro_conv import convert_kiro
-from .copilot_conv import convert_copilot
-from .opencode_conv import convert_opencode
-from .cursor_conv import convert_cursor
-from .windsurf_conv import convert_windsurf
+from .utils import Colors, ask_user
+from .kiro_conv import convert_kiro, copy_mcp_kiro
+from .copilot_conv import convert_copilot, copy_mcp_copilot
+from .opencode_conv import convert_opencode, copy_mcp_opencode
+from .cursor_conv import convert_cursor, copy_mcp_cursor
+from .windsurf_conv import convert_windsurf, copy_mcp_windsurf
 from .kit_sync import update_kit
 
 def main():
@@ -35,6 +36,7 @@ def main():
     init_parser.add_argument("--cursor", action="store_true", help="Only init Cursor")
     init_parser.add_argument("--windsurf", action="store_true", help="Only init Windsurf")
     init_parser.add_argument("--all", action="store_true", help="Init all formats (default if no flags)")
+    init_parser.add_argument("--force", "-f", action="store_true", help="Force overwrite without prompt")
 
     # OpenCode Subcommand
     opencode_parser = subparsers.add_parser("opencode", help="Convert to OpenCode format")
@@ -60,53 +62,56 @@ def main():
     mcp_parser.add_argument("--copilot", action="store_true", help="Install to GitHub Copilot (.vscode/mcp.json)")
     mcp_parser.add_argument("--kiro", action="store_true", help="Install to Kiro (.kiro/settings/mcp.json)")
     mcp_parser.add_argument("--all", action="store_true", help="Install to ALL supported IDEs")
+    mcp_parser.add_argument("--force", "-f", action="store_true", help="Force overwrite without prompt")
 
     args = parser.parse_args()
     
     # --- DISPATCH COMMANDS ---
     if args.format == "init":
-        from .copilot_conv import convert_copilot
-        from .kiro_conv import convert_kiro
-        from .opencode_conv import convert_opencode
-        from .cursor_conv import convert_cursor
-        from .windsurf_conv import convert_windsurf
+        print(f"{Colors.HEADER}🚀 Initializing AI for current project...{Colors.ENDC}")
+        
+        # If no flags provided, set all to True
+        select_all = args.all or (not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf)
+        
+        SOURCE_DIR = args.source
 
-        if args.all:
-            convert_copilot(SOURCE_DIR, "")
-            convert_kiro(SOURCE_DIR, ".kiro")
-            convert_opencode(SOURCE_DIR, "")
-            convert_cursor(SOURCE_DIR, "")
-            convert_windsurf(SOURCE_DIR, "")
-        else:
-            if args.copilot: convert_copilot(SOURCE_DIR, "")
-            if args.kiro: convert_kiro(SOURCE_DIR, ".kiro")
-            if args.opencode: convert_opencode(SOURCE_DIR, "")
-            if args.cursor: convert_cursor(SOURCE_DIR, "")
-            if args.windsurf: convert_windsurf(SOURCE_DIR, "")
+        if select_all or args.copilot:
+            convert_copilot(SOURCE_DIR, "", force=args.force)
+            copy_mcp_copilot(Path("."), force=args.force)
+            
+        if select_all or args.kiro:
+            convert_kiro(SOURCE_DIR, ".kiro", force=args.force)
+            copy_mcp_kiro(Path("."), force=args.force)
+            
+        if select_all or args.opencode:
+            convert_opencode(SOURCE_DIR, "", force=args.force)
+            copy_mcp_opencode(Path("."), force=args.force)
+            
+        if select_all or args.cursor:
+            convert_cursor(SOURCE_DIR, "", force=args.force)
+            copy_mcp_cursor(Path("."), force=args.force)
+            
+        if select_all or args.windsurf:
+            convert_windsurf(SOURCE_DIR, "", force=args.force)
+            copy_mcp_windsurf(Path("."), force=args.force)
             
         print(f"\n{Colors.GREEN}✅ Initialization complete!{Colors.ENDC}")
 
     elif args.format == "mcp":
-        from .cursor_conv import copy_mcp_cursor
-        from .windsurf_conv import copy_mcp_windsurf
-        from .opencode_conv import copy_mcp_opencode
-        from .copilot_conv import copy_mcp_copilot
-        from .kiro_conv import copy_mcp_kiro
-        
-        print("\033[95m⚙️ Installing MCP configuration...\033[0m")
+        print(f"{Colors.HEADER}⚙️ Installing MCP configuration...{Colors.ENDC}")
         install_all = args.all or (not args.cursor and not args.windsurf and not args.opencode and not args.copilot and not args.kiro)
 
         if install_all or args.cursor:
-            copy_mcp_cursor(Path("."))
+            copy_mcp_cursor(Path("."), force=args.force)
         if install_all or args.windsurf:
-            copy_mcp_windsurf(Path("."))
+            copy_mcp_windsurf(Path("."), force=args.force)
         if install_all or args.opencode:
-            copy_mcp_opencode(Path("."))
+            copy_mcp_opencode(Path("."), force=args.force)
         if install_all or args.copilot:
-            copy_mcp_copilot(Path("."))
+            copy_mcp_copilot(Path("."), force=args.force)
         if install_all or args.kiro:
-            copy_mcp_kiro(Path("."))
-        print("\033[92m✅ MCP configuration installed!\033[0m")
+            copy_mcp_kiro(Path("."), force=args.force)
+        print(f"{Colors.GREEN}✅ MCP configuration installed!{Colors.ENDC}")
     elif args.format == "list":
         print("\033[94m📂 Supported IDE Formats:\033[0m")
         print("  - \033[93mcopilot\033[0m: GitHub Copilot (.github/agents/)")

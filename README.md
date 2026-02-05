@@ -25,9 +25,27 @@ agent-bridge init
 agent-bridge init --copilot
 agent-bridge init --opencode
 agent-bridge init --kiro
+agent-bridge init --cursor
+agent-bridge init --windsurf
 ```
 
-### 2. Cập nhật tri thức (`update`)
+### 2. Cài đặt MCP (`mcp`)
+
+Cài đặt file cấu hình MCP (`.agent/mcp_config.json`) vào đúng vị trí cho từng IDE để kích hoạt các tool nâng cao.
+
+```bash
+# Cài đặt MCP cho tất cả IDE
+agent-bridge mcp --all
+
+# Cài đặt theo từng IDE
+agent-bridge mcp --cursor    # .cursor/mcp.json
+agent-bridge mcp --windsurf  # .windsurf/mcp_config.json
+agent-bridge mcp --opencode  # .opencode/mcp.json
+agent-bridge mcp --copilot   # .vscode/mcp.json
+agent-bridge mcp --kiro      # .kiro/settings/mcp.json
+```
+
+### 3. Cập nhật tri thức (`update`)
 
 Đồng bộ tri thức mới nhất từ repository Antigravity Kit gốc về máy. Lệnh này sẽ tự động cập nhật lại các cấu hình (`refresh`) nếu project hiện tại đã có sẵn các folder IDE.
 
@@ -35,21 +53,23 @@ agent-bridge init --kiro
 agent-bridge update
 ```
 
-### 3. Dọn dẹp cấu hình (`clean`)
+### 4. Dọn dẹp cấu hình (`clean`)
 
 Xóa các thư mục cấu hình AI đã tạo trong dự án:
 
 ```bash
-# Xóa tất cả các folder .github/agents, .github/skills, .kiro, .opencode
+# Xóa tất cả các folder .github/agents, .github/skills, .kiro, .opencode, .cursor, .windsurf
 agent-bridge clean
 
 # Xóa theo từng IDE
 agent-bridge clean --copilot
 agent-bridge clean --opencode
 agent-bridge clean --kiro
+agent-bridge clean --cursor
+agent-bridge clean --windsurf
 ```
 
-### 4. Kiểm tra hỗ trợ (`list`)
+### 5. Kiểm tra hỗ trợ (`list`)
 
 Xem danh sách các định dạng IDE/CLI mà công cụ đang hỗ trợ:
 
@@ -61,9 +81,11 @@ agent-bridge list
 
 | IDE/CLI | Vị trí cấu hình |
 |---------|-----------------|
-| **GitHub Copilot** | `.github/agents/`, `.github/skills/` |
-| **OpenCode IDE** | `.opencode/`, `AGENTS.md` |
-| **Kiro CLI** | `.kiro/agents/` |
+| **GitHub Copilot** | `.github/agents/`, `.vscode/mcp.json` |
+| **OpenCode IDE** | `.opencode/` |
+| **Kiro CLI** | `.kiro/agents/`, `.kiro/settings/` |
+| **Cursor AI** | `.cursor/agents/`, `.cursor/rules/`, `.cursor/skills/` |
+| **Windsurf IDE** | `.windsurf/rules/`, `.windsurfrules` |
 
 ## Cấu trúc thư mục công cụ
 

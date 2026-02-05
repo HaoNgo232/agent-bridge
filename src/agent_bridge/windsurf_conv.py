@@ -1,18 +1,11 @@
 import os
+import json
 from pathlib import Path
 from typing import Dict, Tuple, List, Any
 from .copilot_conv import parse_frontmatter, get_master_agent_dir
+from .utils import Colors, ask_user
 
-# ANSI colors
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-
-def convert_windsurf(source_dir: str, output_unused: str):
+def convert_windsurf(source_dir: str, output_unused: str, force: bool = False):
     root_path = Path(source_dir).resolve()
     
     if not root_path.exists() or not (root_path / "agents").exists():
@@ -24,6 +17,13 @@ def convert_windsurf(source_dir: str, output_unused: str):
             return
 
     windsurf_dir = Path(".windsurf/rules").resolve()
+    
+    # Confirmation for Windsurf Overwrite
+    if windsurf_dir.exists() and not force:
+        if not ask_user(f"Found existing '{windsurf_dir}'. Update Windsurf rules?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping Windsurf rules update.{Colors.ENDC}")
+             return
+
     print(f"{Colors.HEADER}🏗️  Converting to Windsurf Rules...{Colors.ENDC}")
 
     # Windsurf uses .windsurf/rules/ or .windsurfrules (single file)
@@ -81,13 +81,22 @@ def convert_windsurf(source_dir: str, output_unused: str):
 
     print(f"{Colors.GREEN}✅ Windsurf conversion complete!{Colors.ENDC}")
 
-def copy_mcp_windsurf(root_path: Path):
+def copy_mcp_windsurf(root_path: Path, force: bool = False):
     """Copies MCP config to .windsurf/mcp_config.json"""
     mcp_src = get_master_agent_dir() / "mcp_config.json"
     if not mcp_src.exists():
          mcp_src = root_path / ".agent" / "mcp_config.json"
 
     if mcp_src.exists():
+        windsurf_dir = root_path / ".windsurf"
+        dest_file = windsurf_dir / "mcp_config.json"
+        
+        # Confirmation for MCP Overwrite (Safe Default)
+        if dest_file.exists() and not force:
+            if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
+                print(f"{Colors.YELLOW}🔒 Kept existing Windsurf MCP config.{Colors.ENDC}")
+                return
+
         try:
             import json
             import re
@@ -100,10 +109,9 @@ def copy_mcp_windsurf(root_path: Path):
             # Windsurf stores it in .windsurf/mcp_config.json (Project local)
             # OR ~/.codeium/windsurf/mcp_config.json (Global)
             # We support project local here.
-            windsurf_dir = root_path / ".windsurf"
             windsurf_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(windsurf_dir / "mcp_config.json", 'w', encoding='utf-8') as f:
+            with open(dest_file, 'w', encoding='utf-8') as f:
                 json.dump(mcp_data, f, indent=4)
                 
             print(f"{Colors.BLUE}  🔌 Copied to .windsurf/mcp_config.json{Colors.ENDC}")

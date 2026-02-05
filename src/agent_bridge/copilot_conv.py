@@ -1,15 +1,10 @@
 import os
+import json
+import shutil
 from pathlib import Path
 from typing import Dict, Tuple, List, Any
+from .utils import Colors, ask_user
 
-# ANSI colors
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
 
 def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
     if not content.startswith('---'):
@@ -58,7 +53,7 @@ def get_master_agent_dir() -> Path:
     """Returns the .agent directory inside the agent-bridge project."""
     return Path(__file__).resolve().parent.parent.parent / ".agent"
 
-def convert_copilot(source_dir: str, output_unused: str):
+def convert_copilot(source_dir: str, output_unused: str, force: bool = False):
     root_path = Path(source_dir).resolve()
     
     # Fallback to Master Copy if local source_dir doesn't exist
@@ -74,6 +69,13 @@ def convert_copilot(source_dir: str, output_unused: str):
 
     # Official GitHub Copilot directories
     github_dir = Path(".github").resolve()
+    
+    # Confirmation for Copilot Overwrite
+    if (github_dir / "agents").exists() and not force:
+        if not ask_user(f"Found existing '{github_dir}/agents'. Update Copilot agents?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping Copilot agents update.{Colors.ENDC}")
+             return
+
     agents_out_dir = github_dir / "agents"
     skills_out_dir = github_dir / "skills"
 
@@ -157,13 +159,22 @@ def convert_copilot(source_dir: str, output_unused: str):
 
     print(f"{Colors.GREEN}✅ Official Copilot Spec conversion complete!{Colors.ENDC}")
 
-def copy_mcp_copilot(root_path: Path):
+def copy_mcp_copilot(root_path: Path, force: bool = False):
     """Copies MCP config to .vscode/mcp.json"""
     mcp_src = get_master_agent_dir() / "mcp_config.json"
     if not mcp_src.exists():
          mcp_src = root_path / ".agent" / "mcp_config.json"
 
     if mcp_src.exists():
+        vscode_dir = root_path / ".vscode"
+        dest_file = vscode_dir / "mcp.json"
+        
+        # Confirmation for MCP Overwrite (Safe Default)
+        if dest_file.exists() and not force:
+            if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
+                print(f"{Colors.YELLOW}🔒 Kept existing Copilot MCP config.{Colors.ENDC}")
+                return
+
         try:
             import json
             import re
@@ -174,7 +185,6 @@ def copy_mcp_copilot(root_path: Path):
             mcp_data = json.loads(content)
             
             # Copilot stores it in .vscode/mcp.json
-            vscode_dir = root_path / ".vscode"
             vscode_dir.mkdir(parents=True, exist_ok=True)
 
             # User Request: "GitHub Copilot root key is wrong, it should be 'servers'"
@@ -188,11 +198,9 @@ def copy_mcp_copilot(root_path: Path):
                  # If source lacks mcpServers key, assume it is flat or already correct
                  final_data = mcp_data
 
-            with open(vscode_dir / "mcp.json", 'w', encoding='utf-8') as f:
+            with open(dest_file, 'w', encoding='utf-8') as f:
                 json.dump(final_data, f, indent=4)
                 
             print(f"{Colors.BLUE}  🔌 Copied to .vscode/mcp.json (Root key: 'servers'){Colors.ENDC}")
-                
-            print(f"{Colors.BLUE}  🔌 Copied to .vscode/mcp.json{Colors.ENDC}")
         except Exception as e:
             print(f"{Colors.RED}  ❌ Failed to copy MCP config to Copilot: {e}{Colors.ENDC}")

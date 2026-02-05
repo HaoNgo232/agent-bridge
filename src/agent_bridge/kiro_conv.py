@@ -2,15 +2,7 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Tuple, List, Any
-
-# ANSI colors
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
+from .utils import Colors, ask_user
 
 def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
     if not content.startswith('---'):
@@ -40,7 +32,7 @@ def get_master_agent_dir() -> Path:
     # File is in src/agent_bridge/kiro_conv.py
     return Path(__file__).resolve().parent.parent.parent / ".agent"
 
-def convert_kiro(source_dir: str, output_dir: str):
+def convert_kiro(source_dir: str, output_dir: str, force: bool = False):
     root_path = Path(source_dir).resolve()
     
     # Fallback to Master Copy if local source_dir doesn't exist
@@ -55,6 +47,12 @@ def convert_kiro(source_dir: str, output_dir: str):
             return
 
     base_dir = Path(output_dir).resolve()
+    
+    # Confirmation for Kiro Overwrite
+    if base_dir.exists() and not force:
+        if not ask_user(f"Found existing '{base_dir}'. Update agents?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping Kiro agents update.{Colors.ENDC}")
+             return
     
     if not base_dir.exists(): base_dir.mkdir(parents=True)
 
@@ -130,13 +128,22 @@ def convert_kiro(source_dir: str, output_dir: str):
 
     print(f"{Colors.GREEN}✅ Kiro conversion complete!{Colors.ENDC}")
 
-def copy_mcp_kiro(root_path: Path):
+def copy_mcp_kiro(root_path: Path, force: bool = False):
     """Copies MCP config to .kiro/settings/mcp.json"""
     mcp_src = get_master_agent_dir() / "mcp_config.json"
     if not mcp_src.exists():
          mcp_src = root_path / ".agent" / "mcp_config.json"
 
     if mcp_src.exists():
+        kiro_settings_dir = root_path / ".kiro" / "settings"
+        dest_file = kiro_settings_dir / "mcp.json"
+        
+        # Confirmation for MCP Overwrite (Safe Default)
+        if dest_file.exists() and not force:
+            if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
+                print(f"{Colors.YELLOW}🔒 Kept existing Kiro MCP config.{Colors.ENDC}")
+                return
+
         try:
             import json
             import re
@@ -146,11 +153,9 @@ def copy_mcp_kiro(root_path: Path):
             content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
             mcp_data = json.loads(content)
             
-            # Kiro expects .kiro/settings/mcp.json
-            kiro_settings_dir = root_path / ".kiro" / "settings"
             kiro_settings_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(kiro_settings_dir / "mcp.json", 'w', encoding='utf-8') as f:
+            with open(dest_file, 'w', encoding='utf-8') as f:
                 json.dump(mcp_data, f, indent=4)
                 
             print(f"{Colors.BLUE}  🔌 Copied to .kiro/settings/mcp.json{Colors.ENDC}")

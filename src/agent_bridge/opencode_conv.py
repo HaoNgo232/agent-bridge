@@ -2,15 +2,7 @@ import os
 from pathlib import Path
 from typing import Dict, Tuple, List, Any
 from .copilot_conv import parse_frontmatter, get_master_agent_dir
-
-# ANSI colors
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
+from .utils import Colors, ask_user
 
 def map_tools_to_opencode(tools: List[str]) -> Dict[str, bool]:
     """Map Antigravity tools to OpenCode tool permissions."""
@@ -39,7 +31,7 @@ def map_tools_to_opencode(tools: List[str]) -> Dict[str, bool]:
         
     return opencode_tools
 
-def convert_opencode(source_dir: str, output_unused: str):
+def convert_opencode(source_dir: str, output_unused: str, force: bool = False):
     root_path = Path(source_dir).resolve()
     
     # Fallback to Master Copy if local source_dir doesn't exist
@@ -55,6 +47,13 @@ def convert_opencode(source_dir: str, output_unused: str):
 
     # OpenCode directory
     opencode_dir = Path(".opencode").resolve()
+    
+    # Confirmation for OpenCode Overwrite
+    if (opencode_dir / "agents").exists() and not force:
+        if not ask_user(f"Found existing '{opencode_dir}/agents'. Update OpenCode agents?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping OpenCode agents update.{Colors.ENDC}")
+             return
+
     agents_out_dir = opencode_dir / "agents"
 
     print(f"{Colors.HEADER}🏗️  Converting to OpenCode Format...{Colors.ENDC}")
@@ -217,13 +216,22 @@ def convert_opencode(source_dir: str, output_unused: str):
 
     print(f"{Colors.GREEN}✅ OpenCode conversion complete!{Colors.ENDC}")
 
-def copy_mcp_opencode(root_path: Path):
+def copy_mcp_opencode(root_path: Path, force: bool = False):
     """Copies MCP config to .opencode/mcp.json"""
     mcp_src = get_master_agent_dir() / "mcp_config.json"
     if not mcp_src.exists():
          mcp_src = root_path / ".agent" / "mcp_config.json"
 
     if mcp_src.exists():
+        opencode_dir = root_path / ".opencode"
+        dest_file = opencode_dir / "mcp.json"
+        
+        # Confirmation for MCP Overwrite (Safe Default)
+        if dest_file.exists() and not force:
+            if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
+                print(f"{Colors.YELLOW}🔒 Kept existing OpenCode MCP config.{Colors.ENDC}")
+                return
+
         try:
             import json
             import re
@@ -265,10 +273,9 @@ def copy_mcp_opencode(root_path: Path):
                         
                 opencode_data["mcp"][name] = new_config
 
-            opencode_dir = root_path / ".opencode"
             opencode_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(opencode_dir / "mcp.json", 'w', encoding='utf-8') as f:
+            with open(dest_file, 'w', encoding='utf-8') as f:
                 json.dump(opencode_data, f, indent=4)
                 
             print(f"{Colors.BLUE}  🔌 Copied to .opencode/mcp.json (Wrapped in 'mcp' key + schema fix){Colors.ENDC}")
