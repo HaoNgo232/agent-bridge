@@ -1,5 +1,5 @@
 ---
-description: 
+description: Python code style and patterns
 globs: **/*.py,**/pyproject.toml,**/requirements.txt
 alwaysApply: false
 ---
@@ -439,3 +439,7 @@ Before implementing:
 ---
 
 > **Remember**: Python patterns are about decision-making for YOUR specific context. Don't copy code—think about what serves your application best.
+
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

@@ -22,164 +22,74 @@ from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
 
 import yaml
 
+CREDIT_LINE = "\n\n---\nBuilt with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn\n"
+
 
 # =============================================================================
 # MDC FRONTMATTER CONFIGURATION
 # =============================================================================
 
-# Rule activation modes mapping
-# 1. alwaysApply=true, globs=empty -> Always injected
-# 2. alwaysApply=false, globs=pattern -> Auto-attach on file match
-# 3. alwaysApply=false, globs=empty, description=text -> Agent-requested
-# 4. alwaysApply=false, globs=empty, description=empty -> Manual @mention only
-
-SKILL_ACTIVATION_MAP = {
-    # Always active skills (core rules)
-    "clean-code": {"alwaysApply": True, "globs": "", "description": ""},
-    "behavioral-modes": {"alwaysApply": True, "globs": "", "description": ""},
-    
-    # Glob-based auto-attach
+# MDC RULES: Auto-activation based on file matching (Globs)
+MDC_RULES_CONFIG = {
+    "clean-code": {"alwaysApply": True, "globs": "", "description": "Core coding standards"},
+    "behavioral-modes": {"alwaysApply": True, "globs": "", "description": "Agent behavioral guidelines"},
     "nextjs-react-expert": {
         "alwaysApply": False,
         "globs": "**/*.tsx,**/*.jsx,**/next.config.*,**/app/**/*,**/pages/**/*",
-        "description": "",
+        "description": "Next.js and React expertise",
     },
     "tailwind-patterns": {
         "alwaysApply": False,
         "globs": "**/*.tsx,**/*.jsx,**/*.css,**/tailwind.config.*",
-        "description": "",
+        "description": "Tailwind CSS styling patterns",
     },
     "typescript-patterns": {
         "alwaysApply": False,
         "globs": "**/*.ts,**/*.tsx,**/tsconfig.json",
-        "description": "",
+        "description": "TypeScript language standards",
     },
     "python-patterns": {
         "alwaysApply": False,
         "globs": "**/*.py,**/pyproject.toml,**/requirements.txt",
-        "description": "",
-    },
-    "rust-pro": {
-        "alwaysApply": False,
-        "globs": "**/*.rs,**/Cargo.toml",
-        "description": "",
+        "description": "Python code style and patterns",
     },
     "database-design": {
         "alwaysApply": False,
         "globs": "**/*.sql,**/prisma/**/*,**/drizzle/**/*,**/migrations/**/*",
-        "description": "",
-    },
-    "api-patterns": {
-        "alwaysApply": False,
-        "globs": "**/api/**/*,**/routes/**/*,**/*.controller.*,**/*.service.*",
-        "description": "",
+        "description": "Database schema and SQL patterns",
     },
     "testing-patterns": {
         "alwaysApply": False,
         "globs": "**/*.test.*,**/*.spec.*,**/__tests__/**/*,**/tests/**/*",
-        "description": "",
+        "description": "Testing frameworks and patterns",
     },
     "mobile-design": {
         "alwaysApply": False,
         "globs": "**/App.tsx,**/app.json,**/*.native.*,**/android/**/*,**/ios/**/*",
-        "description": "",
-    },
-    "game-development": {
-        "alwaysApply": False,
-        "globs": "**/*.unity,**/*.cs,**/*.gd,**/godot/**/*",
-        "description": "",
-    },
-    
-    # Agent-requested (AI decides based on description)
-    "architecture": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN discussing system architecture, design patterns, or making structural decisions",
-    },
-    "brainstorming": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN brainstorming ideas, exploring options, or creative problem solving",
-    },
-    "plan-writing": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN creating implementation plans, project roadmaps, or task breakdowns",
-    },
-    "systematic-debugging": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN debugging issues, analyzing errors, or troubleshooting problems",
-    },
-    "code-review-checklist": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN reviewing code, checking for issues, or ensuring quality",
-    },
-    "performance-profiling": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN optimizing performance, analyzing bottlenecks, or profiling code",
-    },
-    "security-scanner": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN checking security, auditing code, or reviewing vulnerabilities",
-    },
-    "seo-fundamentals": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN optimizing for SEO, improving search rankings, or meta tags",
-    },
-    "deployment-procedures": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN deploying applications, setting up CI/CD, or managing releases",
-    },
-    "documentation-templates": {
-        "alwaysApply": False,
-        "globs": "",
-        "description": "USE WHEN writing documentation, README files, or technical guides",
+        "description": "Mobile development for iOS/Android",
     },
 }
 
-# Agent to tools/permissions mapping for Cursor
+# CURSOR SKILLS: On-demand toolkits invokable via slash commands (e.g., /plan)
+# Map skill name to command/description
+SKILLS_TOOLKIT_MAP = {
+    "architecture": "discuss system architecture and design patterns",
+    "brainstorming": "explore ideas and creative solutions",
+    "plan-writing": "create implementation plans and roadmaps",
+    "systematic-debugging": "debug issues and analyze errors",
+    "code-review-checklist": "review code and ensure quality",
+    "performance-profiling": "optimize performance and find bottlenecks",
+    "security-scanner": "audit code for vulnerabilities",
+    "seo-fundamentals": "optimize for search engines",
+}
+
+# CUSTOM SUBAGENTS: Specialized personas
 AGENT_CONFIG_MAP = {
-    "frontend-specialist": {
-        "description": "Frontend development specialist for React, Vue, and web technologies",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "backend-specialist": {
-        "description": "Backend development specialist for APIs, databases, and server-side logic",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "orchestrator": {
-        "description": "USE WHEN coordinating multiple tasks or managing complex workflows",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "project-planner": {
-        "description": "USE WHEN planning projects, creating roadmaps, or breaking down tasks",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "debugger": {
-        "description": "USE WHEN debugging issues, analyzing stack traces, or fixing bugs",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "security-auditor": {
-        "description": "USE WHEN auditing security, reviewing vulnerabilities, or checking compliance",
-        "alwaysApply": False,
-        "globs": "",
-    },
-    "test-engineer": {
-        "description": "USE WHEN writing tests, improving coverage, or setting up testing frameworks",
-        "alwaysApply": False,
-        "globs": "",
-    },
+    "frontend-specialist": "Specialist for frontend development (React, Next.js, UI/UX)",
+    "backend-specialist": "Specialist for backend systems (APIs, DBs, Server logic)",
+    "orchestrator": "High-level coordinator for complex, multi-step tasks",
+    "project-planner": "Specialist for architecture and technical planning",
+    "debugger": "Specialist for root cause analysis and bug fixing",
 }
 
 
@@ -194,27 +104,12 @@ def generate_mdc_frontmatter(
 ) -> str:
     """
     Generate MDC frontmatter for Cursor rules.
-    
-    MDC format (NOT YAML):
-    ---
-    description: text
-    globs: pattern1,pattern2
-    alwaysApply: true
-    ---
     """
     lines = ["---"]
-    
-    # Description - for AI to decide relevance
     lines.append(f"description: {description}")
-    
-    # Globs - file patterns for auto-attach
     lines.append(f"globs: {globs}")
-    
-    # AlwaysApply - always inject into context
     lines.append(f"alwaysApply: {str(always_apply).lower()}")
-    
     lines.append("---")
-    
     return "\n".join(lines)
 
 
@@ -250,30 +145,24 @@ def extract_metadata_from_content(content: str) -> Dict[str, Any]:
 # =============================================================================
 
 def convert_agent_to_cursor(source_path: Path, dest_path: Path) -> bool:
-    """Convert agent to Cursor format with MDC frontmatter."""
+    """Convert agent to Cursor Subagent markdown format."""
     try:
         content = source_path.read_text(encoding="utf-8")
         agent_slug = source_path.stem.lower()
+        agent_name = agent_slug.replace("-", " ").title()
         
-        # Get activation config
-        config = AGENT_CONFIG_MAP.get(agent_slug, {
-            "description": f"Specialized agent for {agent_slug.replace('-', ' ')} tasks",
-            "alwaysApply": False,
-            "globs": "",
-        })
+        # Cursor Subagents frontmatter
+        description = AGENT_CONFIG_MAP.get(agent_slug, f"Specialized assistant for {agent_name} activities")
         
-        # Generate MDC frontmatter
-        frontmatter = generate_mdc_frontmatter(
-            description=config.get("description", ""),
-            globs=config.get("globs", ""),
-            always_apply=config.get("alwaysApply", False),
-        )
+        lines = ["---"]
+        lines.append(f"name: {agent_name}")
+        lines.append(f"description: {description}")
+        lines.append("---")
         
-        # Remove existing frontmatter
+        # Remove existing frontmatter from content
         content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
         
-        # Build output
-        output = f"{frontmatter}\n\n{content_clean.strip()}\n"
+        output = "\n".join(lines) + f"\n\n{content_clean.strip()}{CREDIT_LINE}"
         
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")
@@ -283,54 +172,78 @@ def convert_agent_to_cursor(source_path: Path, dest_path: Path) -> bool:
         return False
 
 
-def convert_skill_to_cursor_rule(source_dir: Path, dest_path: Path) -> bool:
-    """Convert skill directory to Cursor rule (.mdc file)."""
+def convert_skill_to_cursor(source_dir: Path, rules_dest: Path, skills_dest: Path) -> bool:
+    """Convert skill to either MDC Rule or Cursor Skill folder."""
     try:
         skill_name = source_dir.name
-        
-        # Find SKILL.md
         skill_file = source_dir / "SKILL.md"
-        if not skill_file.exists():
-            md_files = list(source_dir.glob("*.md"))
-            skill_file = md_files[0] if md_files else None
-        
-        if not skill_file:
-            return False
+        if not skill_file.exists(): return False
         
         content = skill_file.read_text(encoding="utf-8")
-        
-        # Get activation config
-        config = SKILL_ACTIVATION_MAP.get(skill_name, {
-            "description": f"Rules for {skill_name.replace('-', ' ')}",
-            "alwaysApply": False,
-            "globs": "",
-        })
-        
-        # Generate MDC frontmatter
-        frontmatter = generate_mdc_frontmatter(
-            description=config.get("description", ""),
-            globs=config.get("globs", ""),
-            always_apply=config.get("alwaysApply", False),
-        )
-        
-        # Remove existing frontmatter and merge additional .md files
         content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-        
-        # Append other .md files in the skill directory
+
+        # Merge additional .md files
         for md_file in sorted(source_dir.glob("*.md")):
             if md_file.name != "SKILL.md":
                 additional = md_file.read_text(encoding="utf-8")
                 additional_clean = re.sub(r'^---\n.*?\n---\n*', '', additional, flags=re.DOTALL)
                 content_clean += f"\n\n---\n\n{additional_clean}"
+
+        # OPTION A: Convert to MDC Rule (Auto-attach)
+        if skill_name in MDC_RULES_CONFIG:
+            config = MDC_RULES_CONFIG[skill_name]
+            frontmatter = generate_mdc_frontmatter(
+                description=config["description"],
+                globs=config["globs"],
+                always_apply=config["alwaysApply"]
+            )
+            rules_dest.mkdir(parents=True, exist_ok=True)
+            dest_file = rules_dest / f"{skill_name}.mdc"
+            dest_file.write_text(f"{frontmatter}\n\n{content_clean}{CREDIT_LINE}", encoding="utf-8")
+            return True
+
+        # OPTION B: Convert to Cursor Skill (On-demand/Slash command)
+        skill_folder = skills_dest / skill_name
+        skill_folder.mkdir(parents=True, exist_ok=True)
         
-        # Build output
-        output = f"{frontmatter}\n\n{content_clean.strip()}\n"
+        description = SKILLS_TOOLKIT_MAP.get(skill_name, f"Expert toolkit for {skill_name}")
         
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        dest_path.write_text(output, encoding="utf-8")
+        skill_header = f"---\nname: {skill_name}\ndescription: {description}\n---\n\n"
+        (skill_folder / "SKILL.md").write_text(f"{skill_header}{content_clean}{CREDIT_LINE}", encoding="utf-8")
+        
+        # Copy other files to skill folder as resources
+        for item in source_dir.iterdir():
+            if item.name != "SKILL.md":
+                if item.is_file(): shutil.copy2(item, skill_folder / item.name)
+                elif item.is_dir(): shutil.copytree(item, skill_folder / item.name, dirs_exist_ok=True)
+                
         return True
     except Exception as e:
         print(f"  Error converting skill {source_dir.name}: {e}")
+        return False
+
+
+def convert_workflow_to_cursor_skill(source_path: Path, skills_dest: Path) -> bool:
+    """Convert a workflow to a Cursor Skill (slash command)."""
+    try:
+        content = source_path.read_text(encoding="utf-8")
+        name = source_path.stem
+        
+        # Extract metadata
+        metadata = extract_metadata_from_content(content)
+        description = metadata.get("description") or f"Execute workflow for {name}"
+        
+        skill_folder = skills_dest / name
+        skill_folder.mkdir(parents=True, exist_ok=True)
+        
+        # Normalize content for Cursor Skill
+        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+        
+        header = f"---\nname: {name}\ndescription: {description}\n---\n\n"
+        (skill_folder / "SKILL.md").write_text(f"{header}{content_clean}{CREDIT_LINE}", encoding="utf-8")
+        return True
+    except Exception as e:
+        print(f"  Error converting workflow {source_path.name}: {e}")
         return False
 
 
@@ -354,13 +267,13 @@ def create_project_instructions(dest_root: Path, source_root: Path) -> bool:
         
         if content_parts:
             frontmatter = generate_mdc_frontmatter(
-                description="",
+                description="Project-specific instructions and architecture guidelines",
                 globs="",
                 always_apply=True,  # Project instructions always apply
             )
             
             combined = "\n\n---\n\n".join(content_parts)
-            output = f"{frontmatter}\n\n{combined}\n"
+            output = f"{frontmatter}\n\n{combined}{CREDIT_LINE}"
             
             (rules_dir / "project-instructions.mdc").write_text(output, encoding="utf-8")
             return True
@@ -373,60 +286,60 @@ def create_project_instructions(dest_root: Path, source_root: Path) -> bool:
 
 def convert_to_cursor(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
     """
-    Main conversion function for Cursor format.
-    
-    Args:
-        source_root: Path to project root containing .agent/
-        dest_root: Path to output root
-        verbose: Print progress messages
-    
-    Returns:
-        Dict with conversion statistics
+    Main conversion function for Cursor v2.4+ format.
     """
-    stats = {"agents": 0, "rules": 0, "errors": []}
+    stats = {"agents": 0, "rules": 0, "skills": 0, "workflows": 0, "errors": []}
     
+    # Define paths
     agents_src = source_root / ".agent" / "agents"
-    agents_dest = dest_root / ".cursor" / "agents"
-    
     skills_src = source_root / ".agent" / "skills"
-    rules_dest = dest_root / ".cursor" / "rules"
+    workflows_src = source_root / ".agent" / "workflows"
     
-    # Convert agents
+    rules_dest = dest_root / ".cursor" / "rules"
+    agents_dest = dest_root / ".cursor" / "agents"
+    skills_dest = dest_root / ".cursor" / "skills"
+    
+    # CLEANUP: Remove old generated folders to prevent ghost files
+    for path in [rules_dest, agents_dest, skills_dest]:
+        if path.exists():
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+    
+    # 1. Convert Agents (Personas)
     if agents_src.exists():
-        if verbose:
-            print("Converting agents to Cursor format...")
-        
+        if verbose: print("Converting Agents to Cursor Subagents...")
         for agent_file in agents_src.glob("*.md"):
             dest_file = agents_dest / agent_file.name
             if convert_agent_to_cursor(agent_file, dest_file):
                 stats["agents"] += 1
-                if verbose:
-                    print(f"  ✓ {agent_file.name}")
-            else:
-                stats["errors"].append(f"agent:{agent_file.name}")
+            else: stats["errors"].append(f"agent:{agent_file.name}")
     
-    # Convert skills to rules (.mdc)
+    # 2. Convert Skills (Auto-rules or Slash-commands)
     if skills_src.exists():
-        if verbose:
-            print("Converting skills to Cursor rules (.mdc)...")
-        
+        if verbose: print("Converting Skills to Cursor Rules/Skills...")
         for skill_dir in skills_src.iterdir():
             if skill_dir.is_dir():
-                dest_file = rules_dest / f"{skill_dir.name}.mdc"
-                if convert_skill_to_cursor_rule(skill_dir, dest_file):
-                    stats["rules"] += 1
-                    if verbose:
-                        print(f"  ✓ {skill_dir.name}.mdc")
-                else:
-                    stats["errors"].append(f"rule:{skill_dir.name}")
+                if convert_skill_to_cursor(skill_dir, rules_dest, skills_dest):
+                    stats["skills"] += 1
+                else: stats["errors"].append(f"skill:{skill_dir.name}")
+
+    # 3. Convert Workflows (Slash-commands)
+    if workflows_src.exists():
+        if verbose: print("Converting Workflows to Cursor Commands...")
+        for workflow_file in workflows_src.glob("*.md"):
+            if convert_workflow_to_cursor_skill(workflow_file, skills_dest):
+                stats["workflows"] += 1
+            else: stats["errors"].append(f"workflow:{workflow_file.name}")
     
-    # Create project instructions
+    # 4. Create Project Instructions (Always-on MDC)
     if create_project_instructions(dest_root, source_root):
-        if verbose:
-            print("  ✓ project-instructions.mdc")
+        if verbose: print("  ✓ project-instructions.mdc created")
     
     if verbose:
-        print(f"\nCursor conversion complete: {stats['agents']} agents, {stats['rules']} rules")
+        print(f"\nCursor v2.4 conversion complete!")
+        print(f"  - Agents: {stats['agents']}")
+        print(f"  - Rules (MDC): {len(list(rules_dest.glob('*.mdc'))) if rules_dest.exists() else 0}")
+        print(f"  - Commands/Skills: {stats['skills'] + stats['workflows']}")
         if stats["errors"]:
             print(f"  Errors: {len(stats['errors'])}")
     

@@ -1,7 +1,6 @@
 ---
-description: USE WHEN planning projects, creating roadmaps, or breaking down tasks
-globs: 
-alwaysApply: false
+name: Project Planner
+description: Specialist for architecture and technical planning
 ---
 
 # Project Planner - Smart Project Planning
@@ -401,3 +400,6 @@ python .agent/skills/webapp-testing/scripts/playwright_runner.py http://localhos
 | 10 | **Phase X** | Verification is ALWAYS final | Definition of done |
 
 ---
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

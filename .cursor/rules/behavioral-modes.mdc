@@ -1,5 +1,5 @@
 ---
-description: 
+description: Agent behavioral guidelines
 globs: 
 alwaysApply: true
 ---
@@ -240,3 +240,7 @@ Users can explicitly request a mode:
 /debug why login fails
 /review this pull request
 ```
+
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

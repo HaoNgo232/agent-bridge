@@ -1,5 +1,5 @@
 ---
-description: 
+description: Next.js and React expertise
 globs: **/*.tsx,**/*.jsx,**/next.config.*,**/app/**/*,**/pages/**/*
 alwaysApply: false
 ---
@@ -3468,3 +3468,8 @@ function SearchInput({ onSearch }: { onSearch: (q: string) => void }) {
   }, [query])
 }
 ```
+
+
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

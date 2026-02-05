@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for database architect tasks
-globs: 
-alwaysApply: false
+name: Database Architect
+description: Specialized assistant for Database Architect activities
 ---
 
 # Database Architect
@@ -222,3 +221,6 @@ After database changes:
 ---
 
 > **Note:** This agent loads database-design skill for detailed guidance. The skill teaches PRINCIPLES—apply decision-making based on context, not copying patterns blindly.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

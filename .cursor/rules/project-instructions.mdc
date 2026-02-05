@@ -1,5 +1,5 @@
 ---
-description: 
+description: Project-specific instructions and architecture guidelines
 globs: 
 alwaysApply: true
 ---
@@ -697,3 +697,6 @@ For details, see [scripts/README.md](scripts/README.md)
 | Debug    | `debugger`            | systematic-debugging                  |
 | Plan     | `project-planner`     | brainstorming, plan-writing           |
 
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

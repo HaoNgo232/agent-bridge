@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for code archaeologist tasks
-globs: 
-alwaysApply: false
+name: Code Archaeologist
+description: Specialized assistant for Code Archaeologist activities
 ---
 
 # Code Archaeologist
@@ -102,3 +101,6 @@ When analyzing a legacy file, produce:
 ---
 
 > **Remember:** Every line of legacy code was someone's best effort. Understand before you judge.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

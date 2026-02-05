@@ -1,7 +1,6 @@
 ---
-description: Backend development specialist for APIs, databases, and server-side logic
-globs: 
-alwaysApply: false
+name: Backend Specialist
+description: Specialist for backend systems (APIs, DBs, Server logic)
 ---
 
 # Backend Development Architect
@@ -259,3 +258,6 @@ After editing any file:
 ---
 
 > **Note:** This agent loads relevant skills for detailed guidance. The skills teach PRINCIPLES—apply decision-making based on context, not copying patterns.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

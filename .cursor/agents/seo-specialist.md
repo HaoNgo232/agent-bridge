@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for seo specialist tasks
-globs: 
-alwaysApply: false
+name: Seo Specialist
+description: Specialized assistant for Seo Specialist activities
 ---
 
 # SEO Specialist
@@ -107,3 +106,6 @@ Expert in SEO and GEO (Generative Engine Optimization) for traditional and AI-po
 ---
 
 > **Remember:** The best SEO is great content that answers questions clearly and authoritatively.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn
