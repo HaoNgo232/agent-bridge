@@ -215,7 +215,7 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
     return metadata
 
 
-def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any], mcp_server_names: List[str] = None) -> Dict[str, Any]:
     """Generate professional Kiro agent JSON following the latest official spec."""
     
     # Get role-specific config or default
@@ -238,6 +238,13 @@ def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any]) -> Dict[
     original_auto = config.get("autoApprove", DEFAULT_AGENT_CONFIG["autoApprove"])
     allowed_tools = [TOOL_MAP.get(t, t) for t in original_auto]
     
+    # Auto-trust MCP servers (Official Spec: @server/*)
+    if mcp_server_names:
+        for mcp in mcp_server_names:
+            trust_pattern = f"@{mcp}/*"
+            if trust_pattern not in allowed_tools:
+                allowed_tools.append(trust_pattern)
+
     agent_json = {
         "name": metadata.get("name") or agent_slug.replace("-", " ").title(),
         "description": metadata.get("description") or f"Specialized agent for {agent_slug.replace('-', ' ')}",
@@ -311,14 +318,14 @@ def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any]) -> Dict[
 # CONVERSION FUNCTIONS
 # =============================================================================
 
-def convert_agent_to_kiro(source_path: Path, dest_path: Path) -> bool:
+def convert_agent_to_kiro(source_path: Path, dest_path: Path, mcp_server_names: List[str] = None) -> bool:
     """Convert agent to Kiro JSON format with full configuration."""
     try:
         content = source_path.read_text(encoding="utf-8")
         agent_slug = source_path.stem.lower()
         
         metadata = extract_agent_metadata(content, source_path.name)
-        agent_json = generate_kiro_agent_json(agent_slug, metadata)
+        agent_json = generate_kiro_agent_json(agent_slug, metadata, mcp_server_names)
         
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(
@@ -630,6 +637,14 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
     scripts_src = agent_root / "scripts"
     shared_src = agent_root / ".shared"
     
+    # Load MCP config to get server names for auto-trust
+    mcp_server_names = []
+    if mcp_src.exists():
+        try:
+            mcp_data = json.loads(mcp_src.read_text(encoding="utf-8"))
+            mcp_server_names = list(mcp_data.get("mcpServers", {}).keys())
+        except: pass
+
     # Convert agents to JSON
     if agents_src.exists():
         if verbose:
@@ -637,7 +652,7 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
         
         for agent_file in agents_src.glob("*.md"):
             dest_file = agents_dest / f"{agent_file.stem}.json"
-            if convert_agent_to_kiro(agent_file, dest_file):
+            if convert_agent_to_kiro(agent_file, dest_file, mcp_server_names):
                 stats["agents"] += 1
                 if verbose:
                     print(f"  ✓ {agent_file.stem}.json")

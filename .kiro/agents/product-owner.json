@@ -9,7 +9,13 @@
   ],
   "allowedTools": [
     "read",
-    "list"
+    "list",
+    "@shadcn/*",
+    "@context7/*",
+    "@sequentialthinking/*",
+    "@time/*",
+    "@chrome-devtools/*",
+    "@next-devtools/*"
   ],
   "includeMcpJson": true,
   "resources": [

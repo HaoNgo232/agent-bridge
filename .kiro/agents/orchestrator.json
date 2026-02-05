@@ -10,7 +10,13 @@
   "allowedTools": [
     "read",
     "list",
-    "code_search"
+    "code_search",
+    "@shadcn/*",
+    "@context7/*",
+    "@sequentialthinking/*",
+    "@time/*",
+    "@chrome-devtools/*",
+    "@next-devtools/*"
   ],
   "includeMcpJson": true,
   "resources": [

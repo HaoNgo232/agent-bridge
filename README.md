@@ -1,6 +1,6 @@
-# Agent Bridge
+# Agent Bridge 🚀
 
-Công cụ chuyển đổi cấu hình Agent và Skill từ Antigravity Kit sang định dạng tương thích với các IDE (GitHub Copilot, OpenCode, Cursor, Windsurf) và CLI (Kiro).
+Công cụ cầu nối giúp chuyển đổi và đồng bộ tri thức Agent/Skill từ dự án Antigravity sang các IDE và CLI phổ biến.
 
 ## 🚀 Cài đặt nhanh (Quick Start)
 
@@ -79,13 +79,13 @@ agent-bridge clean --kiro
 
 ## 💎 Các định dạng hỗ trợ & Tính năng đặc biệt
 
-| IDE/CLI | Vị trí cấu hình | Tính năng nổi bật |
-|---------|-----------------|-------------------|
-| **GitHub Copilot** | `.github/agents/`, `.github/skills/` | Official Agent Spec, Clean Frontmatter |
-| **OpenCode IDE** | `.opencode/opencode.json` | MCP gộp chung vào file settings chính |
-| **Kiro CLI** | `.kiro/agents/*.json` | **Auto-Approve** subagents mặc định |
-| **Cursor AI** | `.cursor/rules/` | Tương thích hoàn toàn với .cursorrules |
-| **Windsurf IDE** | `.windsurf/rules/`, `.windsurfrules` | Hỗ trợ cả Modern Rules và Legacy Rules |
+| IDE/CLI | Trạng thái | Vị trí cấu hình | Tính năng nổi bật |
+|---------|------------|-----------------|-------------------|
+| **Kiro CLI** | 🟢 STABLE | `.kiro/` | **Official Spec**, Auto-trust MCP, Custom Prompts (@), Spawn Hooks |
+| **GitHub Copilot** | 🟡 BETA | `.github/` | Official Agent Spec (JSON/MD), Metadata merging |
+| **OpenCode IDE** | 🟡 BETA | `.opencode/` | Unified JSON settings, Skill support |
+| **Cursor AI** | 🟡 BETA | `.cursor/rules/` | Rule-based steering |
+| **Windsurf IDE** | 🟡 BETA | `.windsurf/` | Context-aware logic |
 
 ## 📂 Cấu trúc dự án
 
