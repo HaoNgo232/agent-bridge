@@ -70,7 +70,7 @@ def convert_opencode(source_dir: str, output_unused: str):
                 desc = meta.get("description", "")
                 if isinstance(desc, list): desc = " ".join(desc)
                 
-                # Model mapping (OpenCode uses provider/model syntax)
+                # Model mapping
                 raw_model = meta.get("model", "")
                 oc_model = None
                 if raw_model and raw_model.lower() != "inherit":
@@ -79,9 +79,6 @@ def convert_opencode(source_dir: str, output_unused: str):
                     elif "claude-3-sonnet" in raw_model.lower(): oc_model = "anthropic/claude-3-5-sonnet-20240620"
                     elif "claude-3-opus" in raw_model.lower(): oc_model = "anthropic/claude-3-opus-20240229"
                 
-                # Temperature
-                temp = meta.get("temperature", None)
-
                 # Mode mapping
                 mode = "subagent"
                 if agent_file.stem == "orchestrator":
@@ -92,32 +89,28 @@ def convert_opencode(source_dir: str, output_unused: str):
                 if isinstance(tools_meta, str): tools_meta = [t.strip() for t in tools_meta.split(",")]
                 oc_tools = map_tools_to_opencode(tools_meta)
 
-                lines = ["---"]
-                lines.append(f"description: \"{desc}\"")
-                lines.append(f"mode: {mode}")
-                if oc_model:
-                    lines.append(f"model: {oc_model}")
-                if temp is not None:
-                    lines.append(f"temperature: {temp}")
-                
-                # Tools YAML block
-                lines.append("tools:")
-                for tool, allowed in oc_tools.items():
-                    lines.append(f"  {tool}: {str(allowed).lower()}")
-                
-                lines.append("---")
-                lines.append(f"\n{body}")
+                # Build clean metadata dictionary for OpenCode
+                oc_meta = {
+                    "description": desc,
+                    "mode": mode,
+                    "tools": oc_tools
+                }
+                if oc_model: oc_meta["model"] = oc_model
+                if meta.get("temperature") is not None: oc_meta["temperature"] = meta["temperature"]
+
+                import yaml
+                new_content = f"---\n{yaml.dump(oc_meta, sort_keys=False)}---\n{body}"
 
                 with open(agents_out_dir / f"{agent_file.stem}.md", 'w', encoding='utf-8') as f:
-                    f.write("\n".join(lines))
+                    f.write(new_content)
                 print(f"{Colors.BLUE}  🔹 Agent: {agent_file.stem}{Colors.ENDC}")
             except Exception as e:
                 print(f"{Colors.RED}  ❌ Failed agent {agent_file.name}: {e}{Colors.ENDC}")
 
-    # 2. PROCESS SKILLS -> .opencode/agents/<skill>.md (As subagents)
+    # 2. PROCESS SKILLS -> .opencode/skills/<skill>/SKILL.md (Official OpenCode Skill Format)
     skills_src_dir = root_path / "skills"
+    skills_out_dir = opencode_dir / "skills"
     if skills_src_dir.exists():
-        if not agents_out_dir.exists(): agents_out_dir.mkdir(parents=True)
         for skill_dir in skills_src_dir.iterdir():
             if not skill_dir.is_dir(): continue
             src_skill_file = skill_dir / "SKILL.md"
@@ -128,36 +121,26 @@ def convert_opencode(source_dir: str, output_unused: str):
                     desc = meta.get("description", "")
                     if isinstance(desc, list): desc = " ".join(desc)
                     
-                    # OpenCode specific mapping for skills (always subagents)
-                    mode = "subagent"
-                    
-                    # Tool mapping
-                    tools_meta = meta.get("tools", [])
-                    if isinstance(tools_meta, str): tools_meta = [t.strip() for t in tools_meta.split(",")]
-                    oc_tools = map_tools_to_opencode(tools_meta)
+                    # OpenCode Official Skill Frontmatter
+                    # Only name, description, license, compatibility, metadata are recognized
+                    oc_skill_meta = {
+                        "name": name.lower().replace("_", "-"),
+                        "description": desc or name
+                    }
 
-                    lines = ["---"]
-                    lines.append(f"description: \"{desc or name}\"")
-                    lines.append(f"mode: {mode}")
-                    
-                    # Tools YAML block
-                    lines.append("tools:")
-                    for tool, allowed in oc_tools.items():
-                        lines.append(f"  {tool}: {str(allowed).lower()}")
-                    
-                    lines.append("---")
-                    lines.append(f"\n{body}")
+                    import yaml
+                    new_content = f"---\n{yaml.dump(oc_skill_meta, sort_keys=False)}---\n{body}"
 
-                    # Use skill directory name as the agent file name
-                    with open(agents_out_dir / f"{skill_dir.name}.md", 'w', encoding='utf-8') as f:
-                        f.write("\n".join(lines))
-                    print(f"{Colors.BLUE}  🔸 Skill: {skill_dir.name}{Colors.ENDC}")
+                    dest_skill_dir = skills_out_dir / skill_dir.name
+                    dest_skill_dir.mkdir(parents=True, exist_ok=True)
+                    with open(dest_skill_dir / "SKILL.md", 'w', encoding='utf-8') as f:
+                        f.write(new_content)
+                    print(f"{Colors.BLUE}  🔸 Skill: {skill_dir.name} (Official Format){Colors.ENDC}")
                 except Exception as e:
                     print(f"{Colors.RED}  ❌ Failed skill {skill_dir.name}: {e}{Colors.ENDC}")
 
     # 3. GENERATE AGENTS.md (Root Level)
     # OpenCode uses AGENTS.md in project root for global project instructions
-    # We can use the project-planner or orchestrator prompt as a base for this if it exists
     planner_file = agents_src_dir / "project-planner.md"
     if planner_file.exists():
         try:
@@ -166,5 +149,67 @@ def convert_opencode(source_dir: str, output_unused: str):
                 f.write(f"# Project Instructions\n\n{body}")
             print(f"{Colors.BLUE}  📜 Generated AGENTS.md (Project Root){Colors.ENDC}")
         except: pass
+
+    # 4. ENRICH ORCHESTRATOR WITH TASK & SKILL PERMISSIONS
+    # In OpenCode, a primary agent needs explicit permission to call subagents via 'task' and load skills via 'skill'
+    orchestrator_out = agents_out_dir / "orchestrator.md"
+    if orchestrator_out.exists():
+        try:
+            # Collect all other agent names
+            subagent_names = [f.stem for f in agents_out_dir.glob("*.md") if f.stem != "orchestrator"]
+            
+            # CLEANUP: If a subagent name also exists as a native skill, remove it from agents folder
+            # to avoid duplication and use official skill tool instead.
+            for name in list(subagent_names):
+                if (skills_out_dir / name).exists():
+                    old_agent_file = agents_out_dir / f"{name}.md"
+                    if old_agent_file.exists():
+                        old_agent_file.unlink()
+                        subagent_names.remove(name)
+                        print(f"{Colors.YELLOW}  🧹 Removed legacy skill-agent: {name}.md (Replaced by Official Skill){Colors.ENDC}")
+
+            meta, body = parse_frontmatter(orchestrator_out.read_text(encoding='utf-8'))
+            
+            # Update permissions for the custom orchestrator
+            if "permission" not in meta: meta["permission"] = {}
+            meta["permission"]["task"] = subagent_names
+            meta["permission"]["skill"] = {"*": "allow"}
+            
+            if "tools" not in meta: meta["tools"] = {}
+            meta["tools"]["skill"] = True
+            
+            # Reconstruct frontmatter
+            import yaml
+            new_content = f"---\n{yaml.dump(meta, sort_keys=False)}---\n{body}"
+            orchestrator_out.write_text(new_content, encoding='utf-8')
+            print(f"{Colors.GREEN}  ✅ Orchestrator enriched with Task & Skill permissions.{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.RED}  ⚠️ Could not enrich orchestrator permissions: {e}{Colors.ENDC}")
+
+    # 5. GENERATE opencode.json (Global Configuration)
+    opencode_json_path = opencode_dir / "opencode.json"
+    try:
+        import json
+        config = {
+            "permission": {
+                "skill": {
+                    "*": "allow"
+                }
+            },
+            "agent": {
+                "plan": {
+                    "permission": {
+                        "skill": {
+                            "*": "allow"
+                        }
+                    }
+                }
+            }
+        }
+        with open(opencode_json_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2)
+        print(f"{Colors.BLUE}  📂 Generated opencode.json (Global Config){Colors.ENDC}")
+    except Exception as e:
+        print(f"{Colors.RED}  ❌ Failed to generate opencode.json: {e}{Colors.ENDC}")
 
     print(f"{Colors.GREEN}✅ OpenCode conversion complete!{Colors.ENDC}")
