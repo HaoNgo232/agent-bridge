@@ -17,6 +17,7 @@ def check_and_refresh_project(source_dir: str):
     # We import here to avoid circular imports if any
     from .copilot_conv import convert_copilot
     from .kiro_conv import convert_kiro
+    from .opencode_conv import convert_opencode
 
     cwd = Path.cwd()
     
@@ -29,6 +30,11 @@ def check_and_refresh_project(source_dir: str):
     if (cwd / ".kiro" / "agents").exists():
         print(f"{Colors.YELLOW}🔄 Auto-refreshing Kiro Format...{Colors.ENDC}")
         convert_kiro(source_dir, ".kiro")
+        
+    # Check for OpenCode
+    if (cwd / ".opencode" / "agents").exists() or (cwd / "AGENTS.md").exists():
+        print(f"{Colors.YELLOW}🔄 Auto-refreshing OpenCode Format...{Colors.ENDC}")
+        convert_opencode(source_dir, "")
 
 KIT_REPO_URL = "https://github.com/vudovn/antigravity-kit"
 

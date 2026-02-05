@@ -2,6 +2,7 @@ import argparse
 import sys
 from .kiro_conv import convert_kiro
 from .copilot_conv import convert_copilot
+from .opencode_conv import convert_opencode
 from .kit_sync import update_kit
 
 def main():
@@ -23,8 +24,12 @@ def main():
     update_parser.add_argument("--target", default=".agent", help="Target directory to update")
 
     # Init Subcommand
-    init_parser = subparsers.add_parser("init", help="Initialize AI in current project (Copilot & Kiro)")
+    init_parser = subparsers.add_parser("init", help="Initialize AI in current project (Copilot, Kiro, OpenCode)")
     init_parser.add_argument("--source", default=".agent", help="Source of knowledge")
+
+    # OpenCode Subcommand
+    opencode_parser = subparsers.add_parser("opencode", help="Convert to OpenCode format")
+    opencode_parser.add_argument("--source", default=".agent", help="Source directory")
 
     args = parser.parse_args()
 
@@ -36,10 +41,13 @@ def main():
         update_kit(args.target)
     elif args.format == "init":
         print("\033[95m🚀 Initializing AI for current project...\033[0m")
-        # Try convert for both
+        # Try convert for all
         convert_copilot(args.source, "")
         convert_kiro(args.source, ".kiro")
+        convert_opencode(args.source, "")
         print("\033[92m✅ Initialization complete!\033[0m")
+    elif args.format == "opencode":
+        convert_opencode(args.source, "")
     else:
         parser.print_help()
 
