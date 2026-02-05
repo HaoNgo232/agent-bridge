@@ -156,3 +156,43 @@ def convert_copilot(source_dir: str, output_unused: str):
         shutil.rmtree(old_instr_dir)
 
     print(f"{Colors.GREEN}✅ Official Copilot Spec conversion complete!{Colors.ENDC}")
+
+def copy_mcp_copilot(root_path: Path):
+    """Copies MCP config to .vscode/mcp.json"""
+    mcp_src = get_master_agent_dir() / "mcp_config.json"
+    if not mcp_src.exists():
+         mcp_src = root_path / ".agent" / "mcp_config.json"
+
+    if mcp_src.exists():
+        try:
+            import json
+            import re
+            
+            content = mcp_src.read_text(encoding='utf-8')
+            content = re.sub(r'//.*', '', content)
+            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+            mcp_data = json.loads(content)
+            
+            # Copilot stores it in .vscode/mcp.json
+            vscode_dir = root_path / ".vscode"
+            vscode_dir.mkdir(parents=True, exist_ok=True)
+
+            # User Request: "GitHub Copilot root key is wrong, it should be 'servers'"
+            # Example provided: { "servers": { "MCP SERVER NAME": ... } }
+            # So we format specifically for Copilot by renaming 'mcpServers' -> 'servers'
+            
+            final_data = {}
+            if "mcpServers" in mcp_data:
+                final_data["servers"] = mcp_data["mcpServers"]
+            else:
+                 # If source lacks mcpServers key, assume it is flat or already correct
+                 final_data = mcp_data
+
+            with open(vscode_dir / "mcp.json", 'w', encoding='utf-8') as f:
+                json.dump(final_data, f, indent=4)
+                
+            print(f"{Colors.BLUE}  🔌 Copied to .vscode/mcp.json (Root key: 'servers'){Colors.ENDC}")
+                
+            print(f"{Colors.BLUE}  🔌 Copied to .vscode/mcp.json{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.RED}  ❌ Failed to copy MCP config to Copilot: {e}{Colors.ENDC}")

@@ -129,3 +129,30 @@ def convert_kiro(source_dir: str, output_dir: str):
             except: pass
 
     print(f"{Colors.GREEN}✅ Kiro conversion complete!{Colors.ENDC}")
+
+def copy_mcp_kiro(root_path: Path):
+    """Copies MCP config to .kiro/settings/mcp.json"""
+    mcp_src = get_master_agent_dir() / "mcp_config.json"
+    if not mcp_src.exists():
+         mcp_src = root_path / ".agent" / "mcp_config.json"
+
+    if mcp_src.exists():
+        try:
+            import json
+            import re
+            
+            content = mcp_src.read_text(encoding='utf-8')
+            content = re.sub(r'//.*', '', content)
+            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+            mcp_data = json.loads(content)
+            
+            # Kiro expects .kiro/settings/mcp.json
+            kiro_settings_dir = root_path / ".kiro" / "settings"
+            kiro_settings_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(kiro_settings_dir / "mcp.json", 'w', encoding='utf-8') as f:
+                json.dump(mcp_data, f, indent=4)
+                
+            print(f"{Colors.BLUE}  🔌 Copied to .kiro/settings/mcp.json{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.RED}  ❌ Failed to copy MCP config to Kiro: {e}{Colors.ENDC}")

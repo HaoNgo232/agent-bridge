@@ -80,3 +80,32 @@ def convert_windsurf(source_dir: str, output_unused: str):
     print(f"{Colors.BLUE}  📜 Generated .windsurfrules (Legacy Combined){Colors.ENDC}")
 
     print(f"{Colors.GREEN}✅ Windsurf conversion complete!{Colors.ENDC}")
+
+def copy_mcp_windsurf(root_path: Path):
+    """Copies MCP config to .windsurf/mcp_config.json"""
+    mcp_src = get_master_agent_dir() / "mcp_config.json"
+    if not mcp_src.exists():
+         mcp_src = root_path / ".agent" / "mcp_config.json"
+
+    if mcp_src.exists():
+        try:
+            import json
+            import re
+            
+            content = mcp_src.read_text(encoding='utf-8')
+            content = re.sub(r'//.*', '', content)
+            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+            mcp_data = json.loads(content)
+            
+            # Windsurf stores it in .windsurf/mcp_config.json (Project local)
+            # OR ~/.codeium/windsurf/mcp_config.json (Global)
+            # We support project local here.
+            windsurf_dir = root_path / ".windsurf"
+            windsurf_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(windsurf_dir / "mcp_config.json", 'w', encoding='utf-8') as f:
+                json.dump(mcp_data, f, indent=4)
+                
+            print(f"{Colors.BLUE}  🔌 Copied to .windsurf/mcp_config.json{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.RED}  ❌ Failed to copy MCP config to Windsurf: {e}{Colors.ENDC}")

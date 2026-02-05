@@ -52,32 +52,61 @@ def main():
     # List Subcommand
     subparsers.add_parser("list", help="List supported IDE formats")
 
-    args = parser.parse_args()
+    # MCP Subcommand
+    mcp_parser = subparsers.add_parser("mcp", help="Install MCP configuration manually")
+    mcp_parser.add_argument("--cursor", action="store_true", help="Install to Cursor (.cursor/mcp.json)")
+    mcp_parser.add_argument("--windsurf", action="store_true", help="Install to Windsurf (.windsurf/mcp_config.json)")
+    mcp_parser.add_argument("--opencode", action="store_true", help="Install to OpenCode (.opencode/mcp.json)")
+    mcp_parser.add_argument("--copilot", action="store_true", help="Install to GitHub Copilot (.vscode/mcp.json)")
+    mcp_parser.add_argument("--kiro", action="store_true", help="Install to Kiro (.kiro/settings/mcp.json)")
+    mcp_parser.add_argument("--all", action="store_true", help="Install to ALL supported IDEs")
 
-    if args.format == "kiro":
-        convert_kiro(args.source, args.output)
-    elif args.format == "copilot":
-        convert_copilot(args.source, args.output)
-    elif args.format == "update" or args.format == "update-kit":
-        update_kit(args.target)
-    elif args.format == "init":
-        print("\033[95m🚀 Initializing AI for current project...\033[0m")
-        
-        # If no flags provided, set all to True
-        select_all = args.all or (not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf)
-        
-        if select_all or args.copilot:
-            convert_copilot(args.source, "")
-        if select_all or args.kiro:
-            convert_kiro(args.source, ".kiro")
-        if select_all or args.opencode:
-            convert_opencode(args.source, "")
-        if select_all or args.cursor:
-            convert_cursor(args.source, "")
-        if select_all or args.windsurf:
-            convert_windsurf(args.source, "")
+    args = parser.parse_args()
+    
+    # --- DISPATCH COMMANDS ---
+    if args.format == "init":
+        from .copilot_conv import convert_copilot
+        from .kiro_conv import convert_kiro
+        from .opencode_conv import convert_opencode
+        from .cursor_conv import convert_cursor
+        from .windsurf_conv import convert_windsurf
+
+        if args.all:
+            convert_copilot(SOURCE_DIR, "")
+            convert_kiro(SOURCE_DIR, ".kiro")
+            convert_opencode(SOURCE_DIR, "")
+            convert_cursor(SOURCE_DIR, "")
+            convert_windsurf(SOURCE_DIR, "")
+        else:
+            if args.copilot: convert_copilot(SOURCE_DIR, "")
+            if args.kiro: convert_kiro(SOURCE_DIR, ".kiro")
+            if args.opencode: convert_opencode(SOURCE_DIR, "")
+            if args.cursor: convert_cursor(SOURCE_DIR, "")
+            if args.windsurf: convert_windsurf(SOURCE_DIR, "")
             
-        print("\033[92m✅ Initialization complete!\033[0m")
+        print(f"\n{Colors.GREEN}✅ Initialization complete!{Colors.ENDC}")
+
+    elif args.format == "mcp":
+        from .cursor_conv import copy_mcp_cursor
+        from .windsurf_conv import copy_mcp_windsurf
+        from .opencode_conv import copy_mcp_opencode
+        from .copilot_conv import copy_mcp_copilot
+        from .kiro_conv import copy_mcp_kiro
+        
+        print("\033[95m⚙️ Installing MCP configuration...\033[0m")
+        install_all = args.all or (not args.cursor and not args.windsurf and not args.opencode and not args.copilot and not args.kiro)
+
+        if install_all or args.cursor:
+            copy_mcp_cursor(Path("."))
+        if install_all or args.windsurf:
+            copy_mcp_windsurf(Path("."))
+        if install_all or args.opencode:
+            copy_mcp_opencode(Path("."))
+        if install_all or args.copilot:
+            copy_mcp_copilot(Path("."))
+        if install_all or args.kiro:
+            copy_mcp_kiro(Path("."))
+        print("\033[92m✅ MCP configuration installed!\033[0m")
     elif args.format == "list":
         print("\033[94m📂 Supported IDE Formats:\033[0m")
         print("  - \033[93mcopilot\033[0m: GitHub Copilot (.github/agents/)")

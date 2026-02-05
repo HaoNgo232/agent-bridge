@@ -100,3 +100,35 @@ def convert_cursor(source_dir: str, output_unused: str):
         except: pass
 
     print(f"{Colors.GREEN}✅ Cursor conversion complete!{Colors.ENDC}")
+
+def copy_mcp_cursor(root_path: Path):
+    """Copies MCP config to .cursor/mcp.json"""
+    mcp_src = get_master_agent_dir() / "mcp_config.json"
+    if not mcp_src.exists():
+        # Fallback to local .agent
+        mcp_src = root_path / ".agent" / "mcp_config.json"
+        
+    if mcp_src.exists():
+        try:
+            import json
+            import re
+            
+            # Read and sanitize
+            content = mcp_src.read_text(encoding='utf-8')
+            content = re.sub(r'//.*', '', content)
+            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+            mcp_data = json.loads(content)
+            
+            cursor_dir = root_path / ".cursor"
+            cursor_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Cursor expects top-level "mcpServers" key? Yes, standard MCP format.
+            # Our mcp_config.json ALREADY has "mcpServers" key.
+            # So we just dump it directly.
+            
+            with open(cursor_dir / "mcp.json", 'w', encoding='utf-8') as f:
+                json.dump(mcp_data, f, indent=4)
+                
+            print(f"{Colors.BLUE}  🔌 Copied to .cursor/mcp.json{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.RED}  ❌ Failed to copy MCP config to Cursor: {e}{Colors.ENDC}")
