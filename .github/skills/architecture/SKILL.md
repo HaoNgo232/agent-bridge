@@ -1,10 +1,7 @@
 ---
-name: architecture
-description: Architectural decision-making framework. Requirements analysis, trade-off evaluation, ADR documentation. Use when making architecture decisions or analyzing system design.
-usage: "Use this skill for Architectural decision-making framework. Requirements analysis, trade-off evaluation, ADR documentation. Use when making architecture decisions or analyzing system design. tasks."
+description: Skill documentation for architecture
+name: Architecture Decision Framework
 ---
-
-# Instructions
 
 # Architecture Decision Framework
 

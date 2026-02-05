@@ -1,7 +1,9 @@
-# Skill: tdd-workflow
+# Tdd Workflow
 
-# TDD Workflow
+**Activation:** Model Decision
+**Description:** Rules for tdd workflow
 
+---
 > Write tests first, code second.
 
 ---

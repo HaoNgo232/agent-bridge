@@ -1,9 +1,11 @@
 ---
-name: documentation-writer
-description: Expert in technical documentation. Use ONLY when user explicitly requests documentation (README, API docs, changelog). DO NOT auto-invoke during normal development.
+name: Documentation Writer
+description: Expert in technical documentation. Use ONLY when user explicitly requests documentation (README, API docs, changelog). DO NOT auto-invoke during norma
+tools:
+- read
+- edit
+- search
 ---
-
-# Prompt
 
 # Documentation Writer
 

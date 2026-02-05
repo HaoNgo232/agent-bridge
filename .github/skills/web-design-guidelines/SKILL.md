@@ -1,10 +1,7 @@
 ---
-name: web-design-guidelines
-description: Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices".
-usage: "Use this skill for Review UI code for Web Interface Guidelines compliance. Use when asked to "review my UI", "check accessibility", "audit design", "review UX", or "check my site against best practices". tasks."
+description: Skill documentation for web design guidelines
+name: Web Interface Guidelines
 ---
-
-# Instructions
 
 # Web Interface Guidelines
 

@@ -1,266 +1,547 @@
-import os
-from pathlib import Path
-from typing import Dict, Tuple, List, Any
-from .copilot_conv import parse_frontmatter, get_master_agent_dir
-from .utils import Colors, ask_user
+"""
+OpenCode Converter
+Converts Antigravity Kit agents/skills to OpenCode format.
 
-def map_tools_to_opencode(tools: List[str]) -> Dict[str, bool]:
-    """Map Antigravity tools to OpenCode tool permissions."""
-    mapping = {
-        "bash": "bash",
-        "terminal": "bash",
-        "shell": "bash",
-        "edit": "write",
-        "write": "write",
-        "replace_file_content": "write",
-        "multi_replace_file_content": "write",
-        "read_file": "read",
-        "web": "webfetch",
-        "search": "webfetch"
+Output structure:
+- .opencode/agents/*.md (agents with frontmatter: mode, tools, permission)
+- .opencode/commands/*.md (custom commands)
+- .opencode/skills/<skill-name>/SKILL.md
+- .opencode/opencode.json (main config)
+- .opencode/mcp.json (MCP configuration)
+
+Reference: https://opencode.ai/docs/config/
+           https://opencode.ai/docs/agents/
+           https://opencode.ai/docs/commands/
+"""
+
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+import json
+import os
+import re
+import shutil
+from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
+
+import yaml
+
+
+# =============================================================================
+# OPENCODE AGENT CONFIGURATION
+# =============================================================================
+
+# Agent modes
+AGENT_MODES = {
+    "primary": "primary",      # Main agents, switchable with Tab
+    "subagent": "subagent",    # Invoked by primary agents or @mention
+}
+
+# Agent role -> configuration mapping
+AGENT_CONFIG_MAP = {
+    # Primary agents (main development agents)
+    "orchestrator": {
+        "mode": "primary",
+        "description": "Orchestrates tasks and delegates to specialized agents",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"task": {"*": "allow"}},  # Can invoke any subagent
+    },
+    "frontend-specialist": {
+        "mode": "primary",
+        "description": "Frontend development with React, Vue, and web technologies",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "allow", "bash": "allow"},
+    },
+    "backend-specialist": {
+        "mode": "primary",
+        "description": "Backend development with APIs, databases, and server logic",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "allow", "bash": "allow"},
+    },
+    
+    # Subagents (specialized tasks)
+    "project-planner": {
+        "mode": "subagent",
+        "description": "Creates implementation plans and task breakdowns",
+        "tools": {"write": False, "edit": False, "bash": False},
+        "permission": {"edit": "deny", "bash": "deny"},
+    },
+    "explorer-agent": {
+        "mode": "subagent",
+        "description": "Explores and analyzes codebase structure",
+        "tools": {"write": False, "edit": False, "bash": False},
+        "permission": {"edit": "deny"},
+    },
+    "security-auditor": {
+        "mode": "subagent",
+        "description": "Audits code for security vulnerabilities",
+        "tools": {"write": False, "edit": False, "bash": False},
+        "permission": {"edit": "deny", "bash": "deny"},
+    },
+    "test-engineer": {
+        "mode": "subagent",
+        "description": "Writes and maintains tests",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "allow", "bash": {"*": "ask", "npm test*": "allow", "npx jest*": "allow"}},
+    },
+    "debugger": {
+        "mode": "subagent",
+        "description": "Debugs issues and analyzes errors",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "ask", "bash": "ask"},
+    },
+    "documentation-writer": {
+        "mode": "subagent",
+        "description": "Writes and maintains documentation",
+        "tools": {"write": True, "edit": True, "bash": False},
+        "permission": {"edit": "allow", "bash": "deny"},
+    },
+    "database-architect": {
+        "mode": "subagent",
+        "description": "Designs database schemas and migrations",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "allow", "bash": {"*": "ask", "npx prisma*": "allow"}},
+    },
+    "devops-engineer": {
+        "mode": "subagent",
+        "description": "Manages deployment and infrastructure",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "allow", "bash": "ask"},
+    },
+    "performance-optimizer": {
+        "mode": "subagent",
+        "description": "Optimizes code and application performance",
+        "tools": {"write": True, "edit": True, "bash": True},
+        "permission": {"edit": "ask", "bash": "ask"},
+    },
+    "code-archaeologist": {
+        "mode": "subagent",
+        "description": "Analyzes legacy code and dependencies",
+        "tools": {"write": False, "edit": False, "bash": False},
+        "permission": {"edit": "deny"},
+        "hidden": True,  # Internal agent
+    },
+}
+
+# Default config for unknown agents
+DEFAULT_AGENT_CONFIG = {
+    "mode": "subagent",
+    "description": "",
+    "tools": {"write": False, "edit": False, "bash": False},
+    "permission": {"edit": "ask"},
+}
+
+# Command templates from workflows
+WORKFLOW_TO_COMMAND_MAP = {
+    "plan": {
+        "description": "Create an implementation plan for a feature or task",
+        "agent": "project-planner",
+        "subtask": True,
+    },
+    "debug": {
+        "description": "Debug an issue or analyze an error",
+        "agent": "debugger",
+        "subtask": True,
+    },
+    "test": {
+        "description": "Run tests and analyze results",
+        "agent": "test-engineer",
+        "subtask": True,
+    },
+    "create": {
+        "description": "Create new components or features",
+        "agent": "frontend-specialist",
+        "subtask": False,
+    },
+    "deploy": {
+        "description": "Deploy application or manage releases",
+        "agent": "devops-engineer",
+        "subtask": True,
+    },
+    "status": {
+        "description": "Check project status and health",
+        "agent": "explorer-agent",
+        "subtask": True,
+    },
+    "brainstorm": {
+        "description": "Brainstorm ideas and explore options",
+        "agent": "project-planner",
+        "subtask": True,
+    },
+    "enhance": {
+        "description": "Enhance or improve existing code",
+        "agent": "backend-specialist",
+        "subtask": False,
+    },
+}
+
+
+# =============================================================================
+# OPENCODE FORMAT HELPERS
+# =============================================================================
+
+def generate_agent_frontmatter(config: Dict[str, Any]) -> str:
+    """Generate YAML frontmatter for OpenCode agent."""
+    frontmatter = {}
+    
+    # Required: description
+    frontmatter["description"] = config.get("description", "")
+    
+    # Required: mode
+    frontmatter["mode"] = config.get("mode", "subagent")
+    
+    # Optional: tools
+    if config.get("tools"):
+        frontmatter["tools"] = config["tools"]
+    
+    # Optional: permission
+    if config.get("permission"):
+        frontmatter["permission"] = config["permission"]
+    
+    # Optional: hidden
+    if config.get("hidden"):
+        frontmatter["hidden"] = True
+    
+    # Optional: temperature (for creative tasks)
+    if config.get("temperature"):
+        frontmatter["temperature"] = config["temperature"]
+    
+    return yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
+def generate_command_frontmatter(config: Dict[str, Any]) -> str:
+    """Generate YAML frontmatter for OpenCode command."""
+    frontmatter = {
+        "description": config.get("description", ""),
     }
     
-    opencode_tools = {}
-    for t in tools:
-        oc_tool = mapping.get(t.lower())
-        if oc_tool:
-            opencode_tools[oc_tool] = True
-            
-    # Default permissions if not specified
-    if not opencode_tools:
-        opencode_tools = {"bash": True, "write": True, "read": True, "webfetch": True}
+    if config.get("agent"):
+        frontmatter["agent"] = config["agent"]
+    
+    if config.get("subtask"):
+        frontmatter["subtask"] = True
+    
+    if config.get("model"):
+        frontmatter["model"] = config["model"]
+    
+    return yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
+# =============================================================================
+# CONVERSION FUNCTIONS
+# =============================================================================
+
+def convert_agent_to_opencode(source_path: Path, dest_path: Path) -> bool:
+    """Convert agent to OpenCode format with full frontmatter."""
+    try:
+        content = source_path.read_text(encoding="utf-8")
+        agent_slug = source_path.stem.lower()
         
-    return opencode_tools
+        # Get config
+        config = AGENT_CONFIG_MAP.get(agent_slug, DEFAULT_AGENT_CONFIG.copy())
+        
+        # Extract description from content if not in config
+        if not config.get("description"):
+            desc_match = re.search(r'(?:You are|Role:)\s*(.+?)(?:\n\n|\n#)', content, re.IGNORECASE | re.DOTALL)
+            if desc_match:
+                config["description"] = desc_match.group(1).strip()[:150]
+            else:
+                config["description"] = f"Specialized agent for {agent_slug.replace('-', ' ')}"
+        
+        # Generate frontmatter
+        frontmatter = generate_agent_frontmatter(config)
+        
+        # Remove existing frontmatter
+        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+        
+        # Build output
+        output = f"---\n{frontmatter}---\n\n{content_clean.strip()}\n"
+        
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        dest_path.write_text(output, encoding="utf-8")
+        return True
+    except Exception as e:
+        print(f"  Error converting agent {source_path.name}: {e}")
+        return False
+
+
+def convert_workflow_to_command(source_path: Path, dest_path: Path) -> bool:
+    """Convert workflow to OpenCode command."""
+    try:
+        content = source_path.read_text(encoding="utf-8")
+        workflow_slug = source_path.stem.lower()
+        
+        # Get command config
+        config = WORKFLOW_TO_COMMAND_MAP.get(workflow_slug, {
+            "description": f"Run {workflow_slug} workflow",
+            "subtask": True,
+        })
+        
+        # Extract better description from content
+        desc_match = re.search(r'^>\s*(.+?)$|^(?:Description|Purpose)[:\s]*(.+?)(?:\n|$)', 
+                               content, re.MULTILINE | re.IGNORECASE)
+        if desc_match:
+            config["description"] = (desc_match.group(1) or desc_match.group(2) or "").strip()[:150]
+        
+        # Generate frontmatter
+        frontmatter = generate_command_frontmatter(config)
+        
+        # Remove existing frontmatter, use content as template
+        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+        
+        # Build command template
+        output = f"---\n{frontmatter}---\n\n{content_clean.strip()}\n"
+        
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        dest_path.write_text(output, encoding="utf-8")
+        return True
+    except Exception as e:
+        print(f"  Error converting workflow {source_path.name}: {e}")
+        return False
+
+
+def convert_skill_to_opencode(source_dir: Path, dest_dir: Path) -> bool:
+    """Convert skill directory to OpenCode format."""
+    try:
+        skill_name = source_dir.name
+        dest_skill_dir = dest_dir / skill_name
+        dest_skill_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Copy all files
+        for item in source_dir.iterdir():
+            if item.is_dir():
+                shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dest_skill_dir / item.name)
+        
+        return True
+    except Exception as e:
+        print(f"  Error converting skill {source_dir.name}: {e}")
+        return False
+
+
+def generate_opencode_config(source_root: Path, dest_root: Path) -> bool:
+    """Generate opencode.json configuration file."""
+    try:
+        config = {
+            "$schema": "https://opencode.ai/config.json",
+            
+            # Instructions - glob patterns for rule files
+            "instructions": [
+                ".opencode/skills/*/SKILL.md",
+                "AGENTS.md",
+                "CONTRIBUTING.md",
+            ],
+            
+            # Default agent
+            "default_agent": "build",
+            
+            # Compaction settings
+            "compaction": {
+                "auto": True,
+                "prune": True,
+            },
+            
+            # Permission defaults
+            "permission": {
+                "edit": "allow",
+                "bash": "ask",
+            },
+        }
+        
+        dest_file = dest_root / ".opencode" / "opencode.json"
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+        dest_file.write_text(
+            json.dumps(config, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
+        return True
+    except Exception as e:
+        print(f"  Error generating opencode.json: {e}")
+        return False
+
+
+def convert_to_opencode(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
+    """
+    Main conversion function for OpenCode format.
+    
+    Args:
+        source_root: Path to project root containing .agent/
+        dest_root: Path to output root
+        verbose: Print progress messages
+    
+    Returns:
+        Dict with conversion statistics
+    """
+    stats = {"agents": 0, "commands": 0, "skills": 0, "errors": []}
+    
+    agents_src = source_root / ".agent" / "agents"
+    agents_dest = dest_root / ".opencode" / "agents"
+    
+    workflows_src = source_root / ".agent" / "workflows"
+    commands_dest = dest_root / ".opencode" / "commands"
+    
+    skills_src = source_root / ".agent" / "skills"
+    skills_dest = dest_root / ".opencode" / "skills"
+    
+    # Convert agents
+    if agents_src.exists():
+        if verbose:
+            print("Converting agents to OpenCode format...")
+        
+        for agent_file in agents_src.glob("*.md"):
+            dest_file = agents_dest / agent_file.name
+            if convert_agent_to_opencode(agent_file, dest_file):
+                stats["agents"] += 1
+                if verbose:
+                    print(f"  ✓ {agent_file.name}")
+            else:
+                stats["errors"].append(f"agent:{agent_file.name}")
+    
+    # Convert workflows to commands
+    if workflows_src.exists():
+        if verbose:
+            print("Converting workflows to OpenCode commands...")
+        
+        for workflow_file in workflows_src.glob("*.md"):
+            dest_file = commands_dest / workflow_file.name
+            if convert_workflow_to_command(workflow_file, dest_file):
+                stats["commands"] += 1
+                if verbose:
+                    print(f"  ✓ /{ workflow_file.stem}")
+            else:
+                stats["errors"].append(f"command:{workflow_file.name}")
+    
+    # Convert skills
+    if skills_src.exists():
+        if verbose:
+            print("Converting skills to OpenCode format...")
+        
+        for skill_dir in skills_src.iterdir():
+            if skill_dir.is_dir():
+                if convert_skill_to_opencode(skill_dir, skills_dest):
+                    stats["skills"] += 1
+                    if verbose:
+                        print(f"  ✓ {skill_dir.name}")
+                else:
+                    stats["errors"].append(f"skill:{skill_dir.name}")
+    
+    # Generate opencode.json
+    if generate_opencode_config(source_root, dest_root):
+        if verbose:
+            print("  ✓ opencode.json")
+    
+    if verbose:
+        print(f"\nOpenCode conversion complete: {stats['agents']} agents, {stats['commands']} commands, {stats['skills']} skills")
+        if stats["errors"]:
+            print(f"  Errors: {len(stats['errors'])}")
+    
+    return stats
+
+
+# =============================================================================
+# CLI ENTRY POINTS
+# =============================================================================
 
 def convert_opencode(source_dir: str, output_unused: str, force: bool = False):
+    """Bridge for CLI compatibility."""
     root_path = Path(source_dir).resolve()
     
-    # Fallback to Master Copy if local source_dir doesn't exist
-    if not root_path.exists() or not (root_path / "agents").exists():
+    # Check for .agent in local or master
+    if root_path.name == ".agent":
+        source_root = root_path.parent
+    elif (root_path / ".agent").exists():
+        source_root = root_path
+    else:
         master_path = get_master_agent_dir()
         if master_path.exists():
-            print(f"{Colors.YELLOW}🔔 Local source '{source_dir}' not found or invalid, using Master Copy: {master_path}{Colors.ENDC}")
-            root_path = master_path
+            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
+            source_root = master_path.parent
         else:
             print(f"{Colors.RED}❌ Error: No source tri thức found.{Colors.ENDC}")
-            print(f"{Colors.YELLOW}👉 Please run 'agent-bridge update' first to initialize your Master Vault from Internet.{Colors.ENDC}")
             return
 
-    # OpenCode directory
-    opencode_dir = Path(".opencode").resolve()
-    
     # Confirmation for OpenCode Overwrite
-    if (opencode_dir / "agents").exists() and not force:
-        if not ask_user(f"Found existing '{opencode_dir}/agents'. Update OpenCode agents?", default=True):
-             print(f"{Colors.YELLOW}⏭️  Skipping OpenCode agents update.{Colors.ENDC}")
+    opencode_dir = Path(".opencode").resolve()
+    if opencode_dir.exists() and not force:
+        if not ask_user(f"Found existing '.opencode'. Update agents & commands?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping OpenCode update.{Colors.ENDC}")
              return
 
-    agents_out_dir = opencode_dir / "agents"
-
-    print(f"{Colors.HEADER}🏗️  Converting to OpenCode Format...{Colors.ENDC}")
-
-    # 1. PROCESS AGENTS -> .opencode/agents/<agent>.md
-    agents_src_dir = root_path / "agents"
-    if agents_src_dir.exists():
-        if not agents_out_dir.exists(): agents_out_dir.mkdir(parents=True)
-        for agent_file in agents_src_dir.glob("*.md"):
-            try:
-                meta, body = parse_frontmatter(agent_file.read_text(encoding='utf-8'))
-                name = meta.get("name", agent_file.stem)
-                desc = meta.get("description", "")
-                if isinstance(desc, list): desc = " ".join(desc)
-                
-                # Model mapping
-                raw_model = meta.get("model", "")
-                oc_model = None
-                if raw_model and raw_model.lower() != "inherit":
-                    oc_model = raw_model
-                    if "gpt-4" in raw_model.lower(): oc_model = "openai/gpt-4o"
-                    elif "claude-3-sonnet" in raw_model.lower(): oc_model = "anthropic/claude-3-5-sonnet-20240620"
-                    elif "claude-3-opus" in raw_model.lower(): oc_model = "anthropic/claude-3-opus-20240229"
-                
-                # Mode mapping
-                mode = "subagent"
-                if agent_file.stem == "orchestrator":
-                    mode = "primary"
-
-                # Tool mapping
-                tools_meta = meta.get("tools", [])
-                if isinstance(tools_meta, str): tools_meta = [t.strip() for t in tools_meta.split(",")]
-                oc_tools = map_tools_to_opencode(tools_meta)
-
-                # Build clean metadata dictionary for OpenCode
-                oc_meta = {
-                    "description": desc,
-                    "mode": mode,
-                    "tools": oc_tools
-                }
-                if oc_model: oc_meta["model"] = oc_model
-                if meta.get("temperature") is not None: oc_meta["temperature"] = meta["temperature"]
-
-                import yaml
-                new_content = f"---\n{yaml.dump(oc_meta, sort_keys=False)}---\n{body}"
-
-                with open(agents_out_dir / f"{agent_file.stem}.md", 'w', encoding='utf-8') as f:
-                    f.write(new_content)
-                print(f"{Colors.BLUE}  🔹 Agent: {agent_file.stem}{Colors.ENDC}")
-            except Exception as e:
-                print(f"{Colors.RED}  ❌ Failed agent {agent_file.name}: {e}{Colors.ENDC}")
-
-    # 2. PROCESS SKILLS -> .opencode/skills/<skill>/SKILL.md (Official OpenCode Skill Format)
-    skills_src_dir = root_path / "skills"
-    skills_out_dir = opencode_dir / "skills"
-    if skills_src_dir.exists():
-        for skill_dir in skills_src_dir.iterdir():
-            if not skill_dir.is_dir(): continue
-            src_skill_file = skill_dir / "SKILL.md"
-            if src_skill_file.exists():
-                try:
-                    meta, body = parse_frontmatter(src_skill_file.read_text(encoding='utf-8'))
-                    name = meta.get("name", skill_dir.name)
-                    desc = meta.get("description", "")
-                    if isinstance(desc, list): desc = " ".join(desc)
-                    
-                    # OpenCode Official Skill Frontmatter
-                    # Only name, description, license, compatibility, metadata are recognized
-                    oc_skill_meta = {
-                        "name": name.lower().replace("_", "-"),
-                        "description": desc or name
-                    }
-
-                    import yaml
-                    new_content = f"---\n{yaml.dump(oc_skill_meta, sort_keys=False)}---\n{body}"
-
-                    dest_skill_dir = skills_out_dir / skill_dir.name
-                    dest_skill_dir.mkdir(parents=True, exist_ok=True)
-                    with open(dest_skill_dir / "SKILL.md", 'w', encoding='utf-8') as f:
-                        f.write(new_content)
-                    print(f"{Colors.BLUE}  🔸 Skill: {skill_dir.name} (Official Format){Colors.ENDC}")
-                except Exception as e:
-                    print(f"{Colors.RED}  ❌ Failed skill {skill_dir.name}: {e}{Colors.ENDC}")
-
-    # 3. GENERATE AGENTS.md (Root Level)
-    # OpenCode uses AGENTS.md in project root for global project instructions
-    planner_file = agents_src_dir / "project-planner.md"
+    print(f"{Colors.HEADER}🏗️  Converting to OpenCode Format (Professional Spec)...{Colors.ENDC}")
+    convert_to_opencode(source_root, Path("."), verbose=True)
+    
+    # Special: Generate AGENTS.md for OpenCode root
+    planner_file = source_root / ".agent" / "agents" / "project-planner.md"
     if planner_file.exists():
         try:
-            _, body = parse_frontmatter(planner_file.read_text(encoding='utf-8'))
-            with open(Path("AGENTS.md"), 'w', encoding='utf-8') as f:
-                f.write(f"# Project Instructions\n\n{body}")
+            from .utils import extract_yaml_frontmatter
+            _, body = extract_yaml_frontmatter(planner_file.read_text(encoding='utf-8'))
+            Path("AGENTS.md").write_text(f"# Project Instructions\n\n{body}", encoding='utf-8')
             print(f"{Colors.BLUE}  📜 Generated AGENTS.md (Project Root){Colors.ENDC}")
         except: pass
-
-    # 4. ENRICH ORCHESTRATOR WITH TASK & SKILL PERMISSIONS
-    # In OpenCode, a primary agent needs explicit permission to call subagents via 'task' and load skills via 'skill'
-    orchestrator_out = agents_out_dir / "orchestrator.md"
-    if orchestrator_out.exists():
-        try:
-            # Collect all other agent names
-            subagent_names = [f.stem for f in agents_out_dir.glob("*.md") if f.stem != "orchestrator"]
-            
-            # CLEANUP: If a subagent name also exists as a native skill, remove it from agents folder
-            # to avoid duplication and use official skill tool instead.
-            for name in list(subagent_names):
-                if (skills_out_dir / name).exists():
-                    old_agent_file = agents_out_dir / f"{name}.md"
-                    if old_agent_file.exists():
-                        old_agent_file.unlink()
-                        subagent_names.remove(name)
-                        print(f"{Colors.YELLOW}  🧹 Removed legacy skill-agent: {name}.md (Replaced by Official Skill){Colors.ENDC}")
-
-            meta, body = parse_frontmatter(orchestrator_out.read_text(encoding='utf-8'))
-            
-            # Ensure meta is a dict
-            if not isinstance(meta, dict): meta = {}
-            
-            # Update permissions for the custom orchestrator
-            if "permission" not in meta: meta["permission"] = {}
-            meta["permission"]["task"] = subagent_names
-            meta["permission"]["skill"] = {"*": "allow"}
-            
-            if "tools" not in meta: meta["tools"] = {}
-            meta["tools"]["skill"] = True
-            
-            # Reconstruct frontmatter
-            import yaml
-            new_content = f"---\n{yaml.dump(meta, sort_keys=False)}---\n{body}"
-            orchestrator_out.write_text(new_content, encoding='utf-8')
-            print(f"{Colors.GREEN}  ✅ Orchestrator enriched with Task & Skill permissions.{Colors.ENDC}")
-        except Exception as e:
-            print(f"{Colors.RED}  ⚠️ Could not enrich orchestrator permissions: {e}{Colors.ENDC}")
-
-    # 5. INTEGRATE MCP CONFIG INTO opencode.json
-    copy_mcp_opencode(root_path, force)
 
     print(f"{Colors.GREEN}✅ OpenCode conversion complete!{Colors.ENDC}")
 
 def copy_mcp_opencode(root_path: Path, force: bool = False):
-    """Integrates MCP config into .opencode/opencode.json"""
-    mcp_src = get_master_agent_dir() / "mcp_config.json"
-    if not mcp_src.exists():
-         mcp_src = root_path / ".agent" / "mcp_config.json"
+    """Bridge for CLI compatibility."""
+    # OpenCode MCP is handled within opencode.json in this refactor
+    # But we still need to pull the MCP config to integrate it
+    source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
+    from .utils import load_mcp_config
+    mcp_config = load_mcp_config(source_root)
+    
+    if mcp_config:
+        opencode_json_path = root_path / ".opencode" / "opencode.json"
+        if opencode_json_path.exists():
+            try:
+                config = json.loads(opencode_json_path.read_text(encoding='utf-8'))
+                
+                # Filter and integrate
+                config["mcp"] = {}
+                source_servers = mcp_config.get("mcpServers", {})
+                for name, server_config in source_servers.items():
+                    new_config = server_config.copy()
+                    if "type" not in new_config: new_config["type"] = "local"
+                    if "enabled" not in new_config: new_config["enabled"] = True
+                    if "command" in new_config and isinstance(new_config["command"], str):
+                        new_config["command"] = [new_config["command"]] + new_config.get("args", [])
+                        if "args" in new_config: del new_config["args"]
+                    config["mcp"][name] = new_config
+                
+                opencode_json_path.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding='utf-8')
+                print(f"{Colors.BLUE}  🔌 Integrated MCP config into opencode.json{Colors.ENDC}")
+            except Exception as e:
+                print(f"{Colors.RED}  ❌ Failed to integrate MCP config: {e}{Colors.ENDC}")
 
-    if mcp_src.exists():
-        opencode_dir = root_path / ".opencode"
-        opencode_json_path = opencode_dir / "opencode.json"
-        
-        try:
-            import json
-            import re
-            
-            # Load existing opencode.json or create base config
-            if opencode_json_path.exists():
-                with open(opencode_json_path, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
+def init_opencode(project_path: Path = None) -> bool:
+    # Existing user function...
+    """Initialize OpenCode configuration in project."""
+    project_path = project_path or Path.cwd()
+    
+    if not (project_path / ".agent").exists():
+        print("Error: .agent directory not found. Run 'agent-bridge update' first.")
+        return False
+    
+    stats = convert_to_opencode(project_path, project_path)
+    return len(stats["errors"]) == 0
+
+
+def clean_opencode(project_path: Path = None) -> bool:
+    """Remove OpenCode configuration from project."""
+    project_path = project_path or Path.cwd()
+    
+    paths_to_remove = [
+        project_path / ".opencode" / "agents",
+        project_path / ".opencode" / "commands",
+        project_path / ".opencode" / "skills",
+        project_path / ".opencode" / "opencode.json",
+    ]
+    
+    for path in paths_to_remove:
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
             else:
-                config = {
-                    "permission": {
-                        "skill": {
-                            "*": "allow"
-                        }
-                    },
-                    "agent": {
-                        "plan": {
-                            "permission": {
-                                "skill": {
-                                    "*": "allow"
-                                }
-                            }
-                        }
-                    }
-                }
-            
-            # Parse MCP source config
-            content = mcp_src.read_text(encoding='utf-8')
-            content = re.sub(r'//.*', '', content)
-            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-            mcp_data = json.loads(content)
-            
-            # Add MCP config to opencode.json
-            config["mcp"] = {}
-            source_servers = mcp_data.get("mcpServers", {})
-            for name, server_config in source_servers.items():
-                new_config = server_config.copy()
-                
-                # Set OpenCode defaults
-                if "type" not in new_config:
-                    new_config["type"] = "local"
-                if "enabled" not in new_config:
-                    new_config["enabled"] = True
-                
-                # Fix command format: merge command + args into single array
-                if "command" in new_config and isinstance(new_config["command"], str):
-                    base_cmd = new_config["command"]
-                    args = new_config.get("args", [])
-                    new_config["command"] = [base_cmd] + args
-                    if "args" in new_config:
-                        del new_config["args"]
-                        
-                config["mcp"][name] = new_config
-
-            opencode_dir.mkdir(parents=True, exist_ok=True)
-            with open(opencode_json_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2)
-                
-            print(f"{Colors.BLUE}  🔌 Integrated MCP config into opencode.json{Colors.ENDC}")
-        except Exception as e:
-            print(f"{Colors.RED}  ❌ Failed to integrate MCP config: {e}{Colors.ENDC}")
+                path.unlink()
+            print(f"  Removed {path}")
+    
+    return True

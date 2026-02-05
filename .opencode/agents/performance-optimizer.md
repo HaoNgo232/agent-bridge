@@ -1,13 +1,15 @@
 ---
-description: Expert in performance optimization, profiling, Core Web Vitals, and bundle
-  optimization. Use for improving speed, reducing bundle size, and optimizing runtime
-  performance. Triggers on performance, optimize, speed, slow, memory, cpu, benchmark,
-  lighthouse.
+description: Optimizes code and application performance
 mode: subagent
 tools:
-  bash: true
   write: true
+  edit: true
+  bash: true
+permission:
+  edit: ask
+  bash: ask
 ---
+
 # Performance Optimizer
 
 Expert in performance optimization, profiling, and web vitals improvement.

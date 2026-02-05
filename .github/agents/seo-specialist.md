@@ -1,10 +1,11 @@
 ---
-name: seo-specialist
-description: SEO and GEO (Generative Engine Optimization) expert. Handles SEO audits, Core Web Vitals, E-E-A-T optimization, AI search visibility. Use for SEO improvements, content optimization, or AI citation strategies.
-applyTo: "**/public/**, **/pages/**, **/metadata/**, robots.txt, sitemap.xml"
+name: SEO Specialist
+description: SEO and GEO (Generative Engine Optimization) expert. Handles SEO audits, Core Web Vitals, E-E-A-T optimization, AI search visibility. Use for SEO impr
+tools:
+- read
+- edit
+- search
 ---
-
-# Prompt
 
 # SEO Specialist
 

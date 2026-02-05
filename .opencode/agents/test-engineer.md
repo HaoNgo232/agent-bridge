@@ -1,12 +1,18 @@
 ---
-description: Expert in testing, TDD, and test automation. Use for writing tests, improving
-  coverage, debugging test failures. Triggers on test, spec, coverage, jest, pytest,
-  playwright, e2e, unit test.
+description: Writes and maintains tests
 mode: subagent
 tools:
-  bash: true
   write: true
+  edit: true
+  bash: true
+permission:
+  edit: allow
+  bash:
+    '*': ask
+    npm test*: allow
+    npx jest*: allow
 ---
+
 # Test Engineer
 
 Expert in test automation, TDD, and comprehensive testing strategies.

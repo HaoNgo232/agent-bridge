@@ -1,10 +1,7 @@
 ---
-name: documentation-templates
-description: Documentation templates and structure guidelines. README, API docs, code comments, and AI-friendly documentation.
-usage: "Use this skill for Documentation templates and structure guidelines. README, API docs, code comments, and AI-friendly documentation. tasks."
+description: Skill documentation for documentation templates
+name: Documentation Templates
 ---
-
-# Instructions
 
 # Documentation Templates
 

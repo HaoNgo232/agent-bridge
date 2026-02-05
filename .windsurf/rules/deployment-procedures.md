@@ -1,7 +1,9 @@
-# Skill: deployment-procedures
-
 # Deployment Procedures
 
+**Activation:** Model Decision
+**Description:** Rules for deployment procedures
+
+---
 > Deployment principles and decision-making for safe production releases.
 > **Learn to THINK, not memorize scripts.**
 

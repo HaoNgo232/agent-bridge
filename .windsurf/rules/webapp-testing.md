@@ -1,7 +1,9 @@
-# Skill: webapp-testing
+# Webapp Testing
 
-# Web App Testing
+**Activation:** Model Decision
+**Description:** Rules for webapp testing
 
+---
 > Discover and test everything. Leave no route untested.
 
 ## 🔧 Runtime Scripts

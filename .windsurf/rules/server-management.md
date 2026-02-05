@@ -1,7 +1,9 @@
-# Skill: server-management
-
 # Server Management
 
+**Activation:** Model Decision
+**Description:** Rules for server management
+
+---
 > Server management principles for production operations.
 > **Learn to THINK, not memorize commands.**
 

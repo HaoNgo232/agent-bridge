@@ -1,12 +1,7 @@
 ---
-name: frontend-design
-description: Design thinking and decision-making for web UI. Use when designing components, layouts, color schemes, typography, or creating aesthetic interfaces. Teaches principles, not fixed values.
-usage: "Use this skill for Design thinking and decision-making for web UI. Use when designing components, layouts, color schemes, typography, or creating aesthetic interfaces. Teaches principles, not fixed values. tasks."
-applyTo:
-  - "**/*.{ts,tsx,js,jsx,css,scss,html}"
+description: Skill documentation for frontend design
+name: Frontend Design System
 ---
-
-# Instructions
 
 # Frontend Design System
 

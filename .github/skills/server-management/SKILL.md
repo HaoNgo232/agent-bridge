@@ -1,10 +1,7 @@
 ---
-name: server-management
-description: Server management principles and decision-making. Process management, monitoring strategy, and scaling decisions. Teaches thinking, not commands.
-usage: "Use this skill for Server management principles and decision-making. Process management, monitoring strategy, and scaling decisions. Teaches thinking, not commands. tasks."
+description: Skill documentation for server management
+name: Server Management
 ---
-
-# Instructions
 
 # Server Management
 

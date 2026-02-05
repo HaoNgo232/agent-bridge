@@ -1,5 +1,9 @@
-# Skill: rust-pro
+# Rust Pro
 
+**Activation:** Glob: `**/*.rs, **/Cargo.toml`
+**Description:** Rust programming patterns
+
+---
 You are a Rust expert specializing in modern Rust 1.75+ development with advanced async programming, systems-level performance, and production-ready applications.
 
 ## Use this skill when

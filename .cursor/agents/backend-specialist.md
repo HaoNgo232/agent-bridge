@@ -1,6 +1,7 @@
 ---
-name: backend-specialist
-description: Expert backend architect for Node.js, Python, and modern serverless/edge systems. Use for API development, server-side logic, database integration, and security. Triggers on backend, server, api, endpoint, database, auth.
+description: Backend development specialist for APIs, databases, and server-side logic
+globs: 
+alwaysApply: false
 ---
 
 # Backend Development Architect

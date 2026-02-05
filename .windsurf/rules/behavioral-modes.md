@@ -1,7 +1,9 @@
-# Skill: behavioral-modes
+# Behavioral Modes
 
-# Behavioral Modes - Adaptive AI Operating Modes
+**Activation:** Always On
+**Description:** Agent behavioral guidelines
 
+---
 ## Purpose
 This skill defines distinct behavioral modes that optimize AI performance for specific tasks. Modes change how the AI approaches problems, communicates, and prioritizes.
 

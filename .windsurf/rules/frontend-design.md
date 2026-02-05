@@ -1,7 +1,9 @@
-# Skill: frontend-design
+# Frontend Design
 
-# Frontend Design System
+**Activation:** Model Decision
+**Description:** Rules for frontend design
 
+---
 > **Philosophy:** Every pixel has purpose. Restraint is luxury. User psychology drives decisions.
 > **Core Principle:** THINK, don't memorize. ASK, don't assume.
 
@@ -411,4 +413,6 @@ After implementing your design, run the audit:
 
 ---
 
-> **Remember:** Design is THINKING, not copying. Every project deserves fresh consideration based on its unique context and users. **Avoid the Modern SaaS Safe Harbor!**
+> **Remember:** Design is THINKING, not copying. Every project deserves fresh consider
+
+... (truncated)

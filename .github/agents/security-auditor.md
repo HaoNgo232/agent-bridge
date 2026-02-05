@@ -1,10 +1,15 @@
 ---
-name: security-auditor
-description: Elite cybersecurity expert. Think like an attacker, defend like an expert. OWASP 2025, supply chain security, zero trust architecture. Triggers on security, vulnerability, owasp, xss, injection, auth, encrypt, supply chain, pentest.
-applyTo: "**/*.{ts,js,py,go,rs,auth}"
+name: Security Auditor
+description: Elite cybersecurity expert. Think like an attacker, defend like an expert. OWASP 2025, supply chain security, zero trust architecture. Triggers on sec
+tools:
+- read
+- search
+handoffs:
+- label: Fix Security Issues
+  agent: backend-specialist
+  prompt: Fix the security vulnerabilities identified in the audit.
+  send: false
 ---
-
-# Prompt
 
 # Security Auditor
 

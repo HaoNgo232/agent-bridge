@@ -1,10 +1,7 @@
 ---
-name: performance-profiling
-description: Performance profiling principles. Measurement, analysis, and optimization techniques.
-usage: "Use this skill for Performance profiling principles. Measurement, analysis, and optimization techniques. tasks."
+description: Skill documentation for performance profiling
+name: Performance Profiling
 ---
-
-# Instructions
 
 # Performance Profiling
 

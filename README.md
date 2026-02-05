@@ -1,25 +1,34 @@
 # Agent Bridge
 
-Công cụ chuyển đổi cấu hình Agent và Skill từ Antigravity Kit sang định dạng tương thích với các IDE (GitHub Copilot, OpenCode) và CLI (Kiro).
+Công cụ chuyển đổi cấu hình Agent và Skill từ Antigravity Kit sang định dạng tương thích với các IDE (GitHub Copilot, OpenCode, Cursor, Windsurf) và CLI (Kiro).
 
-## Cài đặt
+## 🚀 Cài đặt nhanh (Quick Start)
 
-Cài đặt bằng `pip` ở chế độ editable để sử dụng lệnh toàn cục:
+Copy và chạy lệnh này để cài đặt tool chỉ trong 1 lần dán:
 
 ```bash
-cd agent-bridge
-pip install -e .
+git clone https://github.com/HaoNgo232/agent-bridge && cd agent-bridge && pipx install -e . --force
 ```
 
-## Cách sử dụng
+*Lưu ý: Bạn cần cài đặt `pipx` trước nếu chưa có (`sudo apt install pipx` hoặc `brew install pipx`).*
 
-### 1. Khởi tạo cấu hình (`init`)
+## 🛠️ Cách sử dụng
 
-Di chuyển vào dự án của bạn và chạy:
+### 1. Khởi tạo & Cập nhật (`init`)
+
+Di chuyển vào dự án của bạn để khởi tạo cấu hình Agent, Skill và cài đặt MCP.
+
+**Tính năng thông minh (Smart Init):**
+- **Bảo mật**: Tự động hỏi trước khi ghi đè MCP config (Mặc định: Bỏ qua để giữ key của bạn).
+- **Cập nhật**: Tự động hỏi trước khi cập nhật Agent/Skill (Mặc định: Có).
+- **Tương tác**: Sử dụng `--force` hoặc `-f` để bỏ qua mọi câu hỏi.
 
 ```bash
-# Khởi tạo cho tất cả các định dạng được hỗ trợ
+# Khởi tạo cho tất cả các định dạng
 agent-bridge init
+
+# Sử dụng chế độ cưỡng chế (Non-interactive)
+agent-bridge init --force
 
 # Khởi tạo cho từng định dạng cụ thể
 agent-bridge init --copilot
@@ -29,66 +38,60 @@ agent-bridge init --cursor
 agent-bridge init --windsurf
 ```
 
-### 2. Cài đặt MCP (`mcp`)
+### 2. Quản lý MCP (`mcp`)
 
-Cài đặt file cấu hình MCP (`.agent/mcp_config.json`) vào đúng vị trí cho từng IDE để kích hoạt các tool nâng cao.
+Cài đặt hoặc cập nhật cấu hình MCP (`.agent/mcp_config.json`) vào các IDE.
 
 ```bash
-# Cài đặt MCP cho tất cả IDE
+# Cài đặt MCP cho tất cả IDE (Có hỏi xác nhận nếu file đã tồn tại)
 agent-bridge mcp --all
+
+# Cài đặt cưỡng chế
+agent-bridge mcp --all --force
 
 # Cài đặt theo từng IDE
 agent-bridge mcp --cursor    # .cursor/mcp.json
-agent-bridge mcp --windsurf  # .windsurf/mcp_config.json
-agent-bridge mcp --opencode  # .opencode/mcp.json
+agent-bridge mcp --opencode  # .opencode/opencode.json
 agent-bridge mcp --copilot   # .vscode/mcp.json
 agent-bridge mcp --kiro      # .kiro/settings/mcp.json
 ```
 
-### 3. Cập nhật tri thức (`update`)
+### 3. Đồng bộ Tri thức (`update`)
 
-Đồng bộ tri thức mới nhất từ repository Antigravity Kit gốc về máy. Lệnh này sẽ tự động cập nhật lại các cấu hình (`refresh`) nếu project hiện tại đã có sẵn các folder IDE.
+Đồng bộ tri thức mới nhất từ repository Antigravity Kit gốc về máy. Lệnh này sẽ tự động làm mới (`refresh`) các cấu hình nếu dự án hiện tại đã có sẵn các folder IDE.
 
 ```bash
 agent-bridge update
 ```
 
-### 4. Dọn dẹp cấu hình (`clean`)
+### 4. Dọn dẹp (`clean`)
 
-Xóa các thư mục cấu hình AI đã tạo trong dự án:
+Xóa các thư mục cấu hình AI đã tạo:
 
 ```bash
-# Xóa tất cả các folder .github/agents, .github/skills, .kiro, .opencode, .cursor, .windsurf
-agent-bridge clean
+# Xóa tất cả cấu hình
+agent-bridge clean --all
 
 # Xóa theo từng IDE
 agent-bridge clean --copilot
-agent-bridge clean --opencode
 agent-bridge clean --kiro
-agent-bridge clean --cursor
-agent-bridge clean --windsurf
 ```
 
-### 5. Kiểm tra hỗ trợ (`list`)
+## 💎 Các định dạng hỗ trợ & Tính năng đặc biệt
 
-Xem danh sách các định dạng IDE/CLI mà công cụ đang hỗ trợ:
+| IDE/CLI | Vị trí cấu hình | Tính năng nổi bật |
+|---------|-----------------|-------------------|
+| **GitHub Copilot** | `.github/agents/`, `.github/skills/` | Official Agent Spec, Clean Frontmatter |
+| **OpenCode IDE** | `.opencode/opencode.json` | MCP gộp chung vào file settings chính |
+| **Kiro CLI** | `.kiro/agents/*.json` | **Auto-Approve** subagents mặc định |
+| **Cursor AI** | `.cursor/rules/` | Tương thích hoàn toàn với .cursorrules |
+| **Windsurf IDE** | `.windsurf/rules/`, `.windsurfrules` | Hỗ trợ cả Modern Rules và Legacy Rules |
 
-```bash
-agent-bridge list
-```
-
-## Các định dạng hỗ trợ
-
-| IDE/CLI | Vị trí cấu hình |
-|---------|-----------------|
-| **GitHub Copilot** | `.github/agents/`, `.vscode/mcp.json` |
-| **OpenCode IDE** | `.opencode/` |
-| **Kiro CLI** | `.kiro/agents/`, `.kiro/settings/` |
-| **Cursor AI** | `.cursor/agents/`, `.cursor/rules/`, `.cursor/skills/` |
-| **Windsurf IDE** | `.windsurf/rules/`, `.windsurfrules` |
-
-## Cấu trúc thư mục công cụ
+## 📂 Cấu trúc dự án
 
 - `.agent/`: Master Vault lưu trữ tri thức gốc.
-- `src/agent_bridge/`: Logic chuyển đổi cho từng định dạng.
-- `README.md`: Hướng dẫn này.
+- `src/agent_bridge/`: Logic chuyển đổi core cho từng IDE.
+- `utils.py`: Tiện ích giao diện CLI và tương tác người dùng.
+
+---
+*Phát triển bởi Hao Ngo*

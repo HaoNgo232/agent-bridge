@@ -1,7 +1,9 @@
-# Skill: testing-patterns
-
 # Testing Patterns
 
+**Activation:** Glob: `**/*.test.*, **/*.spec.*, **/__tests__/**/*`
+**Description:** Testing frameworks and patterns
+
+---
 > Principles for reliable test suites.
 
 ---

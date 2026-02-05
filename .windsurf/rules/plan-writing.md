@@ -1,7 +1,9 @@
-# Skill: plan-writing
-
 # Plan Writing
 
+**Activation:** Model Decision
+**Description:** Project planning and task breakdown - use when creating plans or roadmaps
+
+---
 > Source: obra/superpowers
 
 ## Overview

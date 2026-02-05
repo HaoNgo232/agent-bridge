@@ -1,7 +1,9 @@
-# Skill: python-patterns
-
 # Python Patterns
 
+**Activation:** Glob: `**/*.py, **/pyproject.toml, **/requirements.txt`
+**Description:** Python best practices and patterns
+
+---
 > Python development principles and decision-making for 2025.
 > **Learn to THINK, not memorize patterns.**
 

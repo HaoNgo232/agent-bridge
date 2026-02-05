@@ -1,7 +1,9 @@
-# Skill: bash-linux
+# Bash Linux
 
-# Bash Linux Patterns
+**Activation:** Model Decision
+**Description:** Rules for bash linux
 
+---
 > Essential patterns for Bash on Linux/macOS.
 
 ---

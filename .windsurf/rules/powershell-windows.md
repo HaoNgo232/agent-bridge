@@ -1,7 +1,9 @@
-# Skill: powershell-windows
+# Powershell Windows
 
-# PowerShell Windows Patterns
+**Activation:** Model Decision
+**Description:** Rules for powershell windows
 
+---
 > Critical patterns and pitfalls for Windows PowerShell.
 
 ---

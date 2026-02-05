@@ -1,12 +1,7 @@
 ---
-name: api-patterns
-description: API design principles and decision-making. REST vs GraphQL vs tRPC selection, response formats, versioning, pagination.
-usage: "Use this skill for API design principles and decision-making. REST vs GraphQL vs tRPC selection, response formats, versioning, pagination. tasks."
-applyTo:
-  - "**/*.{py,js,ts,go,rs,php,api,server}"
+description: Skill documentation for api patterns
+name: API Patterns
 ---
-
-# Instructions
 
 # API Patterns
 

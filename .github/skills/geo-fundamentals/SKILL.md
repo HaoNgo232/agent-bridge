@@ -1,10 +1,7 @@
 ---
-name: geo-fundamentals
-description: Generative Engine Optimization for AI search engines (ChatGPT, Claude, Perplexity).
-usage: "Use this skill for Generative Engine Optimization for AI search engines (ChatGPT, Claude, Perplexity). tasks."
+description: Skill documentation for geo fundamentals
+name: GEO Fundamentals
 ---
-
-# Instructions
 
 # GEO Fundamentals
 

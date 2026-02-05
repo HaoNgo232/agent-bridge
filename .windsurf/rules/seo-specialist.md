@@ -1,5 +1,9 @@
-# Agent: seo-specialist
+# Seo Specialist
 
+**Activation:** Model Decision
+**Description:** Specialized agent for seo specialist tasks
+
+---
 # SEO Specialist
 
 Expert in SEO and GEO (Generative Engine Optimization) for traditional and AI-powered search engines.

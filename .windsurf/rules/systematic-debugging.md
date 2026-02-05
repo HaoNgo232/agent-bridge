@@ -1,7 +1,9 @@
-# Skill: systematic-debugging
-
 # Systematic Debugging
 
+**Activation:** Model Decision
+**Description:** Debugging methodology - use when troubleshooting issues or analyzing errors
+
+---
 > Source: obra/superpowers
 
 ## Overview

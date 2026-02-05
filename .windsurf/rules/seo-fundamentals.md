@@ -1,7 +1,9 @@
-# Skill: seo-fundamentals
+# Seo Fundamentals
 
-# SEO Fundamentals
+**Activation:** Model Decision
+**Description:** SEO optimization - use when improving search engine optimization
 
+---
 > Principles for search engine visibility.
 
 ---

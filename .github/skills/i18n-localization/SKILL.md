@@ -1,10 +1,7 @@
 ---
-name: i18n-localization
-description: Internationalization and localization patterns. Detecting hardcoded strings, managing translations, locale files, RTL support.
-usage: "Use this skill for Internationalization and localization patterns. Detecting hardcoded strings, managing translations, locale files, RTL support. tasks."
+description: Skill documentation for i18n localization
+name: i18n & Localization
 ---
-
-# Instructions
 
 # i18n & Localization
 

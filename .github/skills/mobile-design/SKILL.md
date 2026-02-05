@@ -1,12 +1,7 @@
 ---
-name: mobile-design
-description: Mobile-first design thinking and decision-making for iOS and Android apps. Touch interaction, performance patterns, platform conventions. Teaches principles, not fixed values. Use when building React Native, Flutter, or native mobile apps.
-usage: "Use this skill for Mobile-first design thinking and decision-making for iOS and Android apps. Touch interaction, performance patterns, platform conventions. Teaches principles, not fixed values. Use when building React Native, Flutter, or native mobile apps. tasks."
-applyTo:
-  - "**/ios/**, **/android/**, **/*.{swift,kt,java}"
+description: Skill documentation for mobile design
+name: Mobile Design System
 ---
-
-# Instructions
 
 # Mobile Design System
 

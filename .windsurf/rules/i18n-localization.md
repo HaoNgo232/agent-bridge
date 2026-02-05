@@ -1,7 +1,9 @@
-# Skill: i18n-localization
+# I18N Localization
 
-# i18n & Localization
+**Activation:** Model Decision
+**Description:** Rules for i18n localization
 
+---
 > Internationalization (i18n) and Localization (L10n) best practices.
 
 ---

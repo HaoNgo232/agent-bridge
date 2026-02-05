@@ -1,7 +1,9 @@
-# Skill: performance-profiling
-
 # Performance Profiling
 
+**Activation:** Model Decision
+**Description:** Performance optimization - use when profiling or improving performance
+
+---
 > Measure, analyze, optimize - in that order.
 
 ## 🔧 Runtime Scripts

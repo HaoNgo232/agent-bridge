@@ -1,6 +1,7 @@
 ---
-name: test-engineer
-description: Expert in testing, TDD, and test automation. Use for writing tests, improving coverage, debugging test failures. Triggers on test, spec, coverage, jest, pytest, playwright, e2e, unit test.
+description: USE WHEN writing tests, improving coverage, or setting up testing frameworks
+globs: 
+alwaysApply: false
 ---
 
 # Test Engineer

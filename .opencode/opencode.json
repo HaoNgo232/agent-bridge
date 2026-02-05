@@ -1,16 +1,73 @@
 {
-  "permission": {
-    "skill": {
-      "*": "allow"
-    }
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    ".opencode/skills/*/SKILL.md",
+    "AGENTS.md",
+    "CONTRIBUTING.md"
+  ],
+  "default_agent": "build",
+  "compaction": {
+    "auto": true,
+    "prune": true
   },
-  "agent": {
-    "plan": {
-      "permission": {
-        "skill": {
-          "*": "allow"
-        }
-      }
+  "permission": {
+    "edit": "allow",
+    "bash": "ask"
+  },
+  "mcp": {
+    "shadcn": {
+      "command": [
+        "npx",
+        "-y",
+        "shadcn@latest",
+        "mcp"
+      ],
+      "type": "local",
+      "enabled": true
+    },
+    "context7": {
+      "command": [
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "type": "local",
+      "enabled": true
+    },
+    "sequentialthinking": {
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "type": "local",
+      "enabled": true
+    },
+    "time": {
+      "command": [
+        "uvx",
+        "mcp-server-time"
+      ],
+      "type": "local",
+      "enabled": true
+    },
+    "chrome-devtools": {
+      "command": [
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "type": "local",
+      "enabled": true
+    },
+    "next-devtools": {
+      "command": [
+        "npx",
+        "-y",
+        "next-devtools-mcp@latest"
+      ],
+      "type": "local",
+      "enabled": true
     }
   }
 }

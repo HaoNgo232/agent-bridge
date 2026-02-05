@@ -1,10 +1,7 @@
 ---
-name: plan-writing
-description: Structured task planning with clear breakdowns, dependencies, and verification criteria. Use when implementing features, refactoring, or any multi-step work.
-usage: "Use this skill for Structured task planning with clear breakdowns, dependencies, and verification criteria. Use when implementing features, refactoring, or any multi-step work. tasks."
+description: Skill documentation for plan writing
+name: Plan Writing
 ---
-
-# Instructions
 
 # Plan Writing
 

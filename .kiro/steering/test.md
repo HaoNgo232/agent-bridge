@@ -1,7 +1,3 @@
-# Workflow: /test
-
-Test generation and test running command. Creates and executes tests for code.
-
 # /test - Test Generation and Execution
 
 $ARGUMENTS

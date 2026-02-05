@@ -1,7 +1,9 @@
-# Skill: web-design-guidelines
+# Web Design Guidelines
 
-# Web Interface Guidelines
+**Activation:** Model Decision
+**Description:** Rules for web design guidelines
 
+---
 Review files for compliance with Web Interface Guidelines.
 
 ## How It Works

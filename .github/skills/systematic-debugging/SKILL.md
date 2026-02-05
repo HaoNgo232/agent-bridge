@@ -1,10 +1,7 @@
 ---
-name: systematic-debugging
-description: 4-phase systematic debugging methodology with root cause analysis and evidence-based verification. Use when debugging complex issues.
-usage: "Use this skill for 4-phase systematic debugging methodology with root cause analysis and evidence-based verification. Use when debugging complex issues. tasks."
+description: Skill documentation for systematic debugging
+name: Systematic Debugging
 ---
-
-# Instructions
 
 # Systematic Debugging
 

@@ -1,7 +1,9 @@
-# Skill: red-team-tactics
-
 # Red Team Tactics
 
+**Activation:** Manual (@mention)
+**Description:** Security red team tactics
+
+---
 > Adversary simulation principles based on MITRE ATT&CK framework.
 
 ---

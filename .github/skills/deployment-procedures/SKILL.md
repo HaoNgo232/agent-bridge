@@ -1,10 +1,7 @@
 ---
-name: deployment-procedures
-description: Production deployment principles and decision-making. Safe deployment workflows, rollback strategies, and verification. Teaches thinking, not scripts.
-usage: "Use this skill for Production deployment principles and decision-making. Safe deployment workflows, rollback strategies, and verification. Teaches thinking, not scripts. tasks."
+description: Skill documentation for deployment procedures
+name: Deployment Procedures
 ---
-
-# Instructions
 
 # Deployment Procedures
 

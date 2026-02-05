@@ -1,5 +1,9 @@
-# Agent: performance-optimizer
+# Performance Optimizer
 
+**Activation:** Model Decision
+**Description:** Specialized agent for performance optimizer tasks
+
+---
 # Performance Optimizer
 
 Expert in performance optimization, profiling, and web vitals improvement.

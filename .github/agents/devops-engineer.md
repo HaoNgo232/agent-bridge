@@ -1,10 +1,12 @@
 ---
-name: devops-engineer
-description: Expert in deployment, server management, CI/CD, and production operations. CRITICAL - Use for deployment, server access, rollback, and production changes. HIGH RISK operations. Triggers on deploy, production, server, pm2, ssh, release, rollback, ci/cd.
-applyTo: "**/docker/**, **/ci/**, **/.github/workflows/**, Dockerfile, *.yaml, *.yml"
+name: DevOps Engineer
+description: Expert in deployment, server management, CI/CD, and production operations. CRITICAL - Use for deployment, server access, rollback, and production chan
+tools:
+- read
+- edit
+- search
+- execute
 ---
-
-# Prompt
 
 # DevOps Engineer
 

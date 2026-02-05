@@ -1,7 +1,9 @@
-# Skill: nextjs-react-expert
+# Nextjs React Expert
 
-# Next.js & React Performance Expert
+**Activation:** Glob: `**/*.tsx, **/*.jsx, **/next.config.*, **/app/**/*`
+**Description:** Next.js and React expert patterns
 
+---
 > **From Vercel Engineering** - 57 optimization rules prioritized by impact
 > **Philosophy:** Eliminate waterfalls first, optimize bundles second, then micro-optimize.
 
@@ -280,3 +282,111 @@ Before shipping to production:
 **Date:** January 2026
 **Version:** 1.0.0
 **Total Rules:** 57 across 8 categories
+
+
+---
+
+# 1. Eliminating Waterfalls
+
+> **Impact:** CRITICAL
+> **Focus:** Waterfalls are the #1 performance killer. Each sequential await adds full network latency. Eliminating them yields the largest gains.
+
+---
+
+## Overview
+
+This section contains **5 rules** focused on eliminating waterfalls.
+
+---
+
+## Rule 1.1: Defer Await Until Needed
+
+**Impact:** HIGH  
+**Tags:** async, await, conditional, optimization  
+
+## Defer Await Until Needed
+
+Move `await` operations into the branches where they're actually used to avoid blocking code paths that don't need them.
+
+**Incorrect (blocks both branches):**
+
+```typescript
+async function handleRequest(userId: string, skipProcessing: boolean) {
+  const userData = await fetchUserData(userId)
+  
+  if (skipProcessing) {
+    // Returns immediately but still waited for userData
+    return { skipped: true }
+  }
+  
+  // Only this branch uses userData
+  return processUserData(userData)
+}
+```
+
+**Correct (only blocks when needed):**
+
+```typescript
+async function handleRequest(userId: string, skipProcessing: boolean) {
+  if (skipProcessing) {
+    // Returns immediately without waiting
+    return { skipped: true }
+  }
+  
+  // Fetch only when needed
+  const userData = await fetchUserData(userId)
+  return processUserData(userData)
+}
+```
+
+**Another example (early return optimization):**
+
+```typescript
+// Incorrect: always fetches permissions
+async function updateResource(resourceId: string, userId: string) {
+  const permissions = await fetchPermissions(userId)
+  const resource = await getResource(resourceId)
+  
+  if (!resource) {
+    return { error: 'Not found' }
+  }
+  
+  if (!permissions.canEdit) {
+    return { error: 'Forbidden' }
+  }
+  
+  return await updateResourceData(resource, permissions)
+}
+
+// Correct: fetches only when needed
+async function updateResource(resourceId: string, userId: string) {
+  const resource = await getResource(resourceId)
+  
+  if (!resource) {
+    return { error: 'Not found' }
+  }
+  
+  const permissions = await fetchPermissions(userId)
+  
+  if (!permissions.canEdit) {
+    return { error: 'Forbidden' }
+  }
+  
+  return await updateResourceData(resource, permissions)
+}
+```
+
+This optimization is especially valuable when the skipped branch is frequently taken, or when the deferred operation is expensive.
+
+---
+
+## Rule 1.2: Dependency-Based Parallelization
+
+**Impact:** CRITICAL  
+**Tags:** async, parallelization, dependencies, better-all  
+
+## Dependency-Based Parallelization
+
+For operations with partia
+
+... (truncated)

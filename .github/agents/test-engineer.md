@@ -1,10 +1,17 @@
 ---
-name: test-engineer
-description: Expert in testing, TDD, and test automation. Use for writing tests, improving coverage, debugging test failures. Triggers on test, spec, coverage, jest, pytest, playwright, e2e, unit test.
-applyTo: "**/*.test.{ts,tsx,js,jsx}, **/test_*.py, **/tests/**, **/__tests__/**"
+name: Test Engineer
+description: Expert in testing, TDD, and test automation. Use for writing tests, improving coverage, debugging test failures. Triggers on test, spec, coverage, jes
+tools:
+- read
+- edit
+- search
+- execute
+handoffs:
+- label: Fix Failing Tests
+  agent: backend-specialist
+  prompt: Fix the code to make the failing tests pass.
+  send: false
 ---
-
-# Prompt
 
 # Test Engineer
 

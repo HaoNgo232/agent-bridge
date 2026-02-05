@@ -1,0 +1,328 @@
+---
+description: 
+globs: **/*.sql,**/prisma/**/*,**/drizzle/**/*,**/migrations/**/*
+alwaysApply: false
+---
+
+# Database Design
+
+> **Learn to THINK, not copy SQL patterns.**
+
+## 🎯 Selective Reading Rule
+
+**Read ONLY files relevant to the request!** Check the content map, find what you need.
+
+| File | Description | When to Read |
+|------|-------------|--------------|
+| `database-selection.md` | PostgreSQL vs Neon vs Turso vs SQLite | Choosing database |
+| `orm-selection.md` | Drizzle vs Prisma vs Kysely | Choosing ORM |
+| `schema-design.md` | Normalization, PKs, relationships | Designing schema |
+| `indexing.md` | Index types, composite indexes | Performance tuning |
+| `optimization.md` | N+1, EXPLAIN ANALYZE | Query optimization |
+| `migrations.md` | Safe migrations, serverless DBs | Schema changes |
+
+---
+
+## ⚠️ Core Principle
+
+- ASK user for database preferences when unclear
+- Choose database/ORM based on CONTEXT
+- Don't default to PostgreSQL for everything
+
+---
+
+## Decision Checklist
+
+Before designing schema:
+
+- [ ] Asked user about database preference?
+- [ ] Chosen database for THIS context?
+- [ ] Considered deployment environment?
+- [ ] Planned index strategy?
+- [ ] Defined relationship types?
+
+---
+
+## Anti-Patterns
+
+❌ Default to PostgreSQL for simple apps (SQLite may suffice)
+❌ Skip indexing
+❌ Use SELECT * in production
+❌ Store JSON when structured data is better
+❌ Ignore N+1 queries
+
+
+---
+
+# Database Selection (2025)
+
+> Choose database based on context, not default.
+
+## Decision Tree
+
+```
+What are your requirements?
+│
+├── Full relational features needed
+│   ├── Self-hosted → PostgreSQL
+│   └── Serverless → Neon, Supabase
+│
+├── Edge deployment / Ultra-low latency
+│   └── Turso (edge SQLite)
+│
+├── AI / Vector search
+│   └── PostgreSQL + pgvector
+│
+├── Simple / Embedded / Local
+│   └── SQLite
+│
+└── Global distribution
+    └── PlanetScale, CockroachDB, Turso
+```
+
+## Comparison
+
+| Database | Best For | Trade-offs |
+|----------|----------|------------|
+| **PostgreSQL** | Full features, complex queries | Needs hosting |
+| **Neon** | Serverless PG, branching | PG complexity |
+| **Turso** | Edge, low latency | SQLite limitations |
+| **SQLite** | Simple, embedded, local | Single-writer |
+| **PlanetScale** | MySQL, global scale | No foreign keys |
+
+## Questions to Ask
+
+1. What's the deployment environment?
+2. How complex are the queries?
+3. Is edge/serverless important?
+4. Vector search needed?
+5. Global distribution required?
+
+
+---
+
+# Indexing Principles
+
+> When and how to create indexes effectively.
+
+## When to Create Indexes
+
+```
+Index these:
+├── Columns in WHERE clauses
+├── Columns in JOIN conditions
+├── Columns in ORDER BY
+├── Foreign key columns
+└── Unique constraints
+
+Don't over-index:
+├── Write-heavy tables (slower inserts)
+├── Low-cardinality columns
+├── Columns rarely queried
+```
+
+## Index Type Selection
+
+| Type | Use For |
+|------|---------|
+| **B-tree** | General purpose, equality & range |
+| **Hash** | Equality only, faster |
+| **GIN** | JSONB, arrays, full-text |
+| **GiST** | Geometric, range types |
+| **HNSW/IVFFlat** | Vector similarity (pgvector) |
+
+## Composite Index Principles
+
+```
+Order matters for composite indexes:
+├── Equality columns first
+├── Range columns last
+├── Most selective first
+└── Match query pattern
+```
+
+
+---
+
+# Migration Principles
+
+> Safe migration strategy for zero-downtime changes.
+
+## Safe Migration Strategy
+
+```
+For zero-downtime changes:
+│
+├── Adding column
+│   └── Add as nullable → backfill → add NOT NULL
+│
+├── Removing column
+│   └── Stop using → deploy → remove column
+│
+├── Adding index
+│   └── CREATE INDEX CONCURRENTLY (non-blocking)
+│
+└── Renaming column
+    └── Add new → migrate data → deploy → drop old
+```
+
+## Migration Philosophy
+
+- Never make breaking changes in one step
+- Test migrations on data copy first
+- Have rollback plan
+- Run in transaction when possible
+
+## Serverless Databases
+
+### Neon (Serverless PostgreSQL)
+
+| Feature | Benefit |
+|---------|---------|
+| Scale to zero | Cost savings |
+| Instant branching | Dev/preview |
+| Full PostgreSQL | Compatibility |
+| Autoscaling | Traffic handling |
+
+### Turso (Edge SQLite)
+
+| Feature | Benefit |
+|---------|---------|
+| Edge locations | Ultra-low latency |
+| SQLite compatible | Simple |
+| Generous free tier | Cost |
+| Global distribution | Performance |
+
+
+---
+
+# Query Optimization
+
+> N+1 problem, EXPLAIN ANALYZE, optimization priorities.
+
+## N+1 Problem
+
+```
+What is N+1?
+├── 1 query to get parent records
+├── N queries to get related records
+└── Very slow!
+
+Solutions:
+├── JOIN → Single query with all data
+├── Eager loading → ORM handles JOIN
+├── DataLoader → Batch and cache (GraphQL)
+└── Subquery → Fetch related in one query
+```
+
+## Query Analysis Mindset
+
+```
+Before optimizing:
+├── EXPLAIN ANALYZE the query
+├── Look for Seq Scan (full table scan)
+├── Check actual vs estimated rows
+└── Identify missing indexes
+```
+
+## Optimization Priorities
+
+1. **Add missing indexes** (most common issue)
+2. **Select only needed columns** (not SELECT *)
+3. **Use proper JOINs** (avoid subqueries when possible)
+4. **Limit early** (pagination at database level)
+5. **Cache** (when appropriate)
+
+
+---
+
+# ORM Selection (2025)
+
+> Choose ORM based on deployment and DX needs.
+
+## Decision Tree
+
+```
+What's the context?
+│
+├── Edge deployment / Bundle size matters
+│   └── Drizzle (smallest, SQL-like)
+│
+├── Best DX / Schema-first
+│   └── Prisma (migrations, studio)
+│
+├── Maximum control
+│   └── Raw SQL with query builder
+│
+└── Python ecosystem
+    └── SQLAlchemy 2.0 (async support)
+```
+
+## Comparison
+
+| ORM | Best For | Trade-offs |
+|-----|----------|------------|
+| **Drizzle** | Edge, TypeScript | Newer, less examples |
+| **Prisma** | DX, schema management | Heavier, not edge-ready |
+| **Kysely** | Type-safe SQL builder | Manual migrations |
+| **Raw SQL** | Complex queries, control | Manual type safety |
+
+
+---
+
+# Schema Design Principles
+
+> Normalization, primary keys, timestamps, relationships.
+
+## Normalization Decision
+
+```
+When to normalize (separate tables):
+├── Data is repeated across rows
+├── Updates would need multiple changes
+├── Relationships are clear
+└── Query patterns benefit
+
+When to denormalize (embed/duplicate):
+├── Read performance critical
+├── Data rarely changes
+├── Always fetched together
+└── Simpler queries needed
+```
+
+## Primary Key Selection
+
+| Type | Use When |
+|------|----------|
+| **UUID** | Distributed systems, security |
+| **ULID** | UUID + sortable by time |
+| **Auto-increment** | Simple apps, single database |
+| **Natural key** | Rarely (business meaning) |
+
+## Timestamp Strategy
+
+```
+For every table:
+├── created_at → When created
+├── updated_at → Last modified
+└── deleted_at → Soft delete (if needed)
+
+Use TIMESTAMPTZ (with timezone) not TIMESTAMP
+```
+
+## Relationship Types
+
+| Type | When | Implementation |
+|------|------|----------------|
+| **One-to-One** | Extension data | Separate table with FK |
+| **One-to-Many** | Parent-children | FK on child table |
+| **Many-to-Many** | Both sides have many | Junction table |
+
+## Foreign Key ON DELETE
+
+```
+├── CASCADE → Delete children with parent
+├── SET NULL → Children become orphans
+├── RESTRICT → Prevent delete if children exist
+└── SET DEFAULT → Children get default value
+```

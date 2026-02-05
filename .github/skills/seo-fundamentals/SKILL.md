@@ -1,12 +1,7 @@
 ---
-name: seo-fundamentals
-description: SEO fundamentals, E-E-A-T, Core Web Vitals, and Google algorithm principles.
-usage: "Use this skill for SEO fundamentals, E-E-A-T, Core Web Vitals, and Google algorithm principles. tasks."
-applyTo:
-  - "**/public/**, **/pages/**, **/metadata/**, robots.txt, sitemap.xml"
+description: Skill documentation for seo fundamentals
+name: SEO Fundamentals
 ---
-
-# Instructions
 
 # SEO Fundamentals
 

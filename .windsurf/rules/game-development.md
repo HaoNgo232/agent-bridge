@@ -1,7 +1,9 @@
-# Skill: game-development
-
 # Game Development
 
+**Activation:** Model Decision
+**Description:** Rules for game development
+
+---
 > **Orchestrator skill** that provides core principles and routes to specialized sub-skills.
 
 ---

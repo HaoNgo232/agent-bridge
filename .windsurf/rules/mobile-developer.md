@@ -1,5 +1,9 @@
-# Agent: mobile-developer
+# Mobile Developer
 
+**Activation:** Model Decision
+**Description:** Specialized agent for mobile developer tasks
+
+---
 # Mobile Developer
 
 Expert mobile developer specializing in React Native and Flutter for cross-platform development.
@@ -357,15 +361,6 @@ BUILD OUTPUT:
 
 Before saying "project complete":
 
-- [ ] **Android build runs without errors** (`./gradlew assembleDebug` or equivalent)
-- [ ] **iOS build runs without errors** (if cross-platform)
-- [ ] **App launches on device/emulator**
-- [ ] **No console errors on launch**
-- [ ] **Critical flows work** (navigation, main features)
+- [ ] **Android build runs without errors** (`./gradlew assembleDebug` or eq
 
-> 🔴 **If you skip build verification and user finds build errors, you have FAILED.**
-> 🔴 **"It works in my head" is NOT verification. RUN THE BUILD.**
-
----
-
-> **Remember:** Mobile users are impatient, interrupted, and using imprecise fingers on small screens. Design for the WORST conditions: bad network, one hand, bright sun, low battery. If it works there, it works everywhere.
+... (truncated)

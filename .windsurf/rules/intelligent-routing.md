@@ -1,7 +1,9 @@
-# Skill: intelligent-routing
+# Intelligent Routing
 
-# Intelligent Agent Routing
+**Activation:** Model Decision
+**Description:** Rules for intelligent routing
 
+---
 **Purpose**: Automatically analyze user requests and route them to the most appropriate specialist agent(s) without requiring explicit user mentions.
 
 ## Core Principle

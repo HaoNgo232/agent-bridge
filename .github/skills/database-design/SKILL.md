@@ -1,12 +1,7 @@
 ---
-name: database-design
-description: Database design principles and decision-making. Schema design, indexing strategy, ORM selection, serverless databases.
-usage: "Use this skill for Database design principles and decision-making. Schema design, indexing strategy, ORM selection, serverless databases. tasks."
-applyTo:
-  - "**/prisma/**, **/drizzle/**, **/schema/**, **/*.sql"
+description: Skill documentation for database design
+name: Database Design
 ---
-
-# Instructions
 
 # Database Design
 

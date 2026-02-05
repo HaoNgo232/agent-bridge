@@ -1,7 +1,9 @@
-# Skill: mcp-builder
+# Mcp Builder
 
-# MCP Builder
+**Activation:** Model Decision
+**Description:** Rules for mcp builder
 
+---
 > Principles for building MCP servers.
 
 ---

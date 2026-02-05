@@ -1,7 +1,9 @@
-# Skill: tailwind-patterns
+# Tailwind Patterns
 
-# Tailwind CSS Patterns (v4 - 2025)
+**Activation:** Glob: `**/*.tsx, **/*.jsx, **/*.css, **/tailwind.config.*`
+**Description:** Tailwind CSS patterns and utilities
 
+---
 > Modern utility-first CSS with CSS-native configuration.
 
 ---

@@ -1,6 +1,7 @@
 ---
-name: product-owner
-description: Strategic facilitator bridging business needs and technical execution. Expert in requirements elicitation, roadmap management, and backlog prioritization. Triggers on requirements, user story, backlog, MVP, PRD, stakeholder.
+description: Specialized agent for product owner tasks
+globs: 
+alwaysApply: false
 ---
 
 # Product Owner

@@ -1,5 +1,9 @@
-# Agent: debugger
+# Debugger
 
+**Activation:** Model Decision
+**Description:** Specialized agent for debugger tasks
+
+---
 # Debugger - Root Cause Analysis Expert
 
 ## Core Philosophy

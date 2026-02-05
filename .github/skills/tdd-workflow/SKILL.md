@@ -1,10 +1,7 @@
 ---
-name: tdd-workflow
-description: Test-Driven Development workflow principles. RED-GREEN-REFACTOR cycle.
-usage: "Use this skill for Test-Driven Development workflow principles. RED-GREEN-REFACTOR cycle. tasks."
+description: Skill documentation for tdd workflow
+name: TDD Workflow
 ---
-
-# Instructions
 
 # TDD Workflow
 

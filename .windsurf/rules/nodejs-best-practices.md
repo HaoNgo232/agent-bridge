@@ -1,7 +1,9 @@
-# Skill: nodejs-best-practices
+# Nodejs Best Practices
 
-# Node.js Best Practices
+**Activation:** Model Decision
+**Description:** Rules for nodejs best practices
 
+---
 > Principles and decision-making for Node.js development in 2025.
 > **Learn to THINK, not memorize code patterns.**
 

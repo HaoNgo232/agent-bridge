@@ -1,10 +1,7 @@
 ---
-name: webapp-testing
-description: Web application testing principles. E2E, Playwright, deep audit strategies.
-usage: "Use this skill for Web application testing principles. E2E, Playwright, deep audit strategies. tasks."
+description: Skill documentation for webapp testing
+name: Web App Testing
 ---
-
-# Instructions
 
 # Web App Testing
 

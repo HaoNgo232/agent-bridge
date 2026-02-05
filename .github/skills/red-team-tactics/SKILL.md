@@ -1,10 +1,7 @@
 ---
-name: red-team-tactics
-description: Red team tactics principles based on MITRE ATT&CK. Attack phases, detection evasion, reporting.
-usage: "Use this skill for Red team tactics principles based on MITRE ATT&CK. Attack phases, detection evasion, reporting. tasks."
+description: Skill documentation for red team tactics
+name: Red Team Tactics
 ---
-
-# Instructions
 
 # Red Team Tactics
 

@@ -1,10 +1,7 @@
 ---
-name: parallel-agents
-description: Multi-agent orchestration patterns. Use when multiple independent tasks can run with different domain expertise or when comprehensive analysis requires multiple perspectives.
-usage: "Use this skill for Multi-agent orchestration patterns. Use when multiple independent tasks can run with different domain expertise or when comprehensive analysis requires multiple perspectives. tasks."
+description: Skill documentation for parallel agents
+name: Native Parallel Agents
 ---
-
-# Instructions
 
 # Native Parallel Agents
 

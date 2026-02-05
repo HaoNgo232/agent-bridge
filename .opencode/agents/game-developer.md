@@ -1,13 +1,14 @@
 ---
-description: Game development across all platforms (PC, Web, Mobile, VR/AR). Use when
-  building games with Unity, Godot, Unreal, Phaser, Three.js, or any game engine.
-  Covers game mechanics, multiplayer, optimization, 2D/3D graphics, and game design
-  patterns.
+description: Specialized agent for game developer
 mode: subagent
 tools:
-  write: true
-  bash: true
+  write: false
+  edit: false
+  bash: false
+permission:
+  edit: ask
 ---
+
 # Game Developer Agent
 
 Expert game developer specializing in multi-platform game development with 2025 best practices.

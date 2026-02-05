@@ -1,10 +1,7 @@
 ---
-name: tailwind-patterns
-description: Tailwind CSS v4 principles. CSS-first configuration, container queries, modern patterns, design token architecture.
-usage: "Use this skill for Tailwind CSS v4 principles. CSS-first configuration, container queries, modern patterns, design token architecture. tasks."
+description: Skill documentation for tailwind patterns
+name: Tailwind CSS Patterns (v4 - 2025)
 ---
-
-# Instructions
 
 # Tailwind CSS Patterns (v4 - 2025)
 

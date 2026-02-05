@@ -1,199 +1,445 @@
-import os
-import json
-import shutil
+"""
+GitHub Copilot Converter
+Converts Antigravity Kit agents/skills to GitHub Copilot format.
+
+Output structure:
+- .github/agents/*.md (agent profiles with YAML frontmatter)
+- .github/skills/<skill-name>/SKILL.md
+
+Reference: https://docs.github.com/en/copilot/reference/custom-agents-configuration
+"""
+
 from pathlib import Path
-from typing import Dict, Tuple, List, Any
-from .utils import Colors, ask_user
+from typing import Optional, List, Dict, Any
+import json
+import os
+import re
+import shutil
+from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
+
+import yaml
 
 
-def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
-    if not content.startswith('---'):
-        return {}, content.strip()
-    try:
-        parts = content.split('---', 2)
-        if len(parts) < 3: return {}, content.strip()
-        frontmatter_raw = parts[1].strip()
-        body = parts[2].strip()
-        metadata = {}
-        import yaml
-        metadata = yaml.safe_load(frontmatter_raw)
-        if not isinstance(metadata, dict): metadata = {}
-        return metadata, body
-    except:
-        return {}, content
+# =============================================================================
+# TOOL MAPPINGS
+# =============================================================================
 
-def get_glob_for_context(context_id: str) -> str:
-    """Map agent/skill domain to file globs for Copilot."""
-    mapping = {
-        "frontend-specialist": "**/*.{ts,tsx,js,jsx,css,scss,html}",
-        "frontend-design": "**/*.{ts,tsx,js,jsx,css,scss,html}",
-        "backend-specialist": "**/*.{py,js,ts,go,rs,php,api,server}",
-        "api-patterns": "**/*.{py,js,ts,go,rs,php,api,server}",
-        "database-architect": "**/prisma/**, **/drizzle/**, **/schema/**, **/*.sql",
-        "database-design": "**/prisma/**, **/drizzle/**, **/schema/**, **/*.sql",
-        "test-engineer": "**/*.test.{ts,tsx,js,jsx}, **/test_*.py, **/tests/**, **/__tests__/**",
-        "testing-patterns": "**/*.test.{ts,tsx,js,jsx}, **/test_*.py, **/tests/**, **/__tests__/**",
-        "devops-engineer": "**/docker/**, **/ci/**, **/.github/workflows/**, Dockerfile, *.yaml, *.yml",
-        "seo-specialist": "**/public/**, **/pages/**, **/metadata/**, robots.txt, sitemap.xml",
-        "seo-fundamentals": "**/public/**, **/pages/**, **/metadata/**, robots.txt, sitemap.xml",
-        "mobile-developer": "**/ios/**, **/android/**, **/*.{swift,kt,java}",
-        "mobile-design": "**/ios/**, **/android/**, **/*.{swift,kt,java}",
-        "security-auditor": "**/*.{ts,js,py,go,rs,auth}",
-        "vulnerability-scanner": "**/*.{ts,js,py,go,rs,auth}",
-        "clean-code": "**/*",
-        "node-best-practices": "**/*.{js,ts,json}",
-        "react-best-practices": "**/*.{ts,tsx,jsx,js}",
-        "python-patterns": "**/*.py",
-        "rust-pro": "**/*.rs",
-        "bash-linux": "**/*.sh"
+# Tool alias mapping theo Copilot spec
+COPILOT_TOOL_ALIASES = {
+    # Primary aliases
+    "execute": ["shell", "bash", "powershell"],
+    "read": ["read", "notebookread"],
+    "edit": ["edit", "multiedit", "write", "notebookedit"],
+    "search": ["grep", "glob", "search"],
+    "agent": ["custom-agent", "task"],
+    "web": ["websearch", "webfetch", "fetch"],
+    "todo": ["todowrite"],
+}
+
+# Agent role -> tools mapping
+AGENT_TOOLS_MAP = {
+    "frontend-specialist": ["read", "edit", "search", "execute"],
+    "backend-specialist": ["read", "edit", "search", "execute"],
+    "database-architect": ["read", "edit", "search", "execute"],
+    "security-auditor": ["read", "search"],  # Read-only for security review
+    "test-engineer": ["read", "edit", "search", "execute"],
+    "devops-engineer": ["read", "edit", "search", "execute"],
+    "documentation-writer": ["read", "edit", "search"],
+    "explorer-agent": ["read", "search"],  # Read-only explorer
+    "project-planner": ["read", "search", "agent"],  # Can delegate
+    "orchestrator": ["read", "search", "agent"],  # Orchestrates agents
+    "debugger": ["read", "edit", "search", "execute"],
+    "performance-optimizer": ["read", "edit", "search", "execute"],
+    "code-archaeologist": ["read", "search"],
+    "product-manager": ["read", "search"],
+    "product-owner": ["read", "search"],
+    "seo-specialist": ["read", "edit", "search"],
+    "game-developer": ["read", "edit", "search", "execute"],
+    "mobile-developer": ["read", "edit", "search", "execute"],
+    "penetration-tester": ["read", "search", "execute"],
+    "qa-automation-engineer": ["read", "edit", "search", "execute"],
+}
+
+# Handoffs - workflow transitions between agents
+AGENT_HANDOFFS_MAP = {
+    "project-planner": [
+        {
+            "label": "Start Implementation",
+            "agent": "orchestrator",
+            "prompt": "Implement the plan outlined above following the task breakdown.",
+            "send": False,
+        },
+        {
+            "label": "Security Review",
+            "agent": "security-auditor",
+            "prompt": "Review the security aspects of this implementation plan.",
+            "send": False,
+        },
+    ],
+    "orchestrator": [
+        {
+            "label": "Frontend Tasks",
+            "agent": "frontend-specialist",
+            "prompt": "Implement the frontend components as specified.",
+            "send": False,
+        },
+        {
+            "label": "Backend Tasks",
+            "agent": "backend-specialist",
+            "prompt": "Implement the backend services as specified.",
+            "send": False,
+        },
+        {
+            "label": "Database Setup",
+            "agent": "database-architect",
+            "prompt": "Design and implement the database schema.",
+            "send": False,
+        },
+        {
+            "label": "Write Tests",
+            "agent": "test-engineer",
+            "prompt": "Write tests for the implemented features.",
+            "send": False,
+        },
+    ],
+    "explorer-agent": [
+        {
+            "label": "Create Plan",
+            "agent": "project-planner",
+            "prompt": "Create an implementation plan based on this codebase analysis.",
+            "send": False,
+        },
+    ],
+    "security-auditor": [
+        {
+            "label": "Fix Security Issues",
+            "agent": "backend-specialist",
+            "prompt": "Fix the security vulnerabilities identified in the audit.",
+            "send": False,
+        },
+    ],
+    "test-engineer": [
+        {
+            "label": "Fix Failing Tests",
+            "agent": "backend-specialist",
+            "prompt": "Fix the code to make the failing tests pass.",
+            "send": False,
+        },
+    ],
+    "debugger": [
+        {
+            "label": "Implement Fix",
+            "agent": "backend-specialist",
+            "prompt": "Implement the fix for the identified bug.",
+            "send": False,
+        },
+    ],
+}
+
+
+# =============================================================================
+# METADATA EXTRACTION
+# =============================================================================
+
+def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
+    """Extract metadata from agent markdown content."""
+    metadata = {
+        "name": "",
+        "description": "",
+        "role": "",
+        "skills": [],
     }
-    return mapping.get(context_id, None)
+    
+    # Check for existing YAML frontmatter
+    fm_match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+    if fm_match:
+        try:
+            existing = yaml.safe_load(fm_match.group(1))
+            if existing:
+                metadata.update(existing)
+        except yaml.YAMLError:
+            pass
+    
+    # Extract name from first H1 heading
+    name_match = re.search(r'^#\s+(.+?)(?:\s*[-–—]\s*(.+))?$', content, re.MULTILINE)
+    if name_match:
+        metadata["name"] = name_match.group(1).strip()
+        if name_match.group(2) and not metadata.get("description"):
+            metadata["description"] = name_match.group(2).strip()
+    
+    # Fallback name from filename
+    if not metadata["name"]:
+        metadata["name"] = filename.replace('.md', '').replace('-', ' ').title()
+    
+    # Extract role description
+    role_patterns = [
+        r'(?:You are|Role:|##\s*Role)[:\s]*(.+?)(?:\n\n|\n##|\n#\s)',
+        r'(?:Purpose|Mission)[:\s]*(.+?)(?:\n\n|\n##)',
+        r'^>\s*(.+?)$',  # Blockquote as description
+    ]
+    for pattern in role_patterns:
+        role_match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+        if role_match and not metadata.get("role"):
+            metadata["role"] = role_match.group(1).strip()[:300]
+            break
+    
+    # Extract skill references
+    skill_patterns = [
+        r'skills?[:\s]+\[([^\]]+)\]',
+        r'`([a-z][a-z0-9\-]+)`\s*skill',
+        r'uses?\s+(?:the\s+)?`([a-z][a-z0-9\-]+)`',
+    ]
+    for pattern in skill_patterns:
+        for match in re.finditer(pattern, content, re.IGNORECASE):
+            skills_str = match.group(1)
+            for skill in re.split(r'[,\s]+', skills_str):
+                skill = skill.strip().strip('`"\'')
+                if skill and skill not in metadata["skills"]:
+                    metadata["skills"].append(skill)
+    
+    return metadata
 
-def get_master_agent_dir() -> Path:
-    """Returns the .agent directory inside the agent-bridge project."""
-    return Path(__file__).resolve().parent.parent.parent / ".agent"
+
+def generate_copilot_frontmatter(agent_slug: str, metadata: Dict[str, Any]) -> str:
+    """Generate YAML frontmatter for Copilot agent profile."""
+    
+    frontmatter: Dict[str, Any] = {}
+    
+    # Required: name
+    frontmatter["name"] = metadata.get("name") or agent_slug.replace("-", " ").title()
+    
+    # Required: description (max 150 chars for display)
+    description = metadata.get("description") or metadata.get("role", "")
+    if not description:
+        description = f"Specialized agent for {agent_slug.replace('-', ' ')} tasks"
+    frontmatter["description"] = description[:150]
+    
+    # Tools based on agent role
+    tools = AGENT_TOOLS_MAP.get(agent_slug, ["read", "edit", "search"])
+    frontmatter["tools"] = tools
+    
+    # Handoffs for workflow agents
+    handoffs = AGENT_HANDOFFS_MAP.get(agent_slug)
+    if handoffs:
+        frontmatter["handoffs"] = handoffs
+    
+    # Subagents configuration for orchestrator-type agents
+    if agent_slug in ["orchestrator", "project-planner"]:
+        frontmatter["agents"] = ["*"]  # Allow invoking any agent as subagent
+    
+    # User-invokable (show in dropdown)
+    # Hide internal/utility agents
+    if agent_slug in ["code-archaeologist"]:
+        frontmatter["user-invokable"] = False
+    
+    return yaml.dump(
+        frontmatter,
+        default_flow_style=False,
+        allow_unicode=True,
+        sort_keys=False,
+        width=1000,
+    )
+
+
+# =============================================================================
+# CONVERSION FUNCTIONS
+# =============================================================================
+
+def convert_agent_to_copilot(source_path: Path, dest_path: Path) -> bool:
+    """Convert a single agent file to Copilot format with full frontmatter."""
+    try:
+        content = source_path.read_text(encoding="utf-8")
+        agent_slug = source_path.stem.lower()
+        
+        metadata = extract_agent_metadata(content, source_path.name)
+        frontmatter = generate_copilot_frontmatter(agent_slug, metadata)
+        
+        # Remove existing frontmatter from content
+        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+        
+        # Build output with new frontmatter
+        output = f"---\n{frontmatter}---\n\n{content_clean.strip()}\n"
+        
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        dest_path.write_text(output, encoding="utf-8")
+        return True
+    except Exception as e:
+        print(f"  Error converting agent {source_path.name}: {e}")
+        return False
+
+
+def convert_skill_to_copilot(source_dir: Path, dest_dir: Path) -> bool:
+    """Convert a skill directory to Copilot format."""
+    try:
+        skill_name = source_dir.name
+        dest_skill_dir = dest_dir / skill_name
+        dest_skill_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Find main skill file
+        skill_file = source_dir / "SKILL.md"
+        if not skill_file.exists():
+            md_files = list(source_dir.glob("*.md"))
+            skill_file = md_files[0] if md_files else None
+        
+        if skill_file and skill_file.exists():
+            content = skill_file.read_text(encoding="utf-8")
+            
+            # Extract skill title
+            title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+            skill_title = title_match.group(1) if title_match else skill_name.replace("-", " ").title()
+            
+            # Generate skill frontmatter
+            frontmatter = {
+                "name": skill_title,
+                "description": f"Skill documentation for {skill_name.replace('-', ' ')}",
+            }
+            
+            # Remove existing frontmatter
+            content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+            
+            output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content_clean.strip()}\n"
+            
+            (dest_skill_dir / "SKILL.md").write_text(output, encoding="utf-8")
+        
+        # Copy subdirectories and additional files
+        for item in source_dir.iterdir():
+            if item.is_dir():
+                shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
+            elif item.name != "SKILL.md" and item.suffix == ".md":
+                shutil.copy2(item, dest_skill_dir / item.name)
+        
+        return True
+    except Exception as e:
+        print(f"  Error converting skill {source_dir.name}: {e}")
+        return False
+
+
+def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
+    """
+    Main conversion function for GitHub Copilot format.
+    
+    Args:
+        source_root: Path to project root containing .agent/
+        dest_root: Path to output root (usually same as source_root)
+        verbose: Print progress messages
+    
+    Returns:
+        Dict with conversion statistics
+    """
+    stats = {"agents": 0, "skills": 0, "errors": []}
+    
+    agents_src = source_root / ".agent" / "agents"
+    agents_dest = dest_root / ".github" / "agents"
+    
+    skills_src = source_root / ".agent" / "skills"
+    skills_dest = dest_root / ".github" / "skills"
+    
+    # Convert agents
+    if agents_src.exists():
+        if verbose:
+            print("Converting agents to Copilot format...")
+        
+        for agent_file in agents_src.glob("*.md"):
+            dest_file = agents_dest / agent_file.name
+            if convert_agent_to_copilot(agent_file, dest_file):
+                stats["agents"] += 1
+                if verbose:
+                    print(f"  ✓ {agent_file.name}")
+            else:
+                stats["errors"].append(f"agent:{agent_file.name}")
+    
+    # Convert skills
+    if skills_src.exists():
+        if verbose:
+            print("Converting skills to Copilot format...")
+        
+        for skill_dir in skills_src.iterdir():
+            if skill_dir.is_dir():
+                if convert_skill_to_copilot(skill_dir, skills_dest):
+                    stats["skills"] += 1
+                    if verbose:
+                        print(f"  ✓ {skill_dir.name}")
+                else:
+                    stats["errors"].append(f"skill:{skill_dir.name}")
+    
+    if verbose:
+        print(f"\nCopilot conversion complete: {stats['agents']} agents, {stats['skills']} skills")
+        if stats["errors"]:
+            print(f"  Errors: {len(stats['errors'])}")
+    
+    return stats
+
+
+# =============================================================================
+# CLI ENTRY POINT
+# =============================================================================
 
 def convert_copilot(source_dir: str, output_unused: str, force: bool = False):
+    """Bridge for CLI compatibility."""
     root_path = Path(source_dir).resolve()
     
-    # Fallback to Master Copy if local source_dir doesn't exist
-    if not root_path.exists() or not (root_path / "agents").exists():
+    # Check for .agent in local or master
+    if root_path.name == ".agent":
+        source_root = root_path.parent
+    elif (root_path / ".agent").exists():
+        source_root = root_path
+    else:
         master_path = get_master_agent_dir()
         if master_path.exists():
-            print(f"{Colors.YELLOW}🔔 Local source '{source_dir}' not found or invalid, using Master Copy: {master_path}{Colors.ENDC}")
-            root_path = master_path
+            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
+            source_root = master_path.parent
         else:
             print(f"{Colors.RED}❌ Error: No source tri thức found.{Colors.ENDC}")
-            print(f"{Colors.YELLOW}👉 Please run 'agent-bridge update-kit' first to initialize your Master Vault from Internet.{Colors.ENDC}")
             return
 
-    # Official GitHub Copilot directories
-    github_dir = Path(".github").resolve()
-    
     # Confirmation for Copilot Overwrite
-    if (github_dir / "agents").exists() and not force:
-        if not ask_user(f"Found existing '{github_dir}/agents'. Update Copilot agents?", default=True):
-             print(f"{Colors.YELLOW}⏭️  Skipping Copilot agents update.{Colors.ENDC}")
+    github_dir = Path(".github").resolve()
+    if github_dir.exists() and not force:
+        if not ask_user(f"Found existing '.github'. Update agents & skills?", default=True):
+             print(f"{Colors.YELLOW}⏭️  Skipping Copilot update.{Colors.ENDC}")
              return
 
-    agents_out_dir = github_dir / "agents"
-    skills_out_dir = github_dir / "skills"
-
-    print(f"{Colors.HEADER}🏗️  Converting to Official GitHub Copilot Spec...{Colors.ENDC}")
-
-    # 1. PROCESS AGENTS -> .github/agents/<agent>.md
-    agents_src_dir = root_path / "agents"
-    if agents_src_dir.exists():
-        if not agents_out_dir.exists(): agents_out_dir.mkdir(parents=True)
-        for agent_file in agents_src_dir.glob("*.md"):
-            try:
-                meta, body = parse_frontmatter(agent_file.read_text(encoding='utf-8'))
-                name = meta.get("name", agent_file.stem)
-                desc = meta.get("description", "")
-                if isinstance(desc, list): desc = " ".join(desc)
-                
-                lines = [
-                    "---",
-                    f"name: {name}",
-                    f"description: {desc}",
-                    "---"
-                ]
-                lines.append("\n# Prompt")
-                lines.append(f"\n{body}")
-
-                with open(agents_out_dir / f"{agent_file.stem}.md", 'w', encoding='utf-8') as f:
-                    f.write("\n".join(lines))
-                print(f"{Colors.BLUE}  🔹 Agent: {agent_file.stem}{Colors.ENDC}")
-            except Exception as e:
-                print(f"{Colors.RED}  ❌ Failed agent {agent_file.name}: {e}{Colors.ENDC}")
-
-    # 2. PROCESS SKILLS -> .github/skills/<skill>/SKILL.md
-    skills_src_dir = root_path / "skills"
-    if skills_src_dir.exists():
-        if not skills_out_dir.exists(): skills_out_dir.mkdir(parents=True)
-        for skill_dir in skills_src_dir.iterdir():
-            if not skill_dir.is_dir(): continue
-            src_skill_file = skill_dir / "SKILL.md"
-            if src_skill_file.exists():
-                try:
-                    meta, body = parse_frontmatter(src_skill_file.read_text(encoding='utf-8'))
-                    name = meta.get("name", skill_dir.name)
-                    desc = meta.get("description", "")
-                    if isinstance(desc, list): desc = " ".join(desc)
-                    
-                    # Copilot skills REQUIRE a 'usage' field in frontmatter
-                    usage = meta.get("usage", f"Use this skill for {desc or name} tasks.")
-
-                    lines = [
-                        "---",
-                        f"name: {name}",
-                        f"description: {desc or name}",
-                        f"usage: {usage}",
-                        "---"
-                    ]
-                    lines.append("\n# Instructions")
-                    lines.append(f"\n{body}")
-
-                    dest_dir = skills_out_dir / skill_dir.name
-                    dest_dir.mkdir(parents=True, exist_ok=True)
-                    with open(dest_dir / "SKILL.md", 'w', encoding='utf-8') as f:
-                        f.write("\n".join(lines))
-                    print(f"{Colors.BLUE}  🔸 Skill: {skill_dir.name}{Colors.ENDC}")
-                except Exception as e:
-                    print(f"{Colors.RED}  ❌ Failed skill {skill_dir.name}: {e}{Colors.ENDC}")
-
-    # Cleanup old non-spec files if they exist
-    old_instr_file = github_dir / "copilot-instructions.md"
-    if old_instr_file.exists(): old_instr_file.unlink()
-    old_instr_dir = github_dir / "instructions"
-    if old_instr_dir.exists():
-        import shutil
-        shutil.rmtree(old_instr_dir)
-
-    print(f"{Colors.GREEN}✅ Official Copilot Spec conversion complete!{Colors.ENDC}")
+    print(f"{Colors.HEADER}🏗️  Converting to Copilot Official Format (Professional Spec)...{Colors.ENDC}")
+    convert_to_copilot(source_root, Path("."), verbose=True)
+    print(f"{Colors.GREEN}✅ Copilot conversion complete!{Colors.ENDC}")
 
 def copy_mcp_copilot(root_path: Path, force: bool = False):
-    """Copies MCP config to .vscode/mcp.json"""
-    mcp_src = get_master_agent_dir() / "mcp_config.json"
-    if not mcp_src.exists():
-         mcp_src = root_path / ".agent" / "mcp_config.json"
+    """Bridge for CLI compatibility."""
+    dest_file = root_path / ".vscode" / "mcp.json"
+    if dest_file.exists() and not force:
+        if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
+            print(f"{Colors.YELLOW}🔒 Kept existing Copilot MCP config.{Colors.ENDC}")
+            return
+    
+    source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
+    if install_mcp_for_ide(source_root, root_path, "copilot"):
+        print(f"{Colors.BLUE}  🔌 Integrated MCP config into Copilot (.vscode).{Colors.ENDC}")
 
-    if mcp_src.exists():
-        vscode_dir = root_path / ".vscode"
-        dest_file = vscode_dir / "mcp.json"
-        
-        # Confirmation for MCP Overwrite (Safe Default)
-        if dest_file.exists() and not force:
-            if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
-                print(f"{Colors.YELLOW}🔒 Kept existing Copilot MCP config.{Colors.ENDC}")
-                return
+def init_copilot(project_path: Path = None) -> bool:
+    # Existing user function...
+    """Initialize Copilot configuration in project."""
+    project_path = project_path or Path.cwd()
+    
+    if not (project_path / ".agent").exists():
+        print("Error: .agent directory not found. Run 'agent-bridge update' first.")
+        return False
+    
+    stats = convert_to_copilot(project_path, project_path)
+    return len(stats["errors"]) == 0
 
-        try:
-            import json
-            import re
-            
-            content = mcp_src.read_text(encoding='utf-8')
-            content = re.sub(r'//.*', '', content)
-            content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
-            mcp_data = json.loads(content)
-            
-            # Copilot stores it in .vscode/mcp.json
-            vscode_dir.mkdir(parents=True, exist_ok=True)
 
-            # User Request: "GitHub Copilot root key is wrong, it should be 'servers'"
-            # Example provided: { "servers": { "MCP SERVER NAME": ... } }
-            # So we format specifically for Copilot by renaming 'mcpServers' -> 'servers'
-            
-            final_data = {}
-            if "mcpServers" in mcp_data:
-                final_data["servers"] = mcp_data["mcpServers"]
-            else:
-                 # If source lacks mcpServers key, assume it is flat or already correct
-                 final_data = mcp_data
-
-            with open(dest_file, 'w', encoding='utf-8') as f:
-                json.dump(final_data, f, indent=4)
-                
-            print(f"{Colors.BLUE}  🔌 Copied to .vscode/mcp.json (Root key: 'servers'){Colors.ENDC}")
-        except Exception as e:
-            print(f"{Colors.RED}  ❌ Failed to copy MCP config to Copilot: {e}{Colors.ENDC}")
+def clean_copilot(project_path: Path = None) -> bool:
+    """Remove Copilot configuration from project."""
+    project_path = project_path or Path.cwd()
+    
+    paths_to_remove = [
+        project_path / ".github" / "agents",
+        project_path / ".github" / "skills",
+    ]
+    
+    for path in paths_to_remove:
+        if path.exists():
+            shutil.rmtree(path)
+            print(f"  Removed {path}")
+    
+    return True

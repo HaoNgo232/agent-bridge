@@ -1,7 +1,9 @@
-# Skill: geo-fundamentals
+# Geo Fundamentals
 
-# GEO Fundamentals
+**Activation:** Model Decision
+**Description:** Rules for geo fundamentals
 
+---
 > Optimization for AI-powered search engines.
 
 ---

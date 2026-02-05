@@ -1,7 +1,3 @@
-# Workflow: /brainstorm
-
-Structured brainstorming for projects and features. Explores multiple options before implementation.
-
 # /brainstorm - Structured Idea Exploration
 
 $ARGUMENTS

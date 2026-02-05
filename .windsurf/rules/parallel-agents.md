@@ -1,7 +1,9 @@
-# Skill: parallel-agents
+# Parallel Agents
 
-# Native Parallel Agents
+**Activation:** Model Decision
+**Description:** Rules for parallel agents
 
+---
 > Orchestration through Antigravity's built-in Agent Tool
 
 ## Overview

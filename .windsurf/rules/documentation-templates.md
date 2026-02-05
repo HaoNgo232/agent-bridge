@@ -1,7 +1,9 @@
-# Skill: documentation-templates
-
 # Documentation Templates
 
+**Activation:** Model Decision
+**Description:** Rules for documentation templates
+
+---
 > Templates and structure guidelines for common documentation types.
 
 ---

@@ -1,10 +1,7 @@
 ---
-name: game-development
-description: Game development orchestrator. Routes to platform-specific skills based on project needs.
-usage: "Use this skill for Game development orchestrator. Routes to platform-specific skills based on project needs. tasks."
+description: Skill documentation for game development
+name: Game Development
 ---
-
-# Instructions
 
 # Game Development
 

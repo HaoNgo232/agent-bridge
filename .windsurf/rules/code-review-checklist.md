@@ -1,7 +1,9 @@
-# Skill: code-review-checklist
-
 # Code Review Checklist
 
+**Activation:** Model Decision
+**Description:** Rules for code review checklist
+
+---
 ## Quick Review Checklist
 
 ### Correctness

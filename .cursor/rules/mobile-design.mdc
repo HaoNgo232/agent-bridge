@@ -1,0 +1,6126 @@
+---
+description: 
+globs: **/App.tsx,**/app.json,**/*.native.*,**/android/**/*,**/ios/**/*
+alwaysApply: false
+---
+
+# Mobile Design System
+
+> **Philosophy:** Touch-first. Battery-conscious. Platform-respectful. Offline-capable.
+> **Core Principle:** Mobile is NOT a small desktop. THINK mobile constraints, ASK platform choice.
+
+---
+
+## 🔧 Runtime Scripts
+
+**Execute these for validation (don't read, just run):**
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/mobile_audit.py` | Mobile UX & Touch Audit | `python scripts/mobile_audit.py <project_path>` |
+
+---
+
+## 🔴 MANDATORY: Read Reference Files Before Working!
+
+**⛔ DO NOT start development until you read the relevant files:**
+
+### Universal (Always Read)
+
+| File | Content | Status |
+|------|---------|--------|
+| **[mobile-design-thinking.md](mobile-design-thinking.md)** | **⚠️ ANTI-MEMORIZATION: Forces thinking, prevents AI defaults** | **⬜ CRITICAL FIRST** |
+| **[touch-psychology.md](touch-psychology.md)** | **Fitts' Law, gestures, haptics, thumb zone** | **⬜ CRITICAL** |
+| **[mobile-performance.md](mobile-performance.md)** | **RN/Flutter performance, 60fps, memory** | **⬜ CRITICAL** |
+| **[mobile-backend.md](mobile-backend.md)** | **Push notifications, offline sync, mobile API** | **⬜ CRITICAL** |
+| **[mobile-testing.md](mobile-testing.md)** | **Testing pyramid, E2E, platform-specific** | **⬜ CRITICAL** |
+| **[mobile-debugging.md](mobile-debugging.md)** | **Native vs JS debugging, Flipper, Logcat** | **⬜ CRITICAL** |
+| [mobile-navigation.md](mobile-navigation.md) | Tab/Stack/Drawer, deep linking | ⬜ Read |
+| [mobile-typography.md](mobile-typography.md) | System fonts, Dynamic Type, a11y | ⬜ Read |
+| [mobile-color-system.md](mobile-color-system.md) | OLED, dark mode, battery-aware | ⬜ Read |
+| [decision-trees.md](decision-trees.md) | Framework/state/storage selection | ⬜ Read |
+
+> 🧠 **mobile-design-thinking.md is PRIORITY!** This file ensures AI thinks instead of using memorized patterns.
+
+### Platform-Specific (Read Based on Target)
+
+| Platform | File | Content | When to Read |
+|----------|------|---------|--------------|
+| **iOS** | [platform-ios.md](platform-ios.md) | Human Interface Guidelines, SF Pro, SwiftUI patterns | Building for iPhone/iPad |
+| **Android** | [platform-android.md](platform-android.md) | Material Design 3, Roboto, Compose patterns | Building for Android |
+| **Cross-Platform** | Both above | Platform divergence points | React Native / Flutter |
+
+> 🔴 **If building for iOS → Read platform-ios.md FIRST!**
+> 🔴 **If building for Android → Read platform-android.md FIRST!**
+> 🔴 **If cross-platform → Read BOTH and apply conditional platform logic!**
+
+---
+
+## ⚠️ CRITICAL: ASK BEFORE ASSUMING (MANDATORY)
+
+> **STOP! If the user's request is open-ended, DO NOT default to your favorites.**
+
+### You MUST Ask If Not Specified:
+
+| Aspect | Ask | Why |
+|--------|-----|-----|
+| **Platform** | "iOS, Android, or both?" | Affects EVERY design decision |
+| **Framework** | "React Native, Flutter, or native?" | Determines patterns and tools |
+| **Navigation** | "Tab bar, drawer, or stack-based?" | Core UX decision |
+| **State** | "What state management? (Zustand/Redux/Riverpod/BLoC?)" | Architecture foundation |
+| **Offline** | "Does this need to work offline?" | Affects data strategy |
+| **Target devices** | "Phone only, or tablet support?" | Layout complexity |
+
+### ⛔ AI MOBILE ANTI-PATTERNS (YASAK LİSTESİ)
+
+> 🚫 **These are AI default tendencies that MUST be avoided!**
+
+#### Performance Sins
+
+| ❌ NEVER DO | Why It's Wrong | ✅ ALWAYS DO |
+|-------------|----------------|--------------|
+| **ScrollView for long lists** | Renders ALL items, memory explodes | Use `FlatList` / `FlashList` / `ListView.builder` |
+| **Inline renderItem function** | New function every render, all items re-render | `useCallback` + `React.memo` |
+| **Missing keyExtractor** | Index-based keys cause bugs on reorder | Unique, stable ID from data |
+| **Skip getItemLayout** | Async layout = janky scroll | Provide when items have fixed height |
+| **setState() everywhere** | Unnecessary widget rebuilds | Targeted state, `const` constructors |
+| **Native driver: false** | Animations blocked by JS thread | `useNativeDriver: true` always |
+| **console.log in production** | Blocks JS thread severely | Remove before release build |
+| **Skip React.memo/const** | Every item re-renders on any change | Memoize list items ALWAYS |
+
+#### Touch/UX Sins
+
+| ❌ NEVER DO | Why It's Wrong | ✅ ALWAYS DO |
+|-------------|----------------|--------------|
+| **Touch target < 44px** | Impossible to tap accurately, frustrating | Minimum 44pt (iOS) / 48dp (Android) |
+| **Spacing < 8px between targets** | Accidental taps on neighbors | Minimum 8-12px gap |
+| **Gesture-only interactions** | Motor impaired users excluded | Always provide button alternative |
+| **No loading state** | User thinks app crashed | ALWAYS show loading feedback |
+| **No error state** | User stuck, no recovery path | Show error with retry option |
+| **No offline handling** | Crash/block when network lost | Graceful degradation, cached data |
+| **Ignore platform conventions** | Users confused, muscle memory broken | iOS feels iOS, Android feels Android |
+
+#### Security Sins
+
+| ❌ NEVER DO | Why It's Wrong | ✅ ALWAYS DO |
+|-------------|----------------|--------------|
+| **Token in AsyncStorage** | Easily accessible, stolen on rooted device | `SecureStore` / `Keychain` / `EncryptedSharedPreferences` |
+| **Hardcode API keys** | Reverse engineered from APK/IPA | Environment variables, secure storage |
+| **Skip SSL pinning** | MITM attacks possible | Pin certificates in production |
+| **Log sensitive data** | Logs can be extracted | Never log tokens, passwords, PII |
+
+#### Architecture Sins
+
+| ❌ NEVER DO | Why It's Wrong | ✅ ALWAYS DO |
+|-------------|----------------|--------------|
+| **Business logic in UI** | Untestable, unmaintainable | Service layer separation |
+| **Global state for everything** | Unnecessary re-renders, complexity | Local state default, lift when needed |
+| **Deep linking as afterthought** | Notifications, shares broken | Plan deep links from day one |
+| **Skip dispose/cleanup** | Memory leaks, zombie listeners | Clean up subscriptions, timers |
+
+---
+
+## 📱 Platform Decision Matrix
+
+### When to Unify vs Diverge
+
+```
+                    UNIFY (same on both)          DIVERGE (platform-specific)
+                    ───────────────────           ──────────────────────────
+Business Logic      ✅ Always                     -
+Data Layer          ✅ Always                     -
+Core Features       ✅ Always                     -
+                    
+Navigation          -                             ✅ iOS: edge swipe, Android: back button
+Gestures            -                             ✅ Platform-native feel
+Icons               -                             ✅ SF Symbols vs Material Icons
+Date Pickers        -                             ✅ Native pickers feel right
+Modals/Sheets       -                             ✅ iOS: bottom sheet vs Android: dialog
+Typography          -                             ✅ SF Pro vs Roboto (or custom)
+Error Dialogs       -                             ✅ Platform conventions for alerts
+```
+
+### Quick Reference: Platform Defaults
+
+| Element | iOS | Android |
+|---------|-----|---------|
+| **Primary Font** | SF Pro / SF Compact | Roboto |
+| **Min Touch Target** | 44pt × 44pt | 48dp × 48dp |
+| **Back Navigation** | Edge swipe left | System back button/gesture |
+| **Bottom Tab Icons** | SF Symbols | Material Symbols |
+| **Action Sheet** | UIActionSheet from bottom | Bottom Sheet / Dialog |
+| **Progress** | Spinner | Linear progress (Material) |
+| **Pull to Refresh** | Native UIRefreshControl | SwipeRefreshLayout |
+
+---
+
+## 🧠 Mobile UX Psychology (Quick Reference)
+
+### Fitts' Law for Touch
+
+```
+Desktop: Cursor is precise (1px)
+Mobile:  Finger is imprecise (~7mm contact area)
+
+→ Touch targets MUST be 44-48px minimum
+→ Important actions in THUMB ZONE (bottom of screen)
+→ Destructive actions AWAY from easy reach
+```
+
+### Thumb Zone (One-Handed Usage)
+
+```
+┌─────────────────────────────┐
+│      HARD TO REACH          │ ← Navigation, menu, back
+│        (stretch)            │
+├─────────────────────────────┤
+│      OK TO REACH            │ ← Secondary actions
+│       (natural)             │
+├─────────────────────────────┤
+│      EASY TO REACH          │ ← PRIMARY CTAs, tab bar
+│    (thumb's natural arc)    │ ← Main content interaction
+└─────────────────────────────┘
+        [  HOME  ]
+```
+
+### Mobile-Specific Cognitive Load
+
+| Desktop | Mobile Difference |
+|---------|-------------------|
+| Multiple windows | ONE task at a time |
+| Keyboard shortcuts | Touch gestures |
+| Hover states | NO hover (tap or nothing) |
+| Large viewport | Limited space, scroll vertical |
+| Stable attention | Interrupted constantly |
+
+For deep dive: [touch-psychology.md](touch-psychology.md)
+
+---
+
+## ⚡ Performance Principles (Quick Reference)
+
+### React Native Critical Rules
+
+```typescript
+// ✅ CORRECT: Memoized renderItem + React.memo wrapper
+const ListItem = React.memo(({ item }: { item: Item }) => (
+  <View style={styles.item}>
+    <Text>{item.title}</Text>
+  </View>
+));
+
+const renderItem = useCallback(
+  ({ item }: { item: Item }) => <ListItem item={item} />,
+  []
+);
+
+// ✅ CORRECT: FlatList with all optimizations
+<FlatList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={(item) => item.id}  // Stable ID, NOT index
+  getItemLayout={(data, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+  removeClippedSubviews={true}
+  maxToRenderPerBatch={10}
+  windowSize={5}
+/>
+```
+
+### Flutter Critical Rules
+
+```dart
+// ✅ CORRECT: const constructors prevent rebuilds
+class MyWidget extends StatelessWidget {
+  const MyWidget({super.key}); // CONST!
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column( // CONST!
+      children: [
+        Text('Static content'),
+        MyConstantWidget(),
+      ],
+    );
+  }
+}
+
+// ✅ CORRECT: Targeted state with ValueListenableBuilder
+ValueListenableBuilder<int>(
+  valueListenable: counter,
+  builder: (context, value, child) => Text('$value'),
+  child: const ExpensiveWidget(), // Won't rebuild!
+)
+```
+
+### Animation Performance
+
+```
+GPU-accelerated (FAST):     CPU-bound (SLOW):
+├── transform               ├── width, height
+├── opacity                 ├── top, left, right, bottom
+└── (use these ONLY)        ├── margin, padding
+                            └── (AVOID animating these)
+```
+
+For complete guide: [mobile-performance.md](mobile-performance.md)
+
+---
+
+## 📝 CHECKPOINT (MANDATORY Before Any Mobile Work)
+
+> **Before writing ANY mobile code, you MUST complete this checkpoint:**
+
+```
+🧠 CHECKPOINT:
+
+Platform:   [ iOS / Android / Both ]
+Framework:  [ React Native / Flutter / SwiftUI / Kotlin ]
+Files Read: [ List the skill files you've read ]
+
+3 Principles I Will Apply:
+1. _______________
+2. _______________
+3. _______________
+
+Anti-Patterns I Will Avoid:
+1. _______________
+2. _______________
+```
+
+**Example:**
+```
+🧠 CHECKPOINT:
+
+Platform:   iOS + Android (Cross-platform)
+Framework:  React Native + Expo
+Files Read: touch-psychology.md, mobile-performance.md, platform-ios.md, platform-android.md
+
+3 Principles I Will Apply:
+1. FlatList with React.memo + useCallback for all lists
+2. 48px touch targets, thumb zone for primary CTAs
+3. Platform-specific navigation (edge swipe iOS, back button Android)
+
+Anti-Patterns I Will Avoid:
+1. ScrollView for lists → FlatList
+2. Inline renderItem → Memoized
+3. AsyncStorage for tokens → SecureStore
+```
+
+> 🔴 **Can't fill the checkpoint? → GO BACK AND READ THE SKILL FILES.**
+
+---
+
+## 🔧 Framework Decision Tree
+
+```
+WHAT ARE YOU BUILDING?
+        │
+        ├── Need OTA updates + rapid iteration + web team
+        │   └── ✅ React Native + Expo
+        │
+        ├── Need pixel-perfect custom UI + performance critical
+        │   └── ✅ Flutter
+        │
+        ├── Deep native features + single platform focus
+        │   ├── iOS only → SwiftUI
+        │   └── Android only → Kotlin + Jetpack Compose
+        │
+        ├── Existing RN codebase + new features
+        │   └── ✅ React Native (bare workflow)
+        │
+        └── Enterprise + existing Flutter codebase
+            └── ✅ Flutter
+```
+
+For complete decision trees: [decision-trees.md](decision-trees.md)
+
+---
+
+## 📋 Pre-Development Checklist
+
+### Before Starting ANY Mobile Project
+
+- [ ] **Platform confirmed?** (iOS / Android / Both)
+- [ ] **Framework chosen?** (RN / Flutter / Native)
+- [ ] **Navigation pattern decided?** (Tabs / Stack / Drawer)
+- [ ] **State management selected?** (Zustand / Redux / Riverpod / BLoC)
+- [ ] **Offline requirements known?**
+- [ ] **Deep linking planned from day one?**
+- [ ] **Target devices defined?** (Phone / Tablet / Both)
+
+### Before Every Screen
+
+- [ ] **Touch targets ≥ 44-48px?**
+- [ ] **Primary CTA in thumb zone?**
+- [ ] **Loading state exists?**
+- [ ] **Error state with retry exists?**
+- [ ] **Offline handling considered?**
+- [ ] **Platform conventions followed?**
+
+### Before Release
+
+- [ ] **console.log removed?**
+- [ ] **SecureStore for sensitive data?**
+- [ ] **SSL pinning enabled?**
+- [ ] **Lists optimized (memo, keyExtractor)?**
+- [ ] **Memory cleanup on unmount?**
+- [ ] **Tested on low-end devices?**
+- [ ] **Accessibility labels on all interactive elements?**
+
+---
+
+## 📚 Reference Files
+
+For deeper guidance on specific areas:
+
+| File | When to Use |
+|------|-------------|
+| [mobile-design-thinking.md](mobile-design-thinking.md) | **FIRST! Anti-memorization, forces context-based thinking** |
+| [touch-psychology.md](touch-psychology.md) | Understanding touch interaction, Fitts' Law, gesture design |
+| [mobile-performance.md](mobile-performance.md) | Optimizing RN/Flutter, 60fps, memory/battery |
+| [platform-ios.md](platform-ios.md) | iOS-specific design, HIG compliance |
+| [platform-android.md](platform-android.md) | Android-specific design, Material Design 3 |
+| [mobile-navigation.md](mobile-navigation.md) | Navigation patterns, deep linking |
+| [mobile-typography.md](mobile-typography.md) | Type scale, system fonts, accessibility |
+| [mobile-color-system.md](mobile-color-system.md) | OLED optimization, dark mode, battery |
+| [decision-trees.md](decision-trees.md) | Framework, state, storage decisions |
+
+---
+
+> **Remember:** Mobile users are impatient, interrupted, and using imprecise fingers on small screens. Design for the WORST conditions: bad network, one hand, bright sun, low battery. If it works there, it works everywhere.
+
+
+---
+
+# Mobile Decision Trees
+
+> Framework selection, state management, storage strategy, and context-based decisions.
+> **These are THINKING guides, not copy-paste answers.**
+
+---
+
+## 1. Framework Selection
+
+### Master Decision Tree
+
+```
+WHAT ARE YOU BUILDING?
+        │
+        ├── Need OTA updates without app store review?
+        │   │
+        │   ├── Yes → React Native + Expo
+        │   │         ├── Expo Go for development
+        │   │         ├── EAS Update for production OTA
+        │   │         └── Best for: rapid iteration, web teams
+        │   │
+        │   └── No → Continue ▼
+        │
+        ├── Need pixel-perfect custom UI across platforms?
+        │   │
+        │   ├── Yes → Flutter
+        │   │         ├── Custom rendering engine
+        │   │         ├── Single UI for iOS + Android
+        │   │         └── Best for: branded, visual apps
+        │   │
+        │   └── No → Continue ▼
+        │
+        ├── Heavy native features (ARKit, HealthKit, specific sensors)?
+        │   │
+        │   ├── iOS only → SwiftUI / UIKit
+        │   │              └── Maximum native capability
+        │   │
+        │   ├── Android only → Kotlin + Jetpack Compose
+        │   │                  └── Maximum native capability
+        │   │
+        │   └── Both → Consider native with shared logic
+        │              └── Kotlin Multiplatform for shared
+        │
+        ├── Existing web team + TypeScript codebase?
+        │   │
+        │   └── Yes → React Native
+        │             ├── Familiar paradigm for React devs
+        │             ├── Share code with web (limited)
+        │             └── Large ecosystem
+        │
+        └── Enterprise with existing Flutter team?
+            │
+            └── Yes → Flutter
+                      └── Leverage existing expertise
+```
+
+### Framework Comparison
+
+| Factor | React Native | Flutter | Native (Swift/Kotlin) |
+|--------|-------------|---------|----------------------|
+| **OTA Updates** | ✅ Expo | ❌ No | ❌ No |
+| **Learning Curve** | Low (React devs) | Medium | Higher |
+| **Performance** | Good | Excellent | Best |
+| **UI Consistency** | Platform-native | Identical | Platform-native |
+| **Bundle Size** | Medium | Larger | Smallest |
+| **Native Access** | Via bridges | Via channels | Direct |
+| **Hot Reload** | ✅ | ✅ | ✅ (Xcode 15+) |
+
+### When to Choose Native
+
+```
+CHOOSE NATIVE WHEN:
+├── Maximum performance required (games, 3D)
+├── Deep OS integration needed
+├── Platform-specific features are core
+├── Team has native expertise
+├── App store presence is primary
+└── Long-term maintenance priority
+
+AVOID NATIVE WHEN:
+├── Limited budget/time
+├── Need rapid iteration
+├── Identical UI on both platforms
+├── Team is web-focused
+└── Cross-platform is priority
+```
+
+---
+
+## 2. State Management Selection
+
+### React Native State Decision
+
+```
+WHAT'S YOUR STATE COMPLEXITY?
+        │
+        ├── Simple app, few screens, minimal shared state
+        │   │
+        │   └── Zustand (or just useState/Context)
+        │       ├── Minimal boilerplate
+        │       ├── Easy to understand
+        │       └── Scales OK to medium
+        │
+        ├── Primarily server data (API-driven)
+        │   │
+        │   └── TanStack Query (React Query) + Zustand
+        │       ├── Query for server state
+        │       ├── Zustand for UI state
+        │       └── Excellent caching, refetching
+        │
+        ├── Complex app with many features
+        │   │
+        │   └── Redux Toolkit + RTK Query
+        │       ├── Predicable, debuggable
+        │       ├── RTK Query for API
+        │       └── Good for large teams
+        │
+        └── Atomic, granular state needs
+            │
+            └── Jotai
+                ├── Atom-based (like Recoil)
+                ├── Minimizes re-renders
+                └── Good for derived state
+```
+
+### Flutter State Decision
+
+```
+WHAT'S YOUR STATE COMPLEXITY?
+        │
+        ├── Simple app, learning Flutter
+        │   │
+        │   └── Provider (or setState)
+        │       ├── Official, simple
+        │       ├── Built into Flutter
+        │       └── Good for small apps
+        │
+        ├── Modern, type-safe, testable
+        │   │
+        │   └── Riverpod 2.0
+        │       ├── Compile-time safety
+        │       ├── Code generation
+        │       ├── Excellent for medium-large apps
+        │       └── Recommended for new projects
+        │
+        ├── Enterprise, strict patterns needed
+        │   │
+        │   └── BLoC
+        │       ├── Event → State pattern
+        │       ├── Very testable
+        │       ├── More boilerplate
+        │       └── Good for large teams
+        │
+        └── Quick prototyping
+            │
+            └── GetX (with caution)
+                ├── Fast to implement
+                ├── Less strict patterns
+                └── Can become messy at scale
+```
+
+### State Management Anti-Patterns
+
+```
+❌ DON'T:
+├── Use global state for everything
+├── Mix state management approaches
+├── Store server state in local state
+├── Skip state normalization
+├── Overuse Context (re-render heavy)
+└── Put navigation state in app state
+
+✅ DO:
+├── Server state → Query library
+├── UI state → Minimal, local first
+├── Lift state only when needed
+├── Choose ONE approach per project
+└── Keep state close to where it's used
+```
+
+---
+
+## 3. Navigation Pattern Selection
+
+```
+HOW MANY TOP-LEVEL DESTINATIONS?
+        │
+        ├── 2 destinations
+        │   └── Consider: Top tabs or simple stack
+        │
+        ├── 3-5 destinations (equal importance)
+        │   └── ✅ Tab Bar / Bottom Navigation
+        │       ├── Most common pattern
+        │       └── Easy discovery
+        │
+        ├── 5+ destinations
+        │   │
+        │   ├── All important → Drawer Navigation
+        │   │                   └── Hidden but many options
+        │   │
+        │   └── Some less important → Tab bar + drawer hybrid
+        │
+        └── Single linear flow?
+            └── Stack Navigation only
+                └── Onboarding, checkout, etc.
+```
+
+### Navigation by App Type
+
+| App Type | Pattern | Reason |
+|----------|---------|--------|
+| Social (Instagram) | Tab bar | Frequent switching |
+| E-commerce | Tab bar + stack | Categories as tabs |
+| Email (Gmail) | Drawer + list-detail | Many folders |
+| Settings | Stack only | Deep drill-down |
+| Onboarding | Stack wizard | Linear flow |
+| Messaging | Tab (chats) + stack | Threads |
+
+---
+
+## 4. Storage Strategy Selection
+
+```
+WHAT TYPE OF DATA?
+        │
+        ├── Sensitive (tokens, passwords, keys)
+        │   │
+        │   └── ✅ Secure Storage
+        │       ├── iOS: Keychain
+        │       ├── Android: EncryptedSharedPreferences
+        │       └── RN: expo-secure-store / react-native-keychain
+        │
+        ├── User preferences (settings, theme)
+        │   │
+        │   └── ✅ Key-Value Storage
+        │       ├── iOS: UserDefaults
+        │       ├── Android: SharedPreferences
+        │       └── RN: AsyncStorage / MMKV
+        │
+        ├── Structured data (entities, relationships)
+        │   │
+        │   └── ✅ Database
+        │       ├── SQLite (expo-sqlite, sqflite)
+        │       ├── Realm (NoSQL, reactive)
+        │       └── WatermelonDB (large datasets)
+        │
+        ├── Large files (images, documents)
+        │   │
+        │   └── ✅ File System
+        │       ├── iOS: Documents / Caches directory
+        │       ├── Android: Internal/External storage
+        │       └── RN: react-native-fs / expo-file-system
+        │
+        └── Cached API data
+            │
+            └── ✅ Query Library Cache
+                ├── TanStack Query (RN)
+                ├── Riverpod async (Flutter)
+                └── Automatic invalidation
+```
+
+### Storage Comparison
+
+| Storage | Speed | Security | Capacity | Use Case |
+|---------|-------|----------|----------|----------|
+| Secure Storage | Medium | 🔒 High | Small | Tokens, secrets |
+| Key-Value | Fast | Low | Medium | Settings |
+| SQLite | Fast | Low | Large | Structured data |
+| File System | Medium | Low | Very Large | Media, documents |
+| Query Cache | Fast | Low | Medium | API responses |
+
+---
+
+## 5. Offline Strategy Selection
+
+```
+HOW CRITICAL IS OFFLINE?
+        │
+        ├── Nice to have (works when possible)
+        │   │
+        │   └── Cache last data + show stale
+        │       ├── Simple implementation
+        │       ├── TanStack Query with staleTime
+        │       └── Show "last updated" timestamp
+        │
+        ├── Essential (core functionality offline)
+        │   │
+        │   └── Offline-first architecture
+        │       ├── Local database as source of truth
+        │       ├── Sync to server when online
+        │       ├── Conflict resolution strategy
+        │       └── Queue actions for later sync
+        │
+        └── Real-time critical (collaboration, chat)
+            │
+            └── WebSocket + local queue
+                ├── Optimistic updates
+                ├── Eventual consistency
+                └── Complex conflict handling
+```
+
+### Offline Implementation Patterns
+
+```
+1. CACHE-FIRST (Simple)
+   Request → Check cache → If stale, fetch → Update cache
+   
+2. STALE-WHILE-REVALIDATE
+   Request → Return cached → Fetch update → Update UI
+   
+3. OFFLINE-FIRST (Complex)
+   Action → Write to local DB → Queue sync → Sync when online
+   
+4. SYNC ENGINE
+   Use: Firebase, Realm Sync, Supabase realtime
+   Handles conflict resolution automatically
+```
+
+---
+
+## 6. Authentication Pattern Selection
+
+```
+WHAT AUTH TYPE NEEDED?
+        │
+        ├── Simple email/password
+        │   │
+        │   └── Token-based (JWT)
+        │       ├── Store refresh token securely
+        │       ├── Access token in memory
+        │       └── Silent refresh flow
+        │
+        ├── Social login (Google, Apple, etc.)
+        │   │
+        │   └── OAuth 2.0 + PKCE
+        │       ├── Use platform SDKs
+        │       ├── Deep link callback
+        │       └── Apple Sign-In required for iOS
+        │
+        ├── Enterprise/SSO
+        │   │
+        │   └── OIDC / SAML
+        │       ├── Web view or system browser
+        │       └── Handle redirect properly
+        │
+        └── Biometric (FaceID, fingerprint)
+            │
+            └── Local auth + secure token
+                ├── Biometrics unlock stored token
+                ├── Not a replacement for server auth
+                └── Fallback to PIN/password
+```
+
+### Auth Token Storage
+
+```
+❌ NEVER store tokens in:
+├── AsyncStorage (plain text)
+├── Redux/state (not persisted correctly)
+├── Local storage equivalent
+└── Logs or debug output
+
+✅ ALWAYS store tokens in:
+├── iOS: Keychain
+├── Android: EncryptedSharedPreferences
+├── Expo: SecureStore
+├── Biometric-protected if available
+```
+
+---
+
+## 7. Project Type Templates
+
+### E-Commerce App
+
+```
+RECOMMENDED STACK:
+├── Framework: React Native + Expo (OTA for pricing)
+├── Navigation: Tab bar (Home, Search, Cart, Account)
+├── State: TanStack Query (products) + Zustand (cart)
+├── Storage: SecureStore (auth) + SQLite (cart cache)
+├── Offline: Cache products, queue cart actions
+└── Auth: Email/password + Social + Apple Pay
+
+KEY DECISIONS:
+├── Product images: Lazy load, cache aggressively
+├── Cart: Sync across devices via API
+├── Checkout: Secure, minimal steps
+└── Deep links: Product shares, marketing
+```
+
+### Social/Content App
+
+```
+RECOMMENDED STACK:
+├── Framework: React Native or Flutter
+├── Navigation: Tab bar (Feed, Search, Create, Notifications, Profile)
+├── State: TanStack Query (feed) + Zustand (UI)
+├── Storage: SQLite (feed cache, drafts)
+├── Offline: Cache feed, queue posts
+└── Auth: Social login primary, Apple required
+
+KEY DECISIONS:
+├── Feed: Infinite scroll, memoized items
+├── Media: Upload queuing, background upload
+├── Push: Deep link to content
+└── Real-time: WebSocket for notifications
+```
+
+### Productivity/SaaS App
+
+```
+RECOMMENDED STACK:
+├── Framework: Flutter (consistent UI) or RN
+├── Navigation: Drawer or Tab bar
+├── State: Riverpod/BLoC or Redux Toolkit
+├── Storage: SQLite (offline), SecureStore (auth)
+├── Offline: Full offline editing, sync
+└── Auth: SSO/OIDC for enterprise
+
+KEY DECISIONS:
+├── Data sync: Conflict resolution strategy
+├── Collaborative: Real-time or eventual?
+├── Files: Large file handling
+└── Enterprise: MDM, compliance
+```
+
+---
+
+## 8. Decision Checklist
+
+### Before Starting ANY Project
+
+- [ ] Target platforms defined (iOS/Android/both)?
+- [ ] Framework selected based on criteria?
+- [ ] State management approach chosen?
+- [ ] Navigation pattern selected?
+- [ ] Storage strategy for each data type?
+- [ ] Offline requirements defined?
+- [ ] Auth flow designed?
+- [ ] Deep linking planned from start?
+
+### Questions to Ask User
+
+```
+If project details are vague, ASK:
+
+1. "Will this need OTA updates without app store review?"
+   → Affects framework choice (Expo = yes)
+
+2. "Do iOS and Android need identical UI?"
+   → Affects framework (Flutter = identical)
+
+3. "What's the offline requirement?"
+   → Affects architecture complexity
+
+4. "Is there an existing backend/auth system?"
+   → Affects auth and API approach
+
+5. "What devices? Phone only, or tablet?"
+   → Affects navigation and layout
+
+6. "Enterprise or consumer?"
+   → Affects auth (SSO), security, compliance
+```
+
+---
+
+## 9. Anti-Pattern Decisions
+
+### ❌ Decision Anti-Patterns
+
+| Anti-Pattern | Why It's Bad | Better Approach |
+|--------------|--------------|-----------------|
+| **Redux for simple app** | Massive overkill | Zustand or context |
+| **Native for MVP** | Slow development | Cross-platform MVP |
+| **Drawer for 3 sections** | Hidden navigation | Tab bar |
+| **AsyncStorage for tokens** | Insecure | SecureStore |
+| **No offline consideration** | Broken on subway | Plan from start |
+| **Same stack for all projects** | Doesn't fit context | Evaluate per project |
+
+---
+
+## 10. Quick Reference
+
+### Framework Quick Pick
+
+```
+OTA needed?           → React Native + Expo
+Identical UI?         → Flutter
+Maximum performance?  → Native
+Web team?            → React Native
+Quick prototype?     → Expo
+```
+
+### State Quick Pick
+
+```
+Simple app?          → Zustand / Provider
+Server-heavy?        → TanStack Query / Riverpod
+Enterprise?          → Redux / BLoC
+Atomic state?        → Jotai
+```
+
+### Storage Quick Pick
+
+```
+Secrets?             → SecureStore / Keychain
+Settings?            → AsyncStorage / UserDefaults
+Structured data?     → SQLite
+API cache?           → Query library
+```
+
+---
+
+> **Remember:** These trees are guides for THINKING, not rules to follow blindly. Every project has unique constraints. ASK clarifying questions when requirements are vague, and choose based on actual needs, not defaults.
+
+
+---
+
+# Mobile Backend Patterns
+
+> **This file covers backend/API patterns SPECIFIC to mobile clients.**
+> Generic backend patterns are in `nodejs-best-practices` and `api-patterns`.
+> **Mobile backend is NOT the same as web backend. Different constraints, different patterns.**
+
+---
+
+## 🧠 MOBILE BACKEND MINDSET
+
+```
+Mobile clients are DIFFERENT from web clients:
+├── Unreliable network (2G, subway, elevator)
+├── Battery constraints (minimize wake-ups)
+├── Limited storage (can't cache everything)
+├── Interrupted sessions (calls, notifications)
+├── Diverse devices (old phones to flagships)
+└── Binary updates are slow (App Store review)
+```
+
+**Your backend must compensate for ALL of these.**
+
+---
+
+## 🚫 AI MOBILE BACKEND ANTI-PATTERNS
+
+### These are common AI mistakes when building mobile backends:
+
+| ❌ AI Default | Why It's Wrong | ✅ Mobile-Correct |
+|---------------|----------------|-------------------|
+| Same API for web and mobile | Mobile needs compact responses | Separate mobile endpoints OR field selection |
+| Full object responses | Wastes bandwidth, battery | Partial responses, pagination |
+| No offline consideration | App crashes without network | Offline-first design, sync queues |
+| WebSocket for everything | Battery drain | Push notifications + polling fallback |
+| No app versioning | Can't force updates, breaking changes | Version headers, minimum version check |
+| Generic error messages | Users can't fix issues | Mobile-specific error codes + recovery actions |
+| Session-based auth | Mobile apps restart | Token-based with refresh |
+| Ignore device info | Can't debug issues | Device ID, app version in headers |
+
+---
+
+## 1. Push Notifications
+
+### Platform Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    YOUR BACKEND                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                         │                                        │
+│              ┌──────────┴──────────┐                            │
+│              ▼                     ▼                            │
+│    ┌─────────────────┐   ┌─────────────────┐                    │
+│    │   FCM (Google)  │   │  APNs (Apple)   │                    │
+│    │   Firebase      │   │  Direct or FCM  │                    │
+│    └────────┬────────┘   └────────┬────────┘                    │
+│             │                     │                              │
+│             ▼                     ▼                              │
+│    ┌─────────────────┐   ┌─────────────────┐                    │
+│    │ Android Device  │   │   iOS Device    │                    │
+│    └─────────────────┘   └─────────────────┘                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Push Types
+
+| Type | Use Case | User Sees |
+|------|----------|-----------|
+| **Display** | New message, order update | Notification banner |
+| **Silent** | Background sync, content update | Nothing (background) |
+| **Data** | Custom handling by app | Depends on app logic |
+
+### Anti-Patterns
+
+| ❌ NEVER | ✅ ALWAYS |
+|----------|----------|
+| Send sensitive data in push | Push says "New message", app fetches content |
+| Overload with pushes | Batch, dedupe, respect quiet hours |
+| Same message to all | Segment by user preference, timezone |
+| Ignore failed tokens | Clean up invalid tokens regularly |
+| Skip APNs for iOS | FCM alone doesn't guarantee iOS delivery |
+
+### Token Management
+
+```
+TOKEN LIFECYCLE:
+├── App registers → Get token → Send to backend
+├── Token can change → App must re-register on start
+├── Token expires → Clean from database
+├── User uninstalls → Token becomes invalid (detect via error)
+└── Multiple devices → Store multiple tokens per user
+```
+
+---
+
+## 2. Offline Sync & Conflict Resolution
+
+### Sync Strategy Selection
+
+```
+WHAT TYPE OF DATA?
+        │
+        ├── Read-only (news, catalog)
+        │   └── Simple cache + TTL
+        │       └── ETag/Last-Modified for invalidation
+        │
+        ├── User-owned (notes, todos)
+        │   └── Last-write-wins (simple)
+        │       └── Or timestamp-based merge
+        │
+        ├── Collaborative (shared docs)
+        │   └── CRDT or OT required
+        │       └── Consider Firebase/Supabase
+        │
+        └── Critical (payments, inventory)
+            └── Server is source of truth
+                └── Optimistic UI + server confirmation
+```
+
+### Conflict Resolution Strategies
+
+| Strategy | How It Works | Best For |
+|----------|--------------|----------|
+| **Last-write-wins** | Latest timestamp overwrites | Simple data, single user |
+| **Server-wins** | Server always authoritative | Critical transactions |
+| **Client-wins** | Offline changes prioritized | Offline-heavy apps |
+| **Merge** | Combine changes field-by-field | Documents, rich content |
+| **CRDT** | Mathematically conflict-free | Real-time collaboration |
+
+### Sync Queue Pattern
+
+```
+CLIENT SIDE:
+├── User makes change → Write to local DB
+├── Add to sync queue → { action, data, timestamp, retries }
+├── Network available → Process queue FIFO
+├── Success → Remove from queue
+├── Failure → Retry with backoff (max 5 retries)
+└── Conflict → Apply resolution strategy
+
+SERVER SIDE:
+├── Accept change with client timestamp
+├── Compare with server version
+├── Apply conflict resolution
+├── Return merged state
+└── Client updates local with server response
+```
+
+---
+
+## 3. Mobile API Optimization
+
+### Response Size Reduction
+
+| Technique | Savings | Implementation |
+|-----------|---------|----------------|
+| **Field selection** | 30-70% | `?fields=id,name,thumbnail` |
+| **Compression** | 60-80% | gzip/brotli (automatic) |
+| **Pagination** | Varies | Cursor-based for mobile |
+| **Image variants** | 50-90% | `/image?w=200&q=80` |
+| **Delta sync** | 80-95% | Only changed records since timestamp |
+
+### Pagination: Cursor vs Offset
+
+```
+OFFSET (Bad for mobile):
+├── Page 1: OFFSET 0 LIMIT 20
+├── Page 2: OFFSET 20 LIMIT 20
+├── Problem: New item added → duplicates!
+└── Problem: Large offset = slow query
+
+CURSOR (Good for mobile):
+├── First: ?limit=20
+├── Next: ?limit=20&after=cursor_abc123
+├── Cursor = encoded (id + sort values)
+├── No duplicates on data changes
+└── Consistent performance
+```
+
+### Batch Requests
+
+```
+Instead of:
+GET /users/1
+GET /users/2  
+GET /users/3
+(3 round trips, 3x latency)
+
+Use:
+POST /batch
+{ requests: [
+    { method: "GET", path: "/users/1" },
+    { method: "GET", path: "/users/2" },
+    { method: "GET", path: "/users/3" }
+]}
+(1 round trip)
+```
+
+---
+
+## 4. App Versioning
+
+### Version Check Endpoint
+
+```
+GET /api/app-config
+Headers:
+  X-App-Version: 2.1.0
+  X-Platform: ios
+  X-Device-ID: abc123
+
+Response:
+{
+  "minimum_version": "2.0.0",
+  "latest_version": "2.3.0",
+  "force_update": false,
+  "update_url": "https://apps.apple.com/...",
+  "feature_flags": {
+    "new_player": true,
+    "dark_mode": true
+  },
+  "maintenance": false,
+  "maintenance_message": null
+}
+```
+
+### Version Comparison Logic
+
+```
+CLIENT VERSION vs MINIMUM VERSION:
+├── client >= minimum → Continue normally
+├── client < minimum → Show force update screen
+│   └── Block app usage until updated
+└── client < latest → Show optional update prompt
+
+FEATURE FLAGS:
+├── Enable/disable features without app update
+├── A/B testing by version/device
+└── Gradual rollout (10% → 50% → 100%)
+```
+
+---
+
+## 5. Authentication for Mobile
+
+### Token Strategy
+
+```
+ACCESS TOKEN:
+├── Short-lived (15 min - 1 hour)
+├── Stored in memory (not persistent)
+├── Used for API requests
+└── Refresh when expired
+
+REFRESH TOKEN:
+├── Long-lived (30-90 days)
+├── Stored in SecureStore/Keychain
+├── Used only to get new access token
+└── Rotate on each use (security)
+
+DEVICE TOKEN:
+├── Identifies this device
+├── Allows "log out all devices"
+├── Stored alongside refresh token
+└── Server tracks active devices
+```
+
+### Silent Re-authentication
+
+```
+REQUEST FLOW:
+├── Make request with access token
+├── 401 Unauthorized?
+│   ├── Have refresh token?
+│   │   ├── Yes → Call /auth/refresh
+│   │   │   ├── Success → Retry original request
+│   │   │   └── Failure → Force logout
+│   │   └── No → Force logout
+│   └── Token just expired (not invalid)
+│       └── Auto-refresh, user doesn't notice
+└── Success → Continue
+```
+
+---
+
+## 6. Error Handling for Mobile
+
+### Mobile-Specific Error Format
+
+```json
+{
+  "error": {
+    "code": "PAYMENT_DECLINED",
+    "message": "Your payment was declined",
+    "user_message": "Please check your card details or try another payment method",
+    "action": {
+      "type": "navigate",
+      "destination": "payment_methods"
+    },
+    "retry": {
+      "allowed": true,
+      "after_seconds": 5
+    }
+  }
+}
+```
+
+### Error Categories
+
+| Code Range | Category | Mobile Handling |
+|------------|----------|-----------------|
+| 400-499 | Client error | Show message, user action needed |
+| 401 | Auth expired | Silent refresh or re-login |
+| 403 | Forbidden | Show upgrade/permission screen |
+| 404 | Not found | Remove from local cache |
+| 409 | Conflict | Show sync conflict UI |
+| 429 | Rate limit | Retry after header, backoff |
+| 500-599 | Server error | Retry with backoff, show "try later" |
+| Network | No connection | Use cached data, queue for sync |
+
+---
+
+## 7. Media & Binary Handling
+
+### Image Optimization
+
+```
+CLIENT REQUEST:
+GET /images/{id}?w=400&h=300&q=80&format=webp
+
+SERVER RESPONSE:
+├── Resize on-the-fly OR use CDN
+├── WebP for Android (smaller)
+├── HEIC for iOS 14+ (if supported)
+├── JPEG fallback
+└── Cache-Control: max-age=31536000
+```
+
+### Chunked Upload (Large Files)
+
+```
+UPLOAD FLOW:
+1. POST /uploads/init
+   { filename, size, mime_type }
+   → { upload_id, chunk_size }
+
+2. PUT /uploads/{upload_id}/chunks/{n}
+   → Upload each chunk (1-5 MB)
+   → Can resume if interrupted
+
+3. POST /uploads/{upload_id}/complete
+   → Server assembles chunks
+   → Return final file URL
+```
+
+### Streaming Audio/Video
+
+```
+REQUIREMENTS:
+├── HLS (HTTP Live Streaming) for iOS
+├── DASH or HLS for Android
+├── Multiple quality levels (adaptive bitrate)
+├── Range request support (seeking)
+└── Offline download chunks
+
+ENDPOINTS:
+GET /media/{id}/manifest.m3u8  → HLS manifest
+GET /media/{id}/segment_{n}.ts → Video segment
+GET /media/{id}/download       → Full file for offline
+```
+
+---
+
+## 8. Security for Mobile
+
+### Device Attestation
+
+```
+VERIFY REAL DEVICE (not emulator/bot):
+├── iOS: DeviceCheck API
+│   └── Server verifies with Apple
+├── Android: Play Integrity API (replaces SafetyNet)
+│   └── Server verifies with Google
+└── Fail closed: Reject if attestation fails
+```
+
+### Request Signing
+
+```
+CLIENT:
+├── Create signature = HMAC(timestamp + path + body, secret)
+├── Send: X-Signature: {signature}
+├── Send: X-Timestamp: {timestamp}
+└── Send: X-Device-ID: {device_id}
+
+SERVER:
+├── Validate timestamp (within 5 minutes)
+├── Recreate signature with same inputs
+├── Compare signatures
+└── Reject if mismatch (tampering detected)
+```
+
+### Rate Limiting
+
+```
+MOBILE-SPECIFIC LIMITS:
+├── Per device (X-Device-ID)
+├── Per user (after auth)
+├── Per endpoint (stricter for sensitive)
+└── Sliding window preferred
+
+HEADERS:
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1609459200
+Retry-After: 60 (when 429)
+```
+
+---
+
+## 9. Monitoring & Analytics
+
+### Required Headers from Mobile
+
+```
+Every mobile request should include:
+├── X-App-Version: 2.1.0
+├── X-Platform: ios | android
+├── X-OS-Version: 17.0
+├── X-Device-Model: iPhone15,2
+├── X-Device-ID: uuid (persistent)
+├── X-Request-ID: uuid (per request, for tracing)
+├── Accept-Language: tr-TR
+└── X-Timezone: Europe/Istanbul
+```
+
+### What to Log
+
+```
+FOR EACH REQUEST:
+├── All headers above
+├── Endpoint, method, status
+├── Response time
+├── Error details (if any)
+└── User ID (if authenticated)
+
+ALERTS:
+├── Error rate > 5% per version
+├── P95 latency > 2 seconds
+├── Specific version crash spike
+├── Auth failure spike (attack?)
+└── Push delivery failure spike
+```
+
+---
+
+## 📝 MOBILE BACKEND CHECKLIST
+
+### Before API Design
+- [ ] Identified mobile-specific requirements?
+- [ ] Planned offline behavior?
+- [ ] Designed sync strategy?
+- [ ] Considered bandwidth constraints?
+
+### For Every Endpoint
+- [ ] Response as small as possible?
+- [ ] Pagination cursor-based?
+- [ ] Proper caching headers?
+- [ ] Mobile error format with actions?
+
+### Authentication
+- [ ] Token refresh implemented?
+- [ ] Silent re-auth flow?
+- [ ] Multi-device logout?
+- [ ] Secure token storage guidance?
+
+### Push Notifications
+- [ ] FCM + APNs configured?
+- [ ] Token lifecycle managed?
+- [ ] Silent vs display push defined?
+- [ ] Sensitive data NOT in push payload?
+
+### Release
+- [ ] Version check endpoint ready?
+- [ ] Feature flags configured?
+- [ ] Force update mechanism?
+- [ ] Monitoring headers required?
+
+---
+
+> **Remember:** Mobile backend must be resilient to bad networks, respect battery life, and handle interrupted sessions gracefully. The client cannot be trusted, but it also cannot be hung up—provide offline capabilities and clear error recovery paths.
+
+
+---
+
+# Mobile Color System Reference
+
+> OLED optimization, dark mode, battery-aware colors, and outdoor visibility.
+> **Color on mobile isn't just aesthetics—it's battery life and usability.**
+
+---
+
+## 1. Mobile Color Fundamentals
+
+### Why Mobile Color is Different
+
+```
+DESKTOP:                           MOBILE:
+├── LCD screens (backlit)          ├── OLED common (self-emissive)
+├── Controlled lighting            ├── Outdoor, bright sun
+├── Stable power                   ├── Battery matters
+├── Personal preference            ├── System-wide dark mode
+└── Static viewing                 └── Variable angles, motion
+```
+
+### Mobile Color Priorities
+
+| Priority | Why |
+|----------|-----|
+| **1. Readability** | Outdoor, variable lighting |
+| **2. Battery efficiency** | OLED = dark mode saves power |
+| **3. System integration** | Dark/light mode support |
+| **4. Semantics** | Error, success, warning colors |
+| **5. Brand** | After functional requirements |
+
+---
+
+## 2. OLED Considerations
+
+### How OLED Differs
+
+```
+LCD (Liquid Crystal Display):
+├── Backlight always on
+├── Black = backlight through dark filter
+├── Energy use = constant
+└── Dark mode = no battery savings
+
+OLED (Organic LED):
+├── Each pixel emits own light
+├── Black = pixel OFF (zero power)
+├── Energy use = brighter pixels use more
+└── Dark mode = significant battery savings
+```
+
+### Battery Savings with OLED
+
+```
+Color energy consumption (relative):
+
+#000000 (True Black)  ████░░░░░░  0%
+#1A1A1A (Near Black)  █████░░░░░  ~15%
+#333333 (Dark Gray)   ██████░░░░  ~30%
+#666666 (Medium Gray) ███████░░░  ~50%
+#FFFFFF (White)       ██████████  100%
+
+Saturated colors also use significant power:
+├── Blue pixels: Most efficient
+├── Green pixels: Medium
+├── Red pixels: Least efficient
+└── Desaturated colors save more
+```
+
+### True Black vs Near Black
+
+```
+#000000 (True Black):
+├── Maximum battery savings
+├── Can cause "black smear" on scroll
+├── Sharp contrast (may be harsh)
+└── Used by Apple in pure dark mode
+
+#121212 or #1A1A1A (Near Black):
+├── Still good battery savings
+├── Smoother scrolling (no smear)
+├── Slightly softer on eyes
+└── Material Design recommendation
+
+RECOMMENDATION: #000000 for backgrounds, #0D0D0D-#1A1A1A for surfaces
+```
+
+---
+
+## 3. Dark Mode Design
+
+### Dark Mode Benefits
+
+```
+Users enable dark mode for:
+├── Battery savings (OLED)
+├── Reduced eye strain (low light)
+├── Personal preference
+├── AMOLED aesthetic
+└── Accessibility (light sensitivity)
+```
+
+### Dark Mode Color Strategy
+
+```
+LIGHT MODE                      DARK MODE
+──────────                      ─────────
+Background: #FFFFFF      →      #000000 or #121212
+Surface:    #F5F5F5      →      #1E1E1E
+Surface 2:  #EEEEEE      →      #2C2C2C
+
+Primary:    #1976D2      →      #90CAF9 (lighter)
+Text:       #212121      →      #E0E0E0 (not pure white)
+Secondary:  #757575      →      #9E9E9E
+
+Elevation in dark mode:
+├── Higher = slightly lighter surface
+├── 0dp →  0% overlay
+├── 4dp →  9% overlay
+├── 8dp →  12% overlay
+└── Creates depth without shadows
+```
+
+### Text Colors in Dark Mode
+
+| Role | Light Mode | Dark Mode |
+|------|------------|-----------|
+| Primary | #000000 (Black) | #E8E8E8 (Not pure white) |
+| Secondary | #666666 | #B0B0B0 |
+| Disabled | #9E9E9E | #6E6E6E |
+| Links | #1976D2 | #8AB4F8 |
+
+### Color Inversion Rules
+
+```
+DON'T just invert colors:
+├── Saturated colors become eye-burning
+├── Semantic colors lose meaning
+├── Brand colors may break
+└── Contrast ratios change unpredictably
+
+DO create intentional dark palette:
+├── Desaturate primary colors
+├── Use lighter tints for emphasis
+├── Maintain semantic color meanings
+├── Check contrast ratios independently
+```
+
+---
+
+## 4. Outdoor Visibility
+
+### The Sunlight Problem
+
+```
+Screen visibility outdoors:
+├── Bright sun washes out low contrast
+├── Glare reduces readability
+├── Polarized sunglasses affect
+└── Users shield screen with hand
+
+Affected elements:
+├── Light gray text on white
+├── Subtle color differences
+├── Low opacity overlays
+└── Pastel colors
+```
+
+### High Contrast Strategies
+
+```
+For outdoor visibility:
+
+MINIMUM CONTRAST RATIOS:
+├── Normal text: 4.5:1 (WCAG AA)
+├── Large text: 3:1 (WCAG AA)
+├── Recommended: 7:1+ (AAA)
+
+AVOID:
+├── #999 on #FFF (fails AA)
+├── #BBB on #FFF (fails)
+├── Pale colors on light backgrounds
+└── Subtle gradients for critical info
+
+DO:
+├── Use system semantic colors
+├── Test in bright environment
+├── Provide high contrast mode
+└── Use solid colors for critical UI
+```
+
+---
+
+## 5. Semantic Colors
+
+### Consistent Meaning
+
+| Semantic | Meaning | iOS Default | Android Default |
+|----------|---------|-------------|-----------------|
+| Error | Problems, destruction | #FF3B30 | #B3261E |
+| Success | Completion, positive | #34C759 | #4CAF50 |
+| Warning | Attention, caution | #FF9500 | #FFC107 |
+| Info | Information | #007AFF | #2196F3 |
+
+### Semantic Color Rules
+
+```
+NEVER use semantic colors for:
+├── Branding (confuses meaning)
+├── Decoration (reduces impact)
+├── Arbitrary styling
+└── Status indicators (use icons too)
+
+ALWAYS:
+├── Pair with icons (colorblind users)
+├── Maintain across light/dark modes
+├── Keep consistent throughout app
+└── Follow platform conventions
+```
+
+### Error State Colors
+
+```
+Error states need:
+├── Red-ish color (semantic)
+├── High contrast against background
+├── Icon reinforcement
+├── Clear text explanation
+
+iOS:
+├── Light: #FF3B30
+├── Dark: #FF453A
+
+Android:
+├── Light: #B3261E
+├── Dark: #F2B8B5 (on error container)
+```
+
+---
+
+## 6. Dynamic Color (Android)
+
+### Material You
+
+```
+Android 12+ Dynamic Color:
+
+User's wallpaper → Color extraction → App theme
+
+Your app automatically gets:
+├── Primary (from wallpaper dominant)
+├── Secondary (complementary)
+├── Tertiary (accent)
+├── Surface colors (neutral, derived)
+├── On-colors (text on each)
+```
+
+### Supporting Dynamic Color
+
+```kotlin
+// Jetpack Compose
+MaterialTheme(
+    colorScheme = dynamicColorScheme()
+        ?: staticColorScheme() // Fallback for older Android
+)
+
+// React Native
+// Limited support - consider react-native-material-you
+```
+
+### Fallback Colors
+
+```
+When dynamic color unavailable:
+├── Android < 12
+├── User disabled
+├── Non-supporting launchers
+
+Provide static color scheme:
+├── Define your brand colors
+├── Test in both modes
+├── Match dynamic color roles
+└── Support light + dark
+```
+
+---
+
+## 7. Color Accessibility
+
+### Colorblind Considerations
+
+```
+~8% of men, ~0.5% of women are colorblind
+
+Types:
+├── Protanopia (red weakness)
+├── Deuteranopia (green weakness)
+├── Tritanopia (blue weakness)
+├── Monochromacy (rare, no color)
+
+Design rules:
+├── Never rely on color alone
+├── Use patterns, icons, text
+├── Test with simulation tools
+├── Avoid red/green distinctions only
+```
+
+### Contrast Testing Tools
+
+```
+Use these to verify:
+├── Built-in accessibility inspector (Xcode)
+├── Accessibility Scanner (Android)
+├── Contrast ratio calculators
+├── Colorblind simulation
+└── Test on actual devices in sunlight
+```
+
+### Sufficient Contrast
+
+```
+WCAG Guidelines:
+
+AA (Minimum)
+├── Normal text: 4.5:1
+├── Large text (18pt+): 3:1
+├── UI components: 3:1
+
+AAA (Enhanced)
+├── Normal text: 7:1
+├── Large text: 4.5:1
+
+Mobile recommendation: Meet AA, aim for AAA
+```
+
+---
+
+## 8. Color Anti-Patterns
+
+### ❌ Common Mistakes
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| **Light gray on white** | Invisible outdoors | Min 4.5:1 contrast |
+| **Pure white in dark mode** | Eye strain | Use #E0E0E0-#F0F0F0 |
+| **Same saturation dark mode** | Garish, glowing | Desaturate colors |
+| **Red/green only indicator** | Colorblind users can't see | Add icons |
+| **Semantic colors for brand** | Confusing meaning | Use neutral for brand |
+| **Ignoring system dark mode** | Jarring experience | Support both modes |
+
+### ❌ AI Color Mistakes
+
+```
+AI tends to:
+├── Use same colors for light/dark
+├── Ignore OLED battery implications
+├── Skip contrast calculations
+├── Default to purple/violet (BANNED)
+├── Use low contrast "aesthetic" grays
+├── Not test in outdoor conditions
+└── Forget colorblind users
+
+RULE: Design for the worst case.
+Test in bright sunlight, with colorblindness simulation.
+```
+
+---
+
+## 9. Color System Checklist
+
+### Before Choosing Colors
+
+- [ ] Light and dark mode variants defined?
+- [ ] Contrast ratios checked (4.5:1+)?
+- [ ] OLED battery considered (dark mode)?
+- [ ] Semantic colors follow conventions?
+- [ ] Colorblind-safe (not color-only indicators)?
+
+### Before Release
+
+- [ ] Tested in bright sunlight?
+- [ ] Tested dark mode on OLED device?
+- [ ] System dark mode respected?
+- [ ] Dynamic color supported (Android)?
+- [ ] Error/success/warning consistent?
+- [ ] All text meets contrast requirements?
+
+---
+
+## 10. Quick Reference
+
+### Dark Mode Backgrounds
+
+```
+True black (OLED max savings): #000000
+Near black (Material):         #121212
+Surface 1:                     #1E1E1E
+Surface 2:                     #2C2C2C
+Surface 3:                     #3C3C3C
+```
+
+### Text on Dark
+
+```
+Primary:   #E0E0E0 to #ECECEC
+Secondary: #A0A0A0 to #B0B0B0
+Disabled:  #606060 to #707070
+```
+
+### Contrast Ratios
+
+```
+Small text:  4.5:1 (minimum)
+Large text:  3:1 (minimum)
+UI elements: 3:1 (minimum)
+Ideal:       7:1 (AAA)
+```
+
+---
+
+> **Remember:** Color on mobile must work in the worst conditions—bright sun, tired eyes, colorblindness, low battery. Pretty colors that fail these tests are useless colors.
+
+
+---
+
+# Mobile Debugging Guide
+
+> **Stop console.log() debugging!**
+> Mobile apps have complex native layers. Text logs are not enough.
+> **This file teaches effective mobile debugging strategies.**
+
+---
+
+## 🧠 MOBILE DEBUGGING MINDSET
+
+```
+Web Debugging:      Mobile Debugging:
+┌──────────────┐    ┌──────────────┐
+│  Browser     │    │  JS Bridge   │
+│  DevTools    │    │  Native UI   │
+│  Network Tab │    │  GPU/Memory  │
+└──────────────┘    │  Threads     │
+                    └──────────────┘
+```
+
+**Key Differences:**
+1.  **Native Layer:** JS code works, but app crashes? It's likely native (Java/Obj-C).
+2.  **Deployment:** You can't just "refresh". State gets lost or stuck.
+3.  **Network:** SSL Pinning, proxy settings are harder.
+4.  **Device Logs:** `adb logcat` and `Console.app` are your truth.
+
+---
+
+## 🚫 AI DEBUGGING ANTI-PATTERNS
+
+| ❌ Default | ✅ Mobile-Correct |
+|------------|-------------------|
+| "Add console.logs" | Use Flipper / Reactotron |
+| "Check network tab" | Use Charles Proxy / Proxyman |
+| "It works on simulator" | **Test on Real Device** (HW specific bugs) |
+| "Reinstall node_modules" | **Clean Native Build** (Gradle/Pod cache) |
+| Ignored native logs | Read `logcat` / Xcode logs |
+
+---
+
+## 1. The Toolset
+
+### ⚡ React Native & Expo
+
+| Tool | Purpose | Best For |
+|------|---------|----------|
+| **Reactotron** | State/API/Redux | JS side debugging |
+| **Flipper** | Layout/Network/db | Native + JS bridge |
+| **Expo Tools** | Element inspector | Quick UI checks |
+
+### 🛠️ Native Layer (The Deep Dive)
+
+| Tool | Platform | Command | Why Use? |
+|------|----------|---------|----------|
+| **Logcat** | Android | `adb logcat` | Native crashes, ANRs |
+| **Console** | iOS | via Xcode | Native exceptions, memory |
+| **Layout Insp.** | Android | Android Studio | UI hierarchy bugs |
+| **View Insp.** | iOS | Xcode | UI hierarchy bugs |
+
+---
+
+## 2. Common Debugging Workflows
+
+### 🕵️ "The App Just Crashed" (Red Screen vs Crash to Home)
+
+**Scenario A: Red Screen (JS Error)**
+- **Cause:** Undefined is not an object, import error.
+- **Fix:** Read the stack trace on screen. It's usually clear.
+
+**Scenario B: Crash to Home Screen (Native Crash)**
+- **Cause:** Native module failure, memory OOM, permission usage without declaration.
+- **Tools:**
+    - **Android:** `adb logcat *:E` (Filter for Errors)
+    - **iOS:** Open Xcode → Window → Devices → View Device Logs
+
+> **💡 Pro Tip:** If app crashes immediately on launch, it's almost 100% a native configuration issue (Info.plist, AndroidManifest.xml).
+
+### 🌐 "API Request Failed" (Network)
+
+**Web:** Open Chrome DevTools → Network.
+**Mobile:** *You usually can't see this easily.*
+
+**Solution 1: Reactotron/Flipper**
+- View network requests in the monitoring app.
+
+**Solution 2: Proxy (Charles/Proxyman)**
+- **Hard but powerful.** See ALL traffic even from native SDKs.
+- Requires installing SSL cert on device.
+
+### 🐢 "The UI is Laggy" (Performance)
+
+**Don't guess.** measure.
+- **React Native:** Performance Monitor (Shake menu).
+- **Android:** "Profile GPU Rendering" in Developer Options.
+- **Issues:**
+    - **JS FPS drop:** Heavy calculation in JS thread.
+    - **UI FPS drop:** Too many views, intricate hierarchy, heavy images.
+
+---
+
+## 3. Platform-Specific Nightmares
+
+### Android
+- **Gradle Sync Fail:** Usually Java version mismatch or duplicate classes.
+- **Emulator Network:** Emulator `localhost` is `10.0.2.2`, NOT `127.0.0.1`.
+- **Cached Builds:** `./gradlew clean` is your best friend.
+
+### iOS
+- **Pod Issues:** `pod deintegrate && pod install`.
+- **Signing Errors:** Check Team ID and Bundle Identifier.
+- **Cache:** Xcode → Product → Clean Build Folder.
+
+---
+
+## 📝 DEBUGGING CHECKLIST
+
+- [ ] **Is it a JS or Native crash?** (Red screen or home screen?)
+- [ ] **Did you clean build?** (Native caches are aggressive)
+- [ ] **Are you on a real device?** (Simulators hide concurrency bugs)
+- [ ] **Did you check the native logs?** (Not just terminal output)
+
+> **Remember:** If JavaScript looks perfect but the app fails, look closer at the Native side.
+
+
+---
+
+# Mobile Design Thinking
+
+> **This file prevents AI from using memorized patterns and forces genuine thinking.**
+> Mechanisms to prevent standard AI training defaults in mobile development.
+> **The mobile equivalent of frontend's layout decomposition approach.**
+
+---
+
+## 🧠 DEEP MOBILE THINKING PROTOCOL
+
+### This Process is Mandatory Before Every Mobile Project
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DEEP MOBILE THINKING                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1️⃣ CONTEXT SCAN                                               │
+│     └── What are my assumptions for this project?               │
+│         └── QUESTION these assumptions                          │
+│                                                                 │
+│  2️⃣ ANTI-DEFAULT ANALYSIS                                      │
+│     └── Am I applying a memorized pattern?                      │
+│         └── Is this pattern REALLY the best for THIS project?   │
+│                                                                 │
+│  3️⃣ PLATFORM DECOMPOSITION                                     │
+│     └── Did I think about iOS and Android separately?           │
+│         └── What are the platform-specific patterns?            │
+│                                                                 │
+│  4️⃣ TOUCH INTERACTION BREAKDOWN                                │
+│     └── Did I analyze each interaction individually?            │
+│         └── Did I apply Fitts' Law, Thumb Zone?                 │
+│                                                                 │
+│  5️⃣ PERFORMANCE IMPACT ANALYSIS                                │
+│     └── Did I consider performance impact of each component?    │
+│         └── Is the default solution performant?                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚫 AI MOBILE DEFAULTS (FORBIDDEN LIST)
+
+### Using These Patterns Automatically is FORBIDDEN!
+
+The following patterns are "defaults" that AIs learned from training data.
+Before using any of these, **QUESTION them and CONSIDER ALTERNATIVES!**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 🚫 AI MOBILE SAFE HARBOR                        │
+│           (Default Patterns - Never Use Without Questioning)    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  NAVIGATION DEFAULTS:                                           │
+│  ├── Tab bar for every project (Would drawer be better?)        │
+│  ├── Fixed 5 tabs (Are 3 enough? For 6+, drawer?)               │
+│  ├── "Home" tab on left (What does user behavior say?)          │
+│  └── Hamburger menu (Is it outdated now?)                       │
+│                                                                 │
+│  STATE MANAGEMENT DEFAULTS:                                     │
+│  ├── Redux everywhere (Is Zustand/Jotai sufficient?)            │
+│  ├── Global state for everything (Isn't local state enough?)   │
+│  ├── Context Provider hell (Is atom-based better?)              │
+│  └── BLoC for every Flutter project (Is Riverpod more modern?)  │
+│                                                                 │
+│  LIST IMPLEMENTATION DEFAULTS:                                  │
+│  ├── FlatList as default (Is FlashList more performant?)        │
+│  ├── windowSize=21 (Is it really needed?)                       │
+│  ├── removeClippedSubviews (Always?)                            │
+│  └── ListView.builder (Is ListView.separated better?)           │
+│                                                                 │
+│  UI PATTERN DEFAULTS:                                           │
+│  ├── FAB bottom-right (Is bottom-left more accessible?)         │
+│  ├── Pull-to-refresh on every list (Is it needed everywhere?)   │
+│  ├── Swipe-to-delete from left (Is right better?)               │
+│  └── Bottom sheet for every modal (Is full screen better?)      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔍 COMPONENT DECOMPOSITION (MANDATORY)
+
+### Decomposition Analysis for Every Screen
+
+Before designing any screen, perform this analysis:
+
+```
+SCREEN: [Screen Name]
+├── PRIMARY ACTION: [What is the main action?]
+│   └── Is it in thumb zone? [Yes/No → Why?]
+│
+├── TOUCH TARGETS: [All tappable elements]
+│   ├── [Element 1]: [Size]pt → Sufficient?
+│   ├── [Element 2]: [Size]pt → Sufficient?
+│   └── Spacing: [Gap]pt → Accidental tap risk?
+│
+├── SCROLLABLE CONTENT:
+│   ├── Is it a list? → FlatList/FlashList [Why this choice?]
+│   ├── Item count: ~[N] → Performance consideration?
+│   └── Fixed height? → Is getItemLayout needed?
+│
+├── STATE REQUIREMENTS:
+│   ├── Is local state sufficient?
+│   ├── Do I need to lift state?
+│   └── Is global required? [Why?]
+│
+├── PLATFORM DIFFERENCES:
+│   ├── iOS: [Anything different needed?]
+│   └── Android: [Anything different needed?]
+│
+├── OFFLINE CONSIDERATION:
+│   ├── Should this screen work offline?
+│   └── Cache strategy: [Yes/No/Which one?]
+│
+└── PERFORMANCE IMPACT:
+    ├── Any heavy components?
+    ├── Is memoization needed?
+    └── Animation performance?
+```
+
+---
+
+## 🎯 PATTERN QUESTIONING MATRIX
+
+Ask these questions for every default pattern:
+
+### Navigation Pattern Questioning
+
+| Assumption | Question | Alternative |
+|------------|----------|-------------|
+| "I'll use tab bar" | How many destinations? | 3 → minimal tabs, 6+ → drawer |
+| "5 tabs" | Are all equally important? | "More" tab? Drawer hybrid? |
+| "Bottom nav" | iPad/tablet support? | Navigation rail alternative |
+| "Stack navigation" | Did I consider deep links? | URL structure = navigation structure |
+
+### State Pattern Questioning
+
+| Assumption | Question | Alternative |
+|------------|----------|-------------|
+| "I'll use Redux" | How complex is the app? | Simple: Zustand, Server: TanStack |
+| "Global state" | Is this state really global? | Local lift, Context selector |
+| "Context Provider" | Will re-render be an issue? | Zustand, Jotai (atom-based) |
+| "BLoC pattern" | Is the boilerplate worth it? | Riverpod (less code) |
+
+### List Pattern Questioning
+
+| Assumption | Question | Alternative |
+|------------|----------|-------------|
+| "FlatList" | Is performance critical? | FlashList (faster) |
+| "Standard renderItem" | Is it memoized? | useCallback + React.memo |
+| "Index key" | Does data order change? | Use item.id |
+| "ListView" | Are there separators? | ListView.separated |
+
+### UI Pattern Questioning
+
+| Assumption | Question | Alternative |
+|------------|----------|-------------|
+| "FAB bottom-right" | User handedness? | Accessibility settings |
+| "Pull-to-refresh" | Does this list need refresh? | Only when necessary |
+| "Modal bottom sheet" | How much content? | Full screen modal might be better |
+| "Swipe actions" | Discoverability? | Visible button alternative |
+
+---
+
+## 🧪 ANTI-MEMORIZATION TEST
+
+### Ask Yourself Before Every Solution
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ANTI-MEMORIZATION CHECKLIST                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  □ Did I pick this solution "because I always do it this way"?  │
+│    → If YES: STOP. Consider alternatives.                       │
+│                                                                 │
+│  □ Is this a pattern I've seen frequently in training data?     │
+│    → If YES: Is it REALLY suitable for THIS project?            │
+│                                                                 │
+│  □ Did I write this solution automatically without thinking?    │
+│    → If YES: Step back, do decomposition.                       │
+│                                                                 │
+│  □ Did I consider an alternative approach?                      │
+│    → If NO: Think of at least 2 alternatives, then decide.      │
+│                                                                 │
+│  □ Did I think platform-specifically?                           │
+│    → If NO: Analyze iOS and Android separately.                 │
+│                                                                 │
+│  □ Did I consider performance impact of this solution?          │
+│    → If NO: What is the memory, CPU, battery impact?            │
+│                                                                 │
+│  □ Is this solution suitable for THIS project's CONTEXT?        │
+│    → If NO: Customize based on context.                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 CONTEXT-BASED DECISION PROTOCOL
+
+### Think Differently Based on Project Type
+
+```
+DETERMINE PROJECT TYPE:
+        │
+        ├── E-Commerce App
+        │   ├── Navigation: Tab (Home, Search, Cart, Account)
+        │   ├── Lists: Product grids (memoized, image optimized)
+        │   ├── Performance: Image caching CRITICAL
+        │   ├── Offline: Cart persistence, product cache
+        │   └── Special: Checkout flow, payment security
+        │
+        ├── Social/Content App
+        │   ├── Navigation: Tab (Feed, Search, Create, Notify, Profile)
+        │   ├── Lists: Infinite scroll, complex items
+        │   ├── Performance: Feed rendering CRITICAL
+        │   ├── Offline: Feed cache, draft posts
+        │   └── Special: Real-time updates, media handling
+        │
+        ├── Productivity/SaaS App
+        │   ├── Navigation: Drawer or adaptive (mobile tab, tablet rail)
+        │   ├── Lists: Data tables, forms
+        │   ├── Performance: Data sync
+        │   ├── Offline: Full offline editing
+        │   └── Special: Conflict resolution, background sync
+        │
+        ├── Utility App
+        │   ├── Navigation: Minimal (stack-only possible)
+        │   ├── Lists: Probably minimal
+        │   ├── Performance: Fast startup
+        │   ├── Offline: Core feature offline
+        │   └── Special: Widget, shortcuts
+        │
+        └── Media/Streaming App
+            ├── Navigation: Tab (Home, Search, Library, Profile)
+            ├── Lists: Horizontal carousels, vertical feeds
+            ├── Performance: Preloading, buffering
+            ├── Offline: Download management
+            └── Special: Background playback, casting
+```
+
+---
+
+## 🔄 INTERACTION BREAKDOWN
+
+### Analysis for Every Gesture
+
+Before adding any gesture:
+
+```
+GESTURE: [Gesture Type]
+├── DISCOVERABILITY:
+│   └── How will users discover this gesture?
+│       ├── Is there a visual hint?
+│       ├── Will it be shown in onboarding?
+│       └── Is there a button alternative? (MANDATORY)
+│
+├── PLATFORM CONVENTION:
+│   ├── What does this gesture mean on iOS?
+│   ├── What does this gesture mean on Android?
+│   └── Am I deviating from platform convention?
+│
+├── ACCESSIBILITY:
+│   ├── Can motor-impaired users perform this gesture?
+│   ├── Is there a VoiceOver/TalkBack alternative?
+│   └── Does it work with switch control?
+│
+├── CONFLICT CHECK:
+│   ├── Does it conflict with system gestures?
+│   │   ├── iOS: Edge swipe back
+│   │   ├── Android: Back gesture
+│   │   └── Home indicator swipe
+│   └── Is it consistent with other app gestures?
+│
+└── FEEDBACK:
+    ├── Is haptic feedback defined?
+    ├── Is visual feedback sufficient?
+    └── Is audio feedback needed?
+```
+
+---
+
+## 🎭 SPIRIT OVER CHECKLIST (Mobile Edition)
+
+### Passing the Checklist is Not Enough!
+
+| ❌ Self-Deception | ✅ Honest Assessment |
+|-------------------|----------------------|
+| "Touch target is 44px" (but on edge, unreachable) | "Can user reach it one-handed?" |
+| "I used FlatList" (but didn't memoize) | "Is scroll smooth?" |
+| "Platform-specific nav" (but only icons differ) | "Does iOS feel like iOS, Android like Android?" |
+| "Offline support exists" (but error message is generic) | "What can user actually do offline?" |
+| "Loading state exists" (but just a spinner) | "Does user know how long to wait?" |
+
+> 🔴 **Passing the checklist is NOT the goal. Creating great mobile UX IS the goal.**
+
+---
+
+## 📝 MOBILE DESIGN COMMITMENT
+
+### Fill This at the Start of Every Mobile Project
+
+```
+📱 MOBILE DESIGN COMMITMENT
+
+Project: _______________
+Platform: iOS / Android / Both
+
+1. Default pattern I will NOT use in this project:
+   └── _______________
+   
+2. Context-specific focus for this project:
+   └── _______________
+
+3. Platform-specific differences I will implement:
+   └── iOS: _______________
+   └── Android: _______________
+
+4. Area I will specifically optimize for performance:
+   └── _______________
+
+5. Unique challenge of this project:
+   └── _______________
+
+🧠 If I can't fill this commitment → I don't understand the project well enough.
+   → Go back, understand context better, ask the user.
+```
+
+---
+
+## 🚨 MANDATORY: Before Every Mobile Work
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRE-WORK VALIDATION                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  □ Did I complete Component Decomposition?                      │
+│  □ Did I fill the Pattern Questioning Matrix?                   │
+│  □ Did I pass the Anti-Memorization Test?                       │
+│  □ Did I make context-based decisions?                          │
+│  □ Did I analyze Interaction Breakdown?                         │
+│  □ Did I fill the Mobile Design Commitment?                     │
+│                                                                 │
+│  ⚠️ Do not write code without completing these!                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+> **Remember:** If you chose a solution "because that's how it's always done," you chose WITHOUT THINKING. Every project is unique. Every context is different. Every user behavior is specific. **THINK, then code.**
+
+
+---
+
+# Mobile Navigation Reference
+
+> Navigation patterns, deep linking, back handling, and tab/stack/drawer decisions.
+> **Navigation is the skeleton of your app—get it wrong and everything feels broken.**
+
+---
+
+## 1. Navigation Selection Decision Tree
+
+```
+WHAT TYPE OF APP?
+        │
+        ├── 3-5 top-level sections (equal importance)
+        │   └── ✅ Tab Bar / Bottom Navigation
+        │       Examples: Social, E-commerce, Utility
+        │
+        ├── Deep hierarchical content (drill down)
+        │   └── ✅ Stack Navigation
+        │       Examples: Settings, Email folders
+        │
+        ├── Many destinations (>5 top-level)
+        │   └── ✅ Drawer Navigation
+        │       Examples: Gmail, complex enterprise
+        │
+        ├── Single linear flow
+        │   └── ✅ Stack only (wizard/onboarding)
+        │       Examples: Checkout, Setup flow
+        │
+        └── Tablet/Foldable
+            └── ✅ Navigation Rail + List-Detail
+                Examples: Mail, Notes on iPad
+```
+
+---
+
+## 2. Tab Bar Navigation
+
+### When to Use
+
+```
+✅ USE Tab Bar when:
+├── 3-5 top-level destinations
+├── Destinations are of equal importance
+├── User frequently switches between them
+├── Each tab has independent navigation stack
+└── App is used in short sessions
+
+❌ AVOID Tab Bar when:
+├── More than 5 destinations
+├── Destinations have clear hierarchy
+├── Tabs would be used very unequally
+└── Content flows in a sequence
+```
+
+### Tab Bar Best Practices
+
+```
+iOS Tab Bar:
+├── Height: 49pt (83pt with home indicator)
+├── Max items: 5
+├── Icons: SF Symbols, 25×25pt
+├── Labels: Always show (accessibility)
+├── Active indicator: Tint color
+
+Android Bottom Navigation:
+├── Height: 80dp
+├── Max items: 5 (3-5 ideal)
+├── Icons: Material Symbols, 24dp
+├── Labels: Always show
+├── Active indicator: Pill shape + filled icon
+```
+
+### Tab State Preservation
+
+```
+RULE: Each tab maintains its own navigation stack.
+
+User journey:
+1. Home tab → Drill into item → Add to cart
+2. Switch to Profile tab
+3. Switch back to Home tab
+→ Should return to "Add to cart" screen, NOT home root
+
+Implementation:
+├── React Navigation: Each tab has own navigator
+├── Flutter: IndexedStack for state preservation
+└── Never reset tab stack on switch
+```
+
+---
+
+## 3. Stack Navigation
+
+### Core Concepts
+
+```
+Stack metaphor: Cards stacked on top of each other
+
+Push: Add screen on top
+Pop: Remove top screen (back)
+Replace: Swap current screen
+Reset: Clear stack, set new root
+
+Visual: New screen slides in from right (LTR)
+Back: Screen slides out to right
+```
+
+### Stack Navigation Patterns
+
+| Pattern | Use Case | Implementation |
+|---------|----------|----------------|
+| **Simple Stack** | Linear flow | Push each step |
+| **Nested Stack** | Sections with sub-navigation | Stack inside tab |
+| **Modal Stack** | Focused tasks | Present modally |
+| **Auth Stack** | Login vs Main | Conditional root |
+
+### Back Button Handling
+
+```
+iOS:
+├── Edge swipe from left (system)
+├── Back button in nav bar (optional)
+├── Interactive pop gesture
+└── Never override swipe back without good reason
+
+Android:
+├── System back button/gesture
+├── Up button in toolbar (optional, for drill-down)
+├── Predictive back animation (Android 14+)
+└── Must handle back correctly (Activity/Fragment)
+
+Cross-Platform Rule:
+├── Back ALWAYS navigates up the stack
+├── Never hijack back for other purposes
+├── Confirm before discarding unsaved data
+└── Deep links should allow full back traversal
+```
+
+---
+
+## 4. Drawer Navigation
+
+### When to Use
+
+```
+✅ USE Drawer when:
+├── More than 5 top-level destinations
+├── Less frequently accessed destinations
+├── Complex app with many features
+├── Need for branding/user info in nav
+└── Tablet/large screen with persistent drawer
+
+❌ AVOID Drawer when:
+├── 5 or fewer destinations (use tabs)
+├── All destinations equally important
+├── Mobile-first simple app
+└── Discoverability is critical (drawer is hidden)
+```
+
+### Drawer Patterns
+
+```
+Modal Drawer:
+├── Opens over content (scrim behind)
+├── Swipe to open from edge
+├── Hamburger icon ( ☰ ) triggers
+└── Most common on mobile
+
+Permanent Drawer:
+├── Always visible (large screens)
+├── Content shifts over
+├── Good for productivity apps
+└── Tablets, desktops
+
+Navigation Rail (Android):
+├── Narrow vertical strip
+├── Icons + optional labels
+├── For tablets in portrait
+└── 80dp width
+```
+
+---
+
+## 5. Modal Navigation
+
+### Modal vs Push
+
+```
+PUSH (Stack):                    MODAL:
+├── Horizontal slide             ├── Vertical slide up (sheet)
+├── Part of hierarchy            ├── Separate task
+├── Back returns                 ├── Dismiss (X) returns
+├── Same navigation context      ├── Own navigation context
+└── "Drill in"                   └── "Focus on task"
+
+USE MODAL for:
+├── Creating new content
+├── Settings/preferences
+├── Completing a transaction
+├── Self-contained workflows
+├── Quick actions
+```
+
+### Modal Types
+
+| Type | iOS | Android | Use Case |
+|------|-----|---------|----------|
+| **Sheet** | `.sheet` | Bottom Sheet | Quick tasks |
+| **Full Screen** | `.fullScreenCover` | Full Activity | Complex forms |
+| **Alert** | Alert | Dialog | Confirmations |
+| **Action Sheet** | Action Sheet | Menu/Bottom Sheet | Choose from options |
+
+### Modal Dismissal
+
+```
+Users expect to dismiss modals by:
+├── Tapping X / Close button
+├── Swiping down (sheet)
+├── Tapping scrim (non-critical)
+├── System back (Android)
+├── Hardware back (old Android)
+
+RULE: Only block dismissal for unsaved data.
+```
+
+---
+
+## 6. Deep Linking
+
+### Why Deep Links from Day One
+
+```
+Deep links enable:
+├── Push notification navigation
+├── Sharing content
+├── Marketing campaigns
+├── Spotlight/Search integration
+├── Widget navigation
+├── External app integration
+
+Building later is HARD:
+├── Requires navigation refactor
+├── Screen dependencies unclear
+├── Parameter passing complex
+└── Always plan deep links at start
+```
+
+### URL Structure
+
+```
+Scheme://host/path?params
+
+Examples:
+├── myapp://product/123
+├── https://myapp.com/product/123 (Universal/App Link)
+├── myapp://checkout?promo=SAVE20
+├── myapp://tab/profile/settings
+
+Hierarchy should match navigation:
+├── myapp://home
+├── myapp://home/product/123
+├── myapp://home/product/123/reviews
+└── URL path = navigation path
+```
+
+### Deep Link Navigation Rules
+
+```
+1. FULL STACK CONSTRUCTION
+   Deep link to myapp://product/123 should:
+   ├── Put Home at root of stack
+   ├── Push Product screen on top
+   └── Back button returns to Home
+
+2. AUTHENTICATION AWARENESS
+   If deep link requires auth:
+   ├── Save intended destination
+   ├── Redirect to login
+   ├── After login, navigate to destination
+
+3. INVALID LINKS
+   If deep link target doesn't exist:
+   ├── Navigate to fallback (home)
+   ├── Show error message
+   └── Never crash or blank screen
+
+4. STATEFUL NAVIGATION
+   Deep link during active session:
+   ├── Don't blow away current stack
+   ├── Push on top OR
+   ├── Ask user if should navigate away
+```
+
+---
+
+## 7. Navigation State Persistence
+
+### What to Persist
+
+```
+SHOULD persist:
+├── Current tab selection
+├── Scroll position in lists
+├── Form draft data
+├── Recent navigation stack
+└── User preferences
+
+SHOULD NOT persist:
+├── Modal states (dialogs)
+├── Temporary UI states
+├── Stale data (refresh on return)
+├── Authentication state (use secure storage)
+```
+
+### Implementation
+
+```javascript
+// React Navigation - State Persistence
+const [isReady, setIsReady] = useState(false);
+const [initialState, setInitialState] = useState();
+
+useEffect(() => {
+  const loadState = async () => {
+    const savedState = await AsyncStorage.getItem('NAV_STATE');
+    if (savedState) setInitialState(JSON.parse(savedState));
+    setIsReady(true);
+  };
+  loadState();
+}, []);
+
+const handleStateChange = (state) => {
+  AsyncStorage.setItem('NAV_STATE', JSON.stringify(state));
+};
+
+<NavigationContainer
+  initialState={initialState}
+  onStateChange={handleStateChange}
+>
+```
+
+---
+
+## 8. Transition Animations
+
+### Platform Defaults
+
+```
+iOS Transitions:
+├── Push: Slide from right
+├── Modal: Slide from bottom (sheet) or fade
+├── Tab switch: Cross-fade
+├── Interactive: Swipe to go back
+
+Android Transitions:
+├── Push: Fade + slide from right
+├── Modal: Slide from bottom
+├── Tab switch: Cross-fade or none
+├── Shared element: Hero animations
+```
+
+### Custom Transitions
+
+```
+When to custom:
+├── Brand identity requires it
+├── Shared element connections
+├── Special reveal effects
+└── Keep it subtle, <300ms
+
+When to use default:
+├── Most of the time
+├── Standard drill-down
+├── Platform consistency
+└── Performance critical paths
+```
+
+### Shared Element Transitions
+
+```
+Connect elements between screens:
+
+Screen A: Product card with image
+            ↓ (tap)
+Screen B: Product detail with same image (expanded)
+
+Image animates from card position to detail position.
+
+Implementation:
+├── React Navigation: shared element library
+├── Flutter: Hero widget
+├── SwiftUI: matchedGeometryEffect
+└── Compose: Shared element transitions
+```
+
+---
+
+## 9. Navigation Anti-Patterns
+
+### ❌ Navigation Sins
+
+| Anti-Pattern | Problem | Solution |
+|--------------|---------|----------|
+| **Inconsistent back** | User confused, can't predict | Always pop stack |
+| **Hidden navigation** | Features undiscoverable | Visible tabs/drawer trigger |
+| **Deep nesting** | User gets lost | Max 3-4 levels, breadcrumbs |
+| **Breaking swipe back** | iOS users frustrated | Never override gesture |
+| **No deep links** | Can't share, bad notifications | Plan from start |
+| **Tab stack reset** | Work lost on switch | Preserve tab states |
+| **Modal for primary flow** | Can't back track | Use stack navigation |
+
+### ❌ AI Navigation Mistakes
+
+```
+AI tends to:
+├── Use modals for everything (wrong)
+├── Forget tab state preservation (wrong)
+├── Skip deep linking (wrong)
+├── Override platform back behavior (wrong)
+├── Reset stack on tab switch (wrong)
+└── Ignore predictive back (Android 14+)
+
+RULE: Use platform navigation patterns.
+Don't reinvent navigation.
+```
+
+---
+
+## 10. Navigation Checklist
+
+### Before Navigation Architecture
+
+- [ ] App type determined (tabs/drawer/stack)
+- [ ] Number of top-level destinations counted
+- [ ] Deep link URL scheme planned
+- [ ] Auth flow integrated with navigation
+- [ ] Tablet/large screen considered
+
+### Before Every Screen
+
+- [ ] Can user navigate back? (not dead end)
+- [ ] Deep link to this screen planned
+- [ ] State preserved on navigate away/back
+- [ ] Transition appropriate for relationship
+- [ ] Auth required? Handled?
+
+### Before Release
+
+- [ ] All deep links tested
+- [ ] Back button works everywhere
+- [ ] Tab states preserved correctly
+- [ ] Edge swipe back works (iOS)
+- [ ] Predictive back works (Android 14+)
+- [ ] Universal/App links configured
+- [ ] Push notification deep links work
+
+---
+
+> **Remember:** Navigation is invisible when done right. Users shouldn't think about HOW to get somewhere—they just get there. If they notice navigation, something is wrong.
+
+
+---
+
+# Mobile Performance Reference
+
+> Deep dive into React Native and Flutter performance optimization, 60fps animations, memory management, and battery considerations.
+> **This file covers the #1 area where AI-generated code FAILS.**
+
+---
+
+## 1. The Mobile Performance Mindset
+
+### Why Mobile Performance is Different
+
+```
+DESKTOP:                          MOBILE:
+├── Unlimited power               ├── Battery matters
+├── Abundant RAM                  ├── RAM is shared, limited
+├── Stable network                ├── Network is unreliable
+├── CPU always available          ├── CPU throttles when hot
+└── User expects fast anyway      └── User expects INSTANT
+```
+
+### Performance Budget Concept
+
+```
+Every frame must complete in:
+├── 60fps → 16.67ms per frame
+├── 120fps (ProMotion) → 8.33ms per frame
+
+If your code takes longer:
+├── Frame drops → Janky scroll/animation
+├── User perceives as "slow" or "broken"
+└── They WILL uninstall your app
+```
+
+---
+
+## 2. React Native Performance
+
+### 🚫 The #1 AI Mistake: ScrollView for Lists
+
+```javascript
+// ❌ NEVER DO THIS - AI's favorite mistake
+<ScrollView>
+  {items.map(item => (
+    <ItemComponent key={item.id} item={item} />
+  ))}
+</ScrollView>
+
+// Why it's catastrophic:
+// ├── Renders ALL items immediately (1000 items = 1000 renders)
+// ├── Memory explodes
+// ├── Initial render takes seconds
+// └── Scroll becomes janky
+
+// ✅ ALWAYS USE FlatList
+<FlatList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={item => item.id}
+/>
+```
+
+### FlatList Optimization Checklist
+
+```javascript
+// ✅ CORRECT: All optimizations applied
+
+// 1. Memoize the item component
+const ListItem = React.memo(({ item }: { item: Item }) => {
+  return (
+    <Pressable style={styles.item}>
+      <Text>{item.title}</Text>
+    </Pressable>
+  );
+});
+
+// 2. Memoize renderItem with useCallback
+const renderItem = useCallback(
+  ({ item }: { item: Item }) => <ListItem item={item} />,
+  [] // Empty deps = never recreated
+);
+
+// 3. Stable keyExtractor (NEVER use index!)
+const keyExtractor = useCallback((item: Item) => item.id, []);
+
+// 4. Provide getItemLayout for fixed-height items
+const getItemLayout = useCallback(
+  (data: Item[] | null, index: number) => ({
+    length: ITEM_HEIGHT, // Fixed height
+    offset: ITEM_HEIGHT * index,
+    index,
+  }),
+  []
+);
+
+// 5. Apply to FlatList
+<FlatList
+  data={items}
+  renderItem={renderItem}
+  keyExtractor={keyExtractor}
+  getItemLayout={getItemLayout}
+  // Performance props
+  removeClippedSubviews={true} // Android: detach off-screen
+  maxToRenderPerBatch={10} // Items per batch
+  windowSize={5} // Render window (5 = 2 screens each side)
+  initialNumToRender={10} // Initial items
+  updateCellsBatchingPeriod={50} // Batching delay
+/>
+```
+
+### Why Each Optimization Matters
+
+| Optimization | What It Prevents | Impact |
+|--------------|------------------|--------|
+| `React.memo` | Re-render on parent change | 🔴 Critical |
+| `useCallback renderItem` | New function every render | 🔴 Critical |
+| Stable `keyExtractor` | Wrong item recycling | 🔴 Critical |
+| `getItemLayout` | Async layout calculation | 🟡 High |
+| `removeClippedSubviews` | Memory from off-screen | 🟡 High |
+| `maxToRenderPerBatch` | Blocking main thread | 🟢 Medium |
+| `windowSize` | Memory usage | 🟢 Medium |
+
+### FlashList: The Better Option
+
+```javascript
+// Consider FlashList for better performance
+import { FlashList } from "@shopify/flash-list";
+
+<FlashList
+  data={items}
+  renderItem={renderItem}
+  estimatedItemSize={ITEM_HEIGHT}
+  keyExtractor={keyExtractor}
+/>
+
+// Benefits over FlatList:
+// ├── Faster recycling
+// ├── Better memory management
+// ├── Simpler API
+// └── Fewer optimization props needed
+```
+
+### Animation Performance
+
+```javascript
+// ❌ JS-driven animation (blocks JS thread)
+Animated.timing(value, {
+  toValue: 1,
+  duration: 300,
+  useNativeDriver: false, // BAD!
+}).start();
+
+// ✅ Native-driver animation (runs on UI thread)
+Animated.timing(value, {
+  toValue: 1,
+  duration: 300,
+  useNativeDriver: true, // GOOD!
+}).start();
+
+// Native driver supports ONLY:
+// ├── transform (translate, scale, rotate)
+// └── opacity
+// 
+// Does NOT support:
+// ├── width, height
+// ├── backgroundColor
+// ├── borderRadius changes
+// └── margin, padding
+```
+
+### Reanimated for Complex Animations
+
+```javascript
+// For animations native driver can't handle, use Reanimated 3
+
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+
+const Component = () => {
+  const offset = useSharedValue(0);
+
+  const animatedStyles = useAnimatedStyle(() => ({
+    transform: [{ translateX: withSpring(offset.value) }],
+  }));
+
+  return <Animated.View style={animatedStyles} />;
+};
+
+// Benefits:
+// ├── Runs on UI thread (60fps guaranteed)
+// ├── Can animate any property
+// ├── Gesture-driven animations
+// └── Worklets for complex logic
+```
+
+### Memory Leak Prevention
+
+```javascript
+// ❌ Memory leak: uncleared interval
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchData();
+  }, 5000);
+  // Missing cleanup!
+}, []);
+
+// ✅ Proper cleanup
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchData();
+  }, 5000);
+  
+  return () => clearInterval(interval); // CLEANUP!
+}, []);
+
+// Common memory leak sources:
+// ├── Timers (setInterval, setTimeout)
+// ├── Event listeners
+// ├── Subscriptions (WebSocket, PubSub)
+// ├── Async operations that update state after unmount
+// └── Image caching without limits
+```
+
+### React Native Performance Checklist
+
+```markdown
+## Before Every List
+- [ ] Using FlatList or FlashList (NOT ScrollView)
+- [ ] renderItem is useCallback memoized
+- [ ] List items are React.memo wrapped
+- [ ] keyExtractor uses stable ID (NOT index)
+- [ ] getItemLayout provided (if fixed height)
+
+## Before Every Animation
+- [ ] useNativeDriver: true (if possible)
+- [ ] Using Reanimated for complex animations
+- [ ] Only animating transform/opacity
+- [ ] Tested on low-end Android device
+
+## Before Any Release
+- [ ] console.log statements removed
+- [ ] Cleanup functions in all useEffects
+- [ ] No memory leaks (test with profiler)
+- [ ] Tested in release build (not dev)
+```
+
+---
+
+## 3. Flutter Performance
+
+### 🚫 The #1 AI Mistake: setState Overuse
+
+```dart
+// ❌ WRONG: setState rebuilds ENTIRE widget tree
+class BadCounter extends StatefulWidget {
+  @override
+  State<BadCounter> createState() => _BadCounterState();
+}
+
+class _BadCounterState extends State<BadCounter> {
+  int _counter = 0;
+  
+  void _increment() {
+    setState(() {
+      _counter++; // This rebuilds EVERYTHING below!
+    });
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('Counter: $_counter'),
+        ExpensiveWidget(), // Rebuilds unnecessarily!
+        AnotherExpensiveWidget(), // Rebuilds unnecessarily!
+      ],
+    );
+  }
+}
+```
+
+### The `const` Constructor Revolution
+
+```dart
+// ✅ CORRECT: const prevents rebuilds
+
+class GoodCounter extends StatefulWidget {
+  const GoodCounter({super.key}); // CONST constructor!
+  
+  @override
+  State<GoodCounter> createState() => _GoodCounterState();
+}
+
+class _GoodCounterState extends State<GoodCounter> {
+  int _counter = 0;
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('Counter: $_counter'),
+        const ExpensiveWidget(), // Won't rebuild!
+        const AnotherExpensiveWidget(), // Won't rebuild!
+      ],
+    );
+  }
+}
+
+// RULE: Add `const` to EVERY widget that doesn't depend on state
+```
+
+### Targeted State Management
+
+```dart
+// ❌ setState rebuilds whole tree
+setState(() => _value = newValue);
+
+// ✅ ValueListenableBuilder: surgical rebuilds
+class TargetedState extends StatelessWidget {
+  final ValueNotifier<int> counter = ValueNotifier(0);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Only this rebuilds when counter changes
+        ValueListenableBuilder<int>(
+          valueListenable: counter,
+          builder: (context, value, child) => Text('$value'),
+          child: const Icon(Icons.star), // Won't rebuild!
+        ),
+        const ExpensiveWidget(), // Never rebuilds
+      ],
+    );
+  }
+}
+```
+
+### Riverpod/Provider Best Practices
+
+```dart
+// ❌ WRONG: Reading entire provider in build
+Widget build(BuildContext context) {
+  final state = ref.watch(myProvider); // Rebuilds on ANY change
+  return Text(state.name);
+}
+
+// ✅ CORRECT: Select only what you need
+Widget build(BuildContext context) {
+  final name = ref.watch(myProvider.select((s) => s.name));
+  return Text(name); // Only rebuilds when name changes
+}
+```
+
+### ListView Optimization
+
+```dart
+// ❌ WRONG: ListView without builder (renders all)
+ListView(
+  children: items.map((item) => ItemWidget(item)).toList(),
+)
+
+// ✅ CORRECT: ListView.builder (lazy rendering)
+ListView.builder(
+  itemCount: items.length,
+  itemBuilder: (context, index) => ItemWidget(items[index]),
+  // Additional optimizations:
+  itemExtent: 56, // Fixed height = faster layout
+  cacheExtent: 100, // Pre-render distance
+)
+
+// ✅ EVEN BETTER: ListView.separated for dividers
+ListView.separated(
+  itemCount: items.length,
+  itemBuilder: (context, index) => ItemWidget(items[index]),
+  separatorBuilder: (context, index) => const Divider(),
+)
+```
+
+### Image Optimization
+
+```dart
+// ❌ WRONG: No caching, full resolution
+Image.network(url)
+
+// ✅ CORRECT: Cached with proper sizing
+CachedNetworkImage(
+  imageUrl: url,
+  width: 100,
+  height: 100,
+  fit: BoxFit.cover,
+  memCacheWidth: 200, // Cache at 2x for retina
+  memCacheHeight: 200,
+  placeholder: (context, url) => const Skeleton(),
+  errorWidget: (context, url, error) => const Icon(Icons.error),
+)
+```
+
+### Dispose Pattern
+
+```dart
+class MyWidget extends StatefulWidget {
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final StreamSubscription _subscription;
+  late final AnimationController _controller;
+  late final TextEditingController _textController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _subscription = stream.listen((_) {});
+    _controller = AnimationController(vsync: this);
+    _textController = TextEditingController();
+  }
+  
+  @override
+  void dispose() {
+    // ALWAYS dispose in reverse order of creation
+    _textController.dispose();
+    _controller.dispose();
+    _subscription.cancel();
+    super.dispose();
+  }
+  
+  @override
+  Widget build(BuildContext context) => Container();
+}
+```
+
+### Flutter Performance Checklist
+
+```markdown
+## Before Every Widget
+- [ ] const constructor added (if no runtime args)
+- [ ] const keywords on static children
+- [ ] Minimal setState scope
+- [ ] Using selectors for provider watches
+
+## Before Every List
+- [ ] Using ListView.builder (NOT ListView with children)
+- [ ] itemExtent provided (if fixed height)
+- [ ] Image caching with size limits
+
+## Before Any Animation
+- [ ] Using Impeller (Flutter 3.16+)
+- [ ] Avoiding Opacity widget (use FadeTransition)
+- [ ] TickerProviderStateMixin for AnimationController
+
+## Before Any Release
+- [ ] All dispose() methods implemented
+- [ ] No print() in production
+- [ ] Tested in profile/release mode
+- [ ] DevTools performance overlay checked
+```
+
+---
+
+## 4. Animation Performance (Both Platforms)
+
+### The 60fps Imperative
+
+```
+Human eye detects:
+├── < 24 fps → "Slideshow" (broken)
+├── 24-30 fps → "Choppy" (uncomfortable)
+├── 30-45 fps → "Noticeably not smooth"
+├── 45-60 fps → "Smooth" (acceptable)
+├── 60 fps → "Buttery" (target)
+└── 120 fps → "Premium" (ProMotion devices)
+
+NEVER ship < 60fps animations.
+```
+
+### GPU vs CPU Animation
+
+```
+GPU-ACCELERATED (FAST):          CPU-BOUND (SLOW):
+├── transform: translate          ├── width, height
+├── transform: scale              ├── top, left, right, bottom
+├── transform: rotate             ├── margin, padding
+├── opacity                       ├── border-radius (animated)
+└── (Composited, off main)        └── box-shadow (animated)
+
+RULE: Only animate transform and opacity.
+Everything else causes layout recalculation.
+```
+
+### Animation Timing Guide
+
+| Animation Type | Duration | Easing |
+|----------------|----------|--------|
+| Micro-interaction | 100-200ms | ease-out |
+| Standard transition | 200-300ms | ease-out |
+| Page transition | 300-400ms | ease-in-out |
+| Complex/dramatic | 400-600ms | ease-in-out |
+| Loading skeletons | 1000-1500ms | linear (loop) |
+
+### Spring Physics
+
+```javascript
+// React Native Reanimated
+withSpring(targetValue, {
+  damping: 15,      // How quickly it settles (higher = faster stop)
+  stiffness: 150,   // How "tight" the spring (higher = faster)
+  mass: 1,          // Weight of the object
+})
+
+// Flutter
+SpringSimulation(
+  SpringDescription(
+    mass: 1,
+    stiffness: 150,
+    damping: 15,
+  ),
+  start,
+  end,
+  velocity,
+)
+
+// Natural feel ranges:
+// Damping: 10-20 (bouncy to settled)
+// Stiffness: 100-200 (loose to tight)
+// Mass: 0.5-2 (light to heavy)
+```
+
+---
+
+## 5. Memory Management
+
+### Common Memory Leaks
+
+| Source | Platform | Solution |
+|--------|----------|----------|
+| Timers | Both | Clear in cleanup/dispose |
+| Event listeners | Both | Remove in cleanup/dispose |
+| Subscriptions | Both | Cancel in cleanup/dispose |
+| Large images | Both | Limit cache, resize |
+| Async after unmount | RN | isMounted check or AbortController |
+| Animation controllers | Flutter | Dispose controllers |
+
+### Image Memory
+
+```
+Image memory = width × height × 4 bytes (RGBA)
+
+1080p image = 1920 × 1080 × 4 = 8.3 MB
+4K image = 3840 × 2160 × 4 = 33.2 MB
+
+10 4K images = 332 MB → App crash!
+
+RULE: Always resize images to display size (or 2-3x for retina).
+```
+
+### Memory Profiling
+
+```
+React Native:
+├── Flipper → Memory tab
+├── Xcode Instruments (iOS)
+└── Android Studio Profiler
+
+Flutter:
+├── DevTools → Memory tab
+├── Observatory
+└── flutter run --profile
+```
+
+---
+
+## 6. Battery Optimization
+
+### Battery Drain Sources
+
+| Source | Impact | Mitigation |
+|--------|--------|------------|
+| **Screen on** | 🔴 Highest | Dark mode on OLED |
+| **GPS continuous** | 🔴 Very high | Use significant change |
+| **Network requests** | 🟡 High | Batch, cache aggressively |
+| **Animations** | 🟡 Medium | Reduce when low battery |
+| **Background work** | 🟡 Medium | Defer non-critical |
+| **CPU computation** | 🟢 Lower | Offload to backend |
+
+### OLED Battery Saving
+
+```
+OLED screens: Black pixels = OFF = 0 power
+
+Dark mode savings:
+├── True black (#000000) → Maximum savings
+├── Dark gray (#1a1a1a) → Slight savings
+├── Any color → Some power
+└── White (#FFFFFF) → Maximum power
+
+RULE: On dark mode, use true black for backgrounds.
+```
+
+### Background Task Guidelines
+
+```
+iOS:
+├── Background refresh: Limited, system-scheduled
+├── Push notifications: Use for important updates
+├── Background modes: Location, audio, VoIP only
+└── Background tasks: Max ~30 seconds
+
+Android:
+├── WorkManager: System-scheduled, battery-aware
+├── Foreground service: Visible to user, continuous
+├── JobScheduler: Batch network operations
+└── Doze mode: Respect it, batch operations
+```
+
+---
+
+## 7. Network Performance
+
+### Offline-First Architecture
+
+```
+                    ┌──────────────┐
+                    │     UI       │
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │   Cache      │ ← Read from cache FIRST
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │   Network    │ ← Update cache from network
+                    └──────────────┘
+
+Benefits:
+├── Instant UI (no loading spinner for cached data)
+├── Works offline
+├── Reduces data usage
+└── Better UX on slow networks
+```
+
+### Request Optimization
+
+```
+BATCH: Combine multiple requests into one
+├── 10 small requests → 1 batch request
+├── Reduces connection overhead
+└── Better for battery (radio on once)
+
+CACHE: Don't re-fetch unchanged data
+├── ETag/If-None-Match headers
+├── Cache-Control headers
+└── Stale-while-revalidate pattern
+
+COMPRESS: Reduce payload size
+├── gzip/brotli compression
+├── Request only needed fields (GraphQL)
+└── Paginate large lists
+```
+
+---
+
+## 8. Performance Testing
+
+### What to Test
+
+| Metric | Target | Tool |
+|--------|--------|------|
+| **Frame rate** | ≥ 60fps | Performance overlay |
+| **Memory** | Stable, no growth | Profiler |
+| **Cold start** | < 2s | Manual timing |
+| **TTI (Time to Interactive)** | < 3s | Lighthouse |
+| **List scroll** | No jank | Manual feel |
+| **Animation smoothness** | No drops | Performance monitor |
+
+### Test on Real Devices
+
+```
+⚠️ NEVER trust only:
+├── Simulator/emulator (faster than real)
+├── Dev mode (slower than release)
+├── High-end devices only
+
+✅ ALWAYS test on:
+├── Low-end Android (< $200 phone)
+├── Older iOS device (iPhone 8 or SE)
+├── Release/profile build
+└── With real data (not 10 items)
+```
+
+### Performance Monitoring Checklist
+
+```markdown
+## During Development
+- [ ] Performance overlay enabled
+- [ ] Watching for dropped frames
+- [ ] Memory usage stable
+- [ ] No console warnings about performance
+
+## Before Release
+- [ ] Tested on low-end device
+- [ ] Profiled memory over extended use
+- [ ] Cold start time measured
+- [ ] List scroll tested with 1000+ items
+- [ ] Animations tested at 60fps
+- [ ] Network tested on slow 3G
+```
+
+---
+
+## 9. Quick Reference Card
+
+### React Native Essentials
+
+```javascript
+// List: Always use
+<FlatList
+  data={data}
+  renderItem={useCallback(({item}) => <MemoItem item={item} />, [])}
+  keyExtractor={useCallback(item => item.id, [])}
+  getItemLayout={useCallback((_, i) => ({length: H, offset: H*i, index: i}), [])}
+/>
+
+// Animation: Always native
+useNativeDriver: true
+
+// Cleanup: Always present
+useEffect(() => {
+  return () => cleanup();
+}, []);
+```
+
+### Flutter Essentials
+
+```dart
+// Widgets: Always const
+const MyWidget()
+
+// Lists: Always builder
+ListView.builder(itemBuilder: ...)
+
+// State: Always targeted
+ValueListenableBuilder() or ref.watch(provider.select(...))
+
+// Dispose: Always cleanup
+@override
+void dispose() {
+  controller.dispose();
+  super.dispose();
+}
+```
+
+### Animation Targets
+
+```
+Transform/Opacity only ← What to animate
+16.67ms per frame ← Time budget
+60fps minimum ← Target
+Low-end Android ← Test device
+```
+
+---
+
+> **Remember:** Performance is not optimization—it's baseline quality. A slow app is a broken app. Test on the worst device your users have, not the best device you have.
+
+
+---
+
+# Mobile Testing Patterns
+
+> **Mobile testing is NOT web testing. Different constraints, different strategies.**
+> This file teaches WHEN to use each testing approach and WHY.
+> **Code examples are minimal - focus on decision-making.**
+
+---
+
+## 🧠 MOBILE TESTING MINDSET
+
+```
+Mobile testing differs from web:
+├── Real devices matter (emulators hide bugs)
+├── Platform differences (iOS vs Android behavior)
+├── Network conditions vary wildly
+├── Battery/performance under test
+├── App lifecycle (background, killed, restored)
+├── Permissions and system dialogs
+└── Touch interactions vs clicks
+```
+
+---
+
+## 🚫 AI MOBILE TESTING ANTI-PATTERNS
+
+| ❌ AI Default | Why It's Wrong | ✅ Mobile-Correct |
+|---------------|----------------|-------------------|
+| Jest-only testing | Misses native layer | Jest + E2E on device |
+| Enzyme patterns | Deprecated, web-focused | React Native Testing Library |
+| Browser-based E2E (Cypress) | Can't test native features | Detox / Maestro |
+| Mock everything | Misses integration bugs | Real device testing |
+| Ignore platform tests | iOS/Android differ | Platform-specific cases |
+| Skip performance tests | Mobile perf is critical | Profile on low-end device |
+| Test only happy path | Mobile has more edge cases | Offline, permissions, interrupts |
+| 100% unit test coverage | False security | Pyramid balance |
+| Copy web testing patterns | Different environment | Mobile-specific tools |
+
+---
+
+## 1. Testing Tool Selection
+
+### Decision Tree
+
+```
+WHAT ARE YOU TESTING?
+        │
+        ├── Pure functions, utilities, helpers
+        │   └── Jest (unit tests)
+        │       └── No special mobile setup needed
+        │
+        ├── Individual components (isolated)
+        │   ├── React Native → React Native Testing Library
+        │   └── Flutter → flutter_test (widget tests)
+        │
+        ├── Components with hooks, context, navigation
+        │   ├── React Native → RNTL + mocked providers
+        │   └── Flutter → integration_test package
+        │
+        ├── Full user flows (login, checkout, etc.)
+        │   ├── Detox (React Native, fast, reliable)
+        │   ├── Maestro (Cross-platform, YAML-based)
+        │   └── Appium (Legacy, slow, last resort)
+        │
+        └── Performance, memory, battery
+            ├── Flashlight (RN performance)
+            ├── Flutter DevTools
+            └── Real device profiling (Xcode/Android Studio)
+```
+
+### Tool Comparison
+
+| Tool | Platform | Speed | Reliability | Use When |
+|------|----------|-------|-------------|----------|
+| **Jest** | RN | ⚡⚡⚡ | ⚡⚡⚡ | Unit tests, logic |
+| **RNTL** | RN | ⚡⚡⚡ | ⚡⚡ | Component tests |
+| **flutter_test** | Flutter | ⚡⚡⚡ | ⚡⚡⚡ | Widget tests |
+| **Detox** | RN | ⚡⚡ | ⚡⚡⚡ | E2E, critical flows |
+| **Maestro** | Both | ⚡⚡ | ⚡⚡ | E2E, cross-platform |
+| **Appium** | Both | ⚡ | ⚡ | Legacy, last resort |
+
+---
+
+## 2. Testing Pyramid for Mobile
+
+```
+                    ┌───────────────┐
+                    │    E2E Tests  │  10%
+                    │  (Real device) │  Slow, expensive, essential
+                    ├───────────────┤
+                    │  Integration  │  20%
+                    │    Tests      │  Component + context
+                    ├───────────────┤
+                    │  Component    │  30%
+                    │    Tests      │  Isolated UI
+                    ├───────────────┤
+                    │   Unit Tests  │  40%
+                    │    (Jest)     │  Pure logic
+                    └───────────────┘
+```
+
+### Why This Distribution?
+
+| Level | Why This % |
+|-------|------------|
+| **E2E 10%** | Slow, flaky, but catches integration bugs |
+| **Integration 20%** | Tests real user flows without full app |
+| **Component 30%** | Fast feedback on UI changes |
+| **Unit 40%** | Fastest, most stable, logic coverage |
+
+> 🔴 **If you have 90% unit tests and 0% E2E, you're testing the wrong things.**
+
+---
+
+## 3. What to Test at Each Level
+
+### Unit Tests (Jest)
+
+```
+✅ TEST:
+├── Utility functions (formatDate, calculatePrice)
+├── State reducers (Redux, Zustand stores)
+├── API response transformers
+├── Validation logic
+└── Business rules
+
+❌ DON'T TEST:
+├── Component rendering (use component tests)
+├── Navigation (use integration tests)
+├── Native modules (mock them)
+└── Third-party libraries
+```
+
+### Component Tests (RNTL / flutter_test)
+
+```
+✅ TEST:
+├── Component renders correctly
+├── User interactions (tap, type, swipe)
+├── Loading/error/empty states
+├── Accessibility labels exist
+└── Props change behavior
+
+❌ DON'T TEST:
+├── Internal implementation details
+├── Snapshot everything (only key components)
+├── Styling specifics (brittle)
+└── Third-party component internals
+```
+
+### Integration Tests
+
+```
+✅ TEST:
+├── Form submission flows
+├── Navigation between screens
+├── State persistence across screens
+├── API integration (with mocked server)
+└── Context/provider interactions
+
+❌ DON'T TEST:
+├── Every possible path (use unit tests)
+├── Third-party services (mock them)
+└── Backend logic (backend tests)
+```
+
+### E2E Tests
+
+```
+✅ TEST:
+├── Critical user journeys (login, purchase, signup)
+├── Offline → online transitions
+├── Deep link handling
+├── Push notification navigation
+├── Permission flows
+└── Payment flows
+
+❌ DON'T TEST:
+├── Every edge case (too slow)
+├── Visual regression (use snapshot tests)
+├── Non-critical features
+└── Backend-only logic
+```
+
+---
+
+## 4. Platform-Specific Testing
+
+### What Differs Between iOS and Android?
+
+| Area | iOS Behavior | Android Behavior | Test Both? |
+|------|--------------|------------------|------------|
+| **Back navigation** | Edge swipe | System back button | ✅ YES |
+| **Permissions** | Ask once, settings | Ask each time, rationale | ✅ YES |
+| **Keyboard** | Different appearance | Different behavior | ✅ YES |
+| **Date picker** | Wheel/modal | Material dialog | ⚠️ If custom UI |
+| **Push format** | APNs payload | FCM payload | ✅ YES |
+| **Deep links** | Universal Links | App Links | ✅ YES |
+| **Gestures** | Some unique | Material gestures | ⚠️ If custom |
+
+### Platform Testing Strategy
+
+```
+FOR EACH PLATFORM:
+├── Run unit tests (same on both)
+├── Run component tests (same on both)
+├── Run E2E on REAL DEVICE
+│   ├── iOS: iPhone (not just simulator)
+│   └── Android: Mid-range device (not flagship)
+└── Test platform-specific features separately
+```
+
+---
+
+## 5. Offline & Network Testing
+
+### Offline Scenarios to Test
+
+| Scenario | What to Verify |
+|----------|----------------|
+| Start app offline | Shows cached data or offline message |
+| Go offline mid-action | Action queued, not lost |
+| Come back online | Queue synced, no duplicates |
+| Slow network (2G) | Loading states, timeouts work |
+| Flaky network | Retry logic, error recovery |
+
+### How to Test Network Conditions
+
+```
+APPROACH:
+├── Unit tests: Mock NetInfo, test logic
+├── Integration: Mock API responses, test UI
+├── E2E (Detox): Use device.setURLBlacklist()
+├── E2E (Maestro): Use network conditions
+└── Manual: Use Charles Proxy / Network Link Conditioner
+```
+
+---
+
+## 6. Performance Testing
+
+### What to Measure
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| **App startup** | < 2 seconds | Profiler, Flashlight |
+| **Screen transition** | < 300ms | React DevTools |
+| **List scroll** | 60 FPS | Profiler, feel |
+| **Memory** | Stable, no leaks | Instruments / Android Profiler |
+| **Bundle size** | Minimize | Metro bundler analysis |
+
+### When to Performance Test
+
+```
+PERFORMANCE TEST:
+├── Before release (required)
+├── After adding heavy features
+├── After upgrading dependencies
+├── When users report slowness
+└── On CI (optional, automated benchmarks)
+
+WHERE TO TEST:
+├── Real device (REQUIRED)
+├── Low-end device (Galaxy A series, old iPhone)
+├── NOT on emulator (lies about performance)
+└── With production-like data (not 3 items)
+```
+
+---
+
+## 7. Accessibility Testing
+
+### What to Verify
+
+| Element | Check |
+|---------|-------|
+| Interactive elements | Have accessibilityLabel |
+| Images | Have alt text or decorative flag |
+| Forms | Labels linked to inputs |
+| Buttons | Role = button |
+| Touch targets | ≥ 44x44 (iOS) / 48x48 (Android) |
+| Color contrast | WCAG AA minimum |
+
+### How to Test
+
+```
+AUTOMATED:
+├── React Native: jest-axe
+├── Flutter: Accessibility checker in tests
+└── Lint rules for missing labels
+
+MANUAL:
+├── Enable VoiceOver (iOS) / TalkBack (Android)
+├── Navigate entire app with screen reader
+├── Test with increased text size
+└── Test with reduced motion
+```
+
+---
+
+## 8. CI/CD Integration
+
+### What to Run Where
+
+| Stage | Tests | Devices |
+|-------|-------|---------|
+| **PR** | Unit + Component | None (fast) |
+| **Merge to main** | + Integration | Simulator/Emulator |
+| **Pre-release** | + E2E | Real devices (farm) |
+| **Nightly** | Full suite | Device farm |
+
+### Device Farm Options
+
+| Service | Pros | Cons |
+|---------|------|------|
+| **Firebase Test Lab** | Free tier, Google devices | Android focus |
+| **AWS Device Farm** | Wide selection | Expensive |
+| **BrowserStack** | Good UX | Expensive |
+| **Local devices** | Free, reliable | Limited variety |
+
+---
+
+## 📝 MOBILE TESTING CHECKLIST
+
+### Before PR
+- [ ] Unit tests for new logic
+- [ ] Component tests for new UI
+- [ ] No console.logs in tests
+- [ ] Tests pass on CI
+
+### Before Release
+- [ ] E2E on real iOS device
+- [ ] E2E on real Android device
+- [ ] Tested on low-end device
+- [ ] Offline scenarios verified
+- [ ] Performance acceptable
+- [ ] Accessibility verified
+
+### What to Skip (Consciously)
+- [ ] 100% coverage (aim for meaningful coverage)
+- [ ] Every visual permutation (use snapshots sparingly)
+- [ ] Third-party library internals
+- [ ] Backend logic (separate tests)
+
+---
+
+## 🎯 Testing Questions to Ask
+
+Before writing tests, answer:
+
+1. **What could break?** → Test that
+2. **What's critical for users?** → E2E test that
+3. **What's complex logic?** → Unit test that
+4. **What's platform-specific?** → Test on both platforms
+5. **What happens offline?** → Test that scenario
+
+> **Remember:** Good mobile testing is about testing the RIGHT things, not EVERYTHING. A flaky E2E test is worse than no test. A failing unit test that catches a bug is worth 100 passing trivial tests.
+
+
+---
+
+# Mobile Typography Reference
+
+> Type scale, system fonts, Dynamic Type, accessibility, and dark mode typography.
+> **Typography failures are the #1 cause of unreadable mobile apps.**
+
+---
+
+## 1. Mobile Typography Fundamentals
+
+### Why Mobile Type is Different
+
+```
+DESKTOP:                        MOBILE:
+├── 20-30" viewing distance     ├── 12-15" viewing distance
+├── Large viewport              ├── Small viewport, narrow
+├── Hover for details           ├── Tap/scroll for details
+├── Controlled lighting         ├── Variable (outdoor, etc.)
+├── Fixed font size             ├── User-controlled sizing
+└── Long reading sessions       └── Quick scanning
+```
+
+### Mobile Type Rules
+
+| Rule | Desktop | Mobile |
+|------|---------|--------|
+| **Minimum body size** | 14px | 16px (14pt/14sp) |
+| **Maximum line length** | 75 characters | 40-60 characters |
+| **Line height** | 1.4-1.5 | 1.4-1.6 (more generous) |
+| **Font weight** | Varies | Regular dominant, bold sparingly |
+| **Contrast** | AA (4.5:1) | AA minimum, AAA preferred |
+
+---
+
+## 2. System Fonts
+
+### iOS: SF Pro Family
+
+```
+San Francisco (SF) Family:
+├── SF Pro Display: Large text (≥ 20pt)
+├── SF Pro Text: Body text (< 20pt)
+├── SF Pro Rounded: Friendly contexts
+├── SF Mono: Monospace
+└── SF Compact: Apple Watch, compact UI
+
+Features:
+├── Optical sizing (auto-adjusts)
+├── Dynamic tracking (spacing)
+├── Tabular/proportional figures
+├── Excellent legibility
+```
+
+### Android: Roboto Family
+
+```
+Roboto Family:
+├── Roboto: Default sans-serif
+├── Roboto Flex: Variable font
+├── Roboto Serif: Serif option
+├── Roboto Mono: Monospace
+├── Roboto Condensed: Narrow spaces
+
+Features:
+├── Optimized for screens
+├── Wide language support
+├── Multiple weights
+├── Good at small sizes
+```
+
+### When to Use System Fonts
+
+```
+✅ USE system fonts when:
+├── Brand doesn't mandate custom font
+├── Reading efficiency is priority
+├── App feels native/integrated important
+├── Performance is critical
+├── Wide language support needed
+
+❌ AVOID system fonts when:
+├── Brand identity requires custom
+├── Design differentiation needed
+├── Editorial/magazine style
+└── (But still support accessibility)
+```
+
+### Custom Font Considerations
+
+```
+If using custom fonts:
+├── Include all weights needed
+├── Subset for file size
+├── Test at all Dynamic Type sizes
+├── Provide fallback to system
+├── Test rendering quality
+└── Check language support
+```
+
+---
+
+## 3. Type Scale
+
+### iOS Type Scale (Built-in)
+
+| Style | Size | Weight | Line Height |
+|-------|------|--------|-------------|
+| Large Title | 34pt | Bold | 41pt |
+| Title 1 | 28pt | Bold | 34pt |
+| Title 2 | 22pt | Bold | 28pt |
+| Title 3 | 20pt | Semibold | 25pt |
+| Headline | 17pt | Semibold | 22pt |
+| Body | 17pt | Regular | 22pt |
+| Callout | 16pt | Regular | 21pt |
+| Subhead | 15pt | Regular | 20pt |
+| Footnote | 13pt | Regular | 18pt |
+| Caption 1 | 12pt | Regular | 16pt |
+| Caption 2 | 11pt | Regular | 13pt |
+
+### Android Type Scale (Material 3)
+
+| Role | Size | Weight | Line Height |
+|------|------|--------|-------------|
+| Display Large | 57sp | 400 | 64sp |
+| Display Medium | 45sp | 400 | 52sp |
+| Display Small | 36sp | 400 | 44sp |
+| Headline Large | 32sp | 400 | 40sp |
+| Headline Medium | 28sp | 400 | 36sp |
+| Headline Small | 24sp | 400 | 32sp |
+| Title Large | 22sp | 400 | 28sp |
+| Title Medium | 16sp | 500 | 24sp |
+| Title Small | 14sp | 500 | 20sp |
+| Body Large | 16sp | 400 | 24sp |
+| Body Medium | 14sp | 400 | 20sp |
+| Body Small | 12sp | 400 | 16sp |
+| Label Large | 14sp | 500 | 20sp |
+| Label Medium | 12sp | 500 | 16sp |
+| Label Small | 11sp | 500 | 16sp |
+
+### Creating Custom Scale
+
+```
+If creating custom scale, use modular ratio:
+
+Recommended ratios:
+├── 1.125 (Major second): Dense UI
+├── 1.200 (Minor third): Compact
+├── 1.250 (Major third): Balanced (common)
+├── 1.333 (Perfect fourth): Spacious
+└── 1.500 (Perfect fifth): Dramatic
+
+Example with 1.25 ratio, 16px base:
+├── xs: 10px (16 ÷ 1.25 ÷ 1.25)
+├── sm: 13px (16 ÷ 1.25)
+├── base: 16px
+├── lg: 20px (16 × 1.25)
+├── xl: 25px (16 × 1.25 × 1.25)
+├── 2xl: 31px
+├── 3xl: 39px
+└── 4xl: 49px
+```
+
+---
+
+## 4. Dynamic Type / Text Scaling
+
+### iOS Dynamic Type (MANDATORY)
+
+```swift
+// ❌ WRONG: Fixed size (doesn't scale)
+Text("Hello")
+    .font(.system(size: 17))
+
+// ✅ CORRECT: Dynamic Type
+Text("Hello")
+    .font(.body) // Scales with user setting
+
+// Custom font with scaling
+Text("Hello")
+    .font(.custom("MyFont", size: 17, relativeTo: .body))
+```
+
+### Android Text Scaling (MANDATORY)
+
+```
+ALWAYS use sp for text:
+├── sp = Scale-independent pixels
+├── Scales with user font preference
+├── dp does NOT scale (don't use for text)
+
+User can scale from 85% to 200%:
+├── Default (100%): 14sp = 14dp
+├── Largest (200%): 14sp = 28dp
+
+Test at 200%!
+```
+
+### Scaling Challenges
+
+```
+Problems at large text sizes:
+├── Text overflows containers
+├── Buttons become too tall
+├── Icons look small relative to text
+├── Layouts break
+
+Solutions:
+├── Use flexible containers (not fixed height)
+├── Allow text wrapping
+├── Scale icons with text
+├── Test at extremes during development
+├── Use scrollable containers for long text
+```
+
+---
+
+## 5. Typography Accessibility
+
+### Minimum Sizes
+
+| Element | Minimum | Recommended |
+|---------|---------|-------------|
+| Body text | 14px/pt/sp | 16px/pt/sp |
+| Secondary text | 12px/pt/sp | 13-14px/pt/sp |
+| Captions | 11px/pt/sp | 12px/pt/sp |
+| Buttons | 14px/pt/sp | 14-16px/pt/sp |
+| **Nothing smaller** | 11px | - |
+
+### Contrast Requirements (WCAG)
+
+```
+Normal text (< 18pt or < 14pt bold):
+├── AA: 4.5:1 ratio minimum
+├── AAA: 7:1 ratio recommended
+
+Large text (≥ 18pt or ≥ 14pt bold):
+├── AA: 3:1 ratio minimum
+├── AAA: 4.5:1 ratio recommended
+
+Logos/decorative: No requirement
+```
+
+### Line Height for Accessibility
+
+```
+WCAG Success Criterion 1.4.12:
+
+Line height (line spacing): ≥ 1.5×
+Paragraph spacing: ≥ 2× font size
+Letter spacing: ≥ 0.12× font size
+Word spacing: ≥ 0.16× font size
+
+Mobile recommendation:
+├── Body: 1.4-1.6 line height
+├── Headings: 1.2-1.3 line height
+├── Never below 1.2
+```
+
+---
+
+## 6. Dark Mode Typography
+
+### Color Adjustments
+
+```
+Light Mode:               Dark Mode:
+├── Black text (#000)     ├── White/light gray (#E0E0E0)
+├── High contrast         ├── Slightly reduced contrast
+├── Full saturation       ├── Desaturated colors
+└── Dark = emphasis       └── Light = emphasis
+
+RULE: Don't use pure white (#FFF) on dark.
+Use off-white (#E0E0E0 to #F0F0F0) to reduce eye strain.
+```
+
+### Dark Mode Hierarchy
+
+| Level | Light Mode | Dark Mode |
+|-------|------------|-----------|
+| Primary text | #000000 | #E8E8E8 |
+| Secondary text | #666666 | #A0A0A0 |
+| Tertiary text | #999999 | #707070 |
+| Disabled text | #CCCCCC | #505050 |
+
+### Weight in Dark Mode
+
+```
+Dark mode text appears thinner due to halation
+(light bleeding into dark background)
+
+Consider:
+├── Using medium weight for body (instead of regular)
+├── Increasing letter-spacing slightly
+├── Testing on actual OLED displays
+└── Using slightly bolder weight than light mode
+```
+
+---
+
+## 7. Typography Anti-Patterns
+
+### ❌ Common Mistakes
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| **Fixed font sizes** | Ignores accessibility | Use dynamic sizing |
+| **Too small text** | Unreadable | Min 14pt/sp |
+| **Low contrast** | Invisible in sunlight | Min 4.5:1 |
+| **Long lines** | Hard to track | Max 60 chars |
+| **Tight line height** | Cramped, hard to read | Min 1.4× |
+| **Too many sizes** | Visual chaos | Max 5-7 sizes |
+| **All caps body** | Hard to read | Headlines only |
+| **Light gray on white** | Impossible in bright light | Higher contrast |
+
+### ❌ AI Typography Mistakes
+
+```
+AI tends to:
+├── Use fixed px values instead of pt/sp
+├── Skip Dynamic Type support
+├── Use too small text (12-14px body)
+├── Ignore line height settings
+├── Use low contrast "aesthetic" grays
+├── Apply same scale to mobile as desktop
+└── Skip testing at large text sizes
+
+RULE: Typography must SCALE.
+Test at smallest and largest settings.
+```
+
+---
+
+## 8. Font Loading & Performance
+
+### Font File Optimization
+
+```
+Font file sizes matter on mobile:
+├── Full font: 100-300KB per weight
+├── Subset (Latin): 15-40KB per weight
+├── Variable font: 100-200KB (all weights)
+
+Recommendations:
+├── Subset to needed characters
+├── Use WOFF2 format
+├── Max 2-3 font files
+├── Consider variable fonts
+├── Cache fonts appropriately
+```
+
+### Loading Strategy
+
+```
+1. SYSTEM FONT FALLBACK
+   Show system font → swap when custom loads
+   
+2. FONT DISPLAY SWAP
+   font-display: swap (CSS)
+   
+3. PRELOAD CRITICAL FONTS
+   Preload fonts needed above the fold
+   
+4. DON'T BLOCK RENDER
+   Don't wait for fonts to show content
+```
+
+---
+
+## 9. Typography Checklist
+
+### Before Any Text Design
+
+- [ ] Body text ≥ 16px/pt/sp?
+- [ ] Line height ≥ 1.4?
+- [ ] Line length ≤ 60 chars?
+- [ ] Type scale defined (max 5-7 sizes)?
+- [ ] Using pt (iOS) or sp (Android)?
+
+### Before Release
+
+- [ ] Dynamic Type tested (iOS)?
+- [ ] Font scaling tested at 200% (Android)?
+- [ ] Dark mode contrast checked?
+- [ ] Sunlight readability tested?
+- [ ] All text has proper hierarchy?
+- [ ] Custom fonts have fallbacks?
+- [ ] Long text scrolls properly?
+
+---
+
+## 10. Quick Reference
+
+### Typography Tokens
+
+```
+// iOS
+.largeTitle  // 34pt, Bold
+.title       // 28pt, Bold
+.title2      // 22pt, Bold
+.title3      // 20pt, Semibold
+.headline    // 17pt, Semibold
+.body        // 17pt, Regular
+.subheadline // 15pt, Regular
+.footnote    // 13pt, Regular
+.caption     // 12pt, Regular
+
+// Android (Material 3)
+displayLarge   // 57sp
+headlineLarge  // 32sp
+titleLarge     // 22sp
+bodyLarge      // 16sp
+labelLarge     // 14sp
+```
+
+### Minimum Sizes
+
+```
+Body:       14-16pt/sp (16 preferred)
+Secondary:  12-13pt/sp
+Caption:    11-12pt/sp
+Nothing:    < 11pt/sp
+```
+
+### Line Height
+
+```
+Headings:  1.1-1.3
+Body:      1.4-1.6
+Long text: 1.5-1.75
+```
+
+---
+
+> **Remember:** If users can't read your text, your app is broken. Typography isn't decoration—it's the primary interface. Test on real devices, in real conditions, with accessibility settings enabled.
+
+
+---
+
+# Android Platform Guidelines
+
+> Material Design 3 essentials, Android design conventions, Roboto typography, and native patterns.
+> **Read this file when building for Android devices.**
+
+---
+
+## 1. Material Design 3 Philosophy
+
+### Core Material Principles
+
+```
+MATERIAL AS METAPHOR:
+├── Surfaces exist in 3D space
+├── Light and shadow define hierarchy
+├── Motion provides continuity
+└── Bold, graphic, intentional design
+
+ADAPTIVE DESIGN:
+├── Responds to device capabilities
+├── One UI for all form factors
+├── Dynamic color from wallpaper
+└── Personalized per user
+
+ACCESSIBLE BY DEFAULT:
+├── Large touch targets
+├── Clear visual hierarchy
+├── Semantic colors
+└── Motion respects preferences
+```
+
+### Material Design Values
+
+| Value | Implementation |
+|-------|----------------|
+| **Dynamic Color** | Colors adapt to wallpaper/user preference |
+| **Personalization** | User-specific themes |
+| **Accessibility** | Built into every component |
+| **Responsiveness** | Works on all screen sizes |
+| **Consistency** | Unified design language |
+
+---
+
+## 2. Android Typography
+
+### Roboto Font Family
+
+```
+Android System Fonts:
+├── Roboto: Default sans-serif
+├── Roboto Flex: Variable font (API 33+)
+├── Roboto Serif: Serif alternative
+├── Roboto Mono: Monospace
+└── Google Sans: Google products (special license)
+```
+
+### Material Type Scale
+
+| Role | Size | Weight | Line Height | Usage |
+|------|------|--------|-------------|-------|
+| **Display Large** | 57sp | Regular | 64sp | Hero text, splash |
+| **Display Medium** | 45sp | Regular | 52sp | Large headers |
+| **Display Small** | 36sp | Regular | 44sp | Medium headers |
+| **Headline Large** | 32sp | Regular | 40sp | Page titles |
+| **Headline Medium** | 28sp | Regular | 36sp | Section headers |
+| **Headline Small** | 24sp | Regular | 32sp | Subsections |
+| **Title Large** | 22sp | Regular | 28sp | Dialogs, cards |
+| **Title Medium** | 16sp | Medium | 24sp | Lists, navigation |
+| **Title Small** | 14sp | Medium | 20sp | Tabs, secondary |
+| **Body Large** | 16sp | Regular | 24sp | Primary content |
+| **Body Medium** | 14sp | Regular | 20sp | Secondary content |
+| **Body Small** | 12sp | Regular | 16sp | Captions |
+| **Label Large** | 14sp | Medium | 20sp | Buttons, FAB |
+| **Label Medium** | 12sp | Medium | 16sp | Navigation |
+| **Label Small** | 11sp | Medium | 16sp | Chips, badges |
+
+### Scalable Pixels (sp)
+
+```
+sp = Scale-independent pixels
+
+sp automatically scales with:
+├── User font size preference
+├── Display density
+└── Accessibility settings
+
+RULE: ALWAYS use sp for text, dp for everything else.
+```
+
+### Font Weight Usage
+
+| Weight | Use Case |
+|--------|----------|
+| Regular (400) | Body text, display |
+| Medium (500) | Buttons, labels, emphasis |
+| Bold (700) | Rarely, strong emphasis only |
+
+---
+
+## 3. Material Color System
+
+### Dynamic Color (Material You)
+
+```
+Android 12+ Dynamic Color:
+
+User's wallpaper → Color extraction → App theme
+
+Your app automatically adapts to:
+├── Primary color (from wallpaper)
+├── Secondary color (complementary)
+├── Tertiary color (accent)
+├── Surface colors (derived)
+└── All semantic colors adjust
+
+RULE: Implement dynamic color for personalized feel.
+```
+
+### Semantic Color Roles
+
+```
+Surface Colors:
+├── Surface → Main background
+├── SurfaceVariant → Cards, containers
+├── SurfaceTint → Elevation overlay
+├── InverseSurface → Snackbars, tooltips
+
+On-Surface Colors:
+├── OnSurface → Primary text
+├── OnSurfaceVariant → Secondary text
+├── Outline → Borders, dividers
+├── OutlineVariant → Subtle dividers
+
+Primary Colors:
+├── Primary → Key actions, FAB
+├── OnPrimary → Text on primary
+├── PrimaryContainer → Less emphasis
+├── OnPrimaryContainer → Text on container
+
+Secondary/Tertiary: Similar pattern
+```
+
+### Error, Warning, Success Colors
+
+| Role | Light | Dark | Usage |
+|------|-------|------|-------|
+| Error | #B3261E | #F2B8B5 | Errors, destructive |
+| OnError | #FFFFFF | #601410 | Text on error |
+| ErrorContainer | #F9DEDC | #8C1D18 | Error backgrounds |
+
+### Dark Theme
+
+```
+Material Dark Theme:
+
+├── Background: #121212 (not pure black by default)
+├── Surface: #1E1E1E, #232323, etc. (elevation)
+├── Elevation: Higher = lighter overlay
+├── Reduce saturation on colors
+└── Check contrast ratios
+
+Elevation overlays (dark mode):
+├── 0dp → 0% overlay
+├── 1dp → 5% overlay
+├── 3dp → 8% overlay
+├── 6dp → 11% overlay
+├── 8dp → 12% overlay
+├── 12dp → 14% overlay
+```
+
+---
+
+## 4. Android Layout & Spacing
+
+### Layout Grid
+
+```
+Android uses 8dp baseline grid:
+
+All spacing in multiples of 8dp:
+├── 4dp: Component internal (half-step)
+├── 8dp: Minimum spacing
+├── 16dp: Standard spacing
+├── 24dp: Section spacing
+├── 32dp: Large spacing
+
+Margins:
+├── Compact (phone): 16dp
+├── Medium (small tablet): 24dp
+├── Expanded (large): 24dp+ or columns
+```
+
+### Responsive Layout
+
+```
+Window Size Classes:
+
+COMPACT (< 600dp width):
+├── Phones in portrait
+├── Single column layout
+├── Bottom navigation
+
+MEDIUM (600-840dp width):
+├── Tablets, foldables
+├── Consider 2 columns
+├── Navigation rail option
+
+EXPANDED (> 840dp width):
+├── Large tablets, desktop
+├── Multi-column layouts
+├── Navigation drawer
+```
+
+### Canonical Layouts
+
+| Layout | Use Case | Window Class |
+|--------|----------|--------------|
+| **List-Detail** | Email, messages | Medium, Expanded |
+| **Feed** | Social, news | All |
+| **Supporting Pane** | Reference content | Medium, Expanded |
+
+---
+
+## 5. Android Navigation Patterns
+
+### Navigation Components
+
+| Component | Use Case | Position |
+|-----------|----------|----------|
+| **Bottom Navigation** | 3-5 top-level destinations | Bottom |
+| **Navigation Rail** | Tablets, foldables | Left side, vertical |
+| **Navigation Drawer** | Many destinations, large screens | Left side, hidden/visible |
+| **Top App Bar** | Current context, actions | Top |
+
+### Bottom Navigation
+
+```
+┌─────────────────────────────────────┐
+│                                     │
+│         Content Area                │
+│                                     │
+├─────────────────────────────────────┤
+│  🏠     🔍     ➕     ❤️     👤    │ ← 80dp height
+│ Home   Search  FAB   Saved  Profile│
+└─────────────────────────────────────┘
+
+Rules:
+├── 3-5 destinations
+├── Icons: Material Symbols (24dp)
+├── Labels: Always visible (accessibility)
+├── Active: Filled icon + indicator pill
+├── Badge: For notifications
+├── FAB can integrate (optional)
+```
+
+### Top App Bar
+
+```
+Types:
+├── Center-aligned: Logo apps, simple
+├── Small: Compact, scrolls away
+├── Medium: Title + actions, collapses
+├── Large: Display title, collapses to small
+
+┌─────────────────────────────────────┐
+│  ☰   App Title              🔔 ⋮  │ ← 64dp (small)
+├─────────────────────────────────────┤
+│                                     │
+│         Content Area                │
+└─────────────────────────────────────┘
+
+Actions: Max 3 icons, overflow menu ( ⋮ ) for more
+```
+
+### Navigation Rail (Tablets)
+
+```
+┌───────┬─────────────────────────────┐
+│  ≡    │                             │
+│       │                             │
+│  🏠   │                             │
+│ Home  │       Content Area          │
+│       │                             │
+│  🔍   │                             │
+│Search │                             │
+│       │                             │
+│  👤   │                             │
+│Profile│                             │
+└───────┴─────────────────────────────┘
+
+Width: 80dp
+Icons: 24dp
+Labels: Below icon
+FAB: Can be at top
+```
+
+### Back Navigation
+
+```
+Android provides system back:
+├── Back button (3-button nav)
+├── Back gesture (swipe from edge)
+├── Predictive back (Android 14+)
+
+Your app must:
+├── Handle back correctly (pop stack)
+├── Support predictive back animation
+├── Never hijack/override back unexpectedly
+└── Confirm before discarding unsaved work
+```
+
+---
+
+## 6. Material Components
+
+### Buttons
+
+```
+Button Types:
+
+┌──────────────────────┐
+│    Filled Button     │  ← Primary action
+└──────────────────────┘
+
+┌──────────────────────┐
+│    Tonal Button      │  ← Secondary, less emphasis
+└──────────────────────┘
+
+┌──────────────────────┐
+│   Outlined Button    │  ← Tertiary, lower emphasis
+└──────────────────────┘
+
+    Text Button           ← Lowest emphasis
+
+Heights:
+├── Small: 40dp (when constrained)
+├── Standard: 40dp
+├── Large: 56dp (FAB size when needed)
+
+Min touch target: 48dp (even if visual is smaller)
+```
+
+### Floating Action Button (FAB)
+
+```
+FAB Types:
+├── Standard: 56dp diameter
+├── Small: 40dp diameter
+├── Large: 96dp diameter
+├── Extended: Icon + text, variable width
+
+Position: Bottom right, 16dp from edges
+Elevation: Floats above content
+
+┌─────────────────────────────────────┐
+│                                     │
+│         Content                     │
+│                                     │
+│                              ┌────┐ │
+│                              │ ➕ │ │ ← FAB
+│                              └────┘ │
+├─────────────────────────────────────┤
+│       Bottom Navigation             │
+└─────────────────────────────────────┘
+```
+
+### Cards
+
+```
+Card Types:
+├── Elevated: Shadow, resting state
+├── Filled: Background color, no shadow
+├── Outlined: Border, no shadow
+
+Card Anatomy:
+┌─────────────────────────────────────┐
+│           Header Image              │ ← Optional
+├─────────────────────────────────────┤
+│  Title / Headline                   │
+│  Subhead / Supporting text          │
+├─────────────────────────────────────┤
+│      [ Action ]    [ Action ]       │ ← Optional actions
+└─────────────────────────────────────┘
+
+Corner radius: 12dp (M3 default)
+Padding: 16dp
+```
+
+### Text Fields
+
+```
+Types:
+├── Filled: Background fill, underline
+├── Outlined: Border all around
+
+┌─────────────────────────────────────┐
+│  Label                              │ ← Floats up on focus
+│  ________________________________________________
+│  │     Input text here...          │ ← Leading/trailing icons
+│  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+│  Supporting text or error           │
+└─────────────────────────────────────┘
+
+Height: 56dp
+Label: Animates from placeholder to top
+Error: Red color + icon + message
+```
+
+### Chips
+
+```
+Types:
+├── Assist: Smart actions (directions, call)
+├── Filter: Toggle filters
+├── Input: Represent entities (tags, contacts)
+├── Suggestion: Dynamic recommendations
+
+┌───────────────┐
+│  🏷️ Filter   │  ← 32dp height, 8dp corner radius
+└───────────────┘
+
+States: Unselected, Selected, Disabled
+```
+
+---
+
+## 7. Android-Specific Patterns
+
+### Snackbars
+
+```
+Position: Bottom, above navigation
+Duration: 4-10 seconds
+Action: One optional text action
+
+┌─────────────────────────────────────────────────┐
+│  Archived 1 item                    [ UNDO ]    │
+└─────────────────────────────────────────────────┘
+
+Rules:
+├── Brief message, single line if possible
+├── Max 2 lines
+├── One action (text, not icon)
+├── Can be dismissed by swipe
+└── Don't stack, queue them
+```
+
+### Bottom Sheets
+
+```
+Types:
+├── Standard: Interactive content
+├── Modal: Blocks background (with scrim)
+
+Modal Bottom Sheet:
+┌─────────────────────────────────────┐
+│                                     │
+│        (Scrim over content)         │
+│                                     │
+├═════════════════════════════════════┤
+│  ─────  (Drag handle, optional)     │
+│                                     │
+│        Sheet Content                │
+│                                     │
+│        Actions / Options            │
+│                                     │
+└─────────────────────────────────────┘
+
+Corner radius: 28dp (top corners)
+```
+
+### Dialogs
+
+```
+Types:
+├── Basic: Title + content + actions
+├── Full-screen: Complex editing (mobile)
+├── Date/Time picker
+├── Confirmation dialog
+
+┌─────────────────────────────────────┐
+│              Title                  │
+│                                     │
+│       Supporting text that          │
+│       explains the dialog           │
+│                                     │
+│           [ Cancel ]  [ Confirm ]   │
+└─────────────────────────────────────┘
+
+Rules:
+├── Centered on screen
+├── Scrim behind (dim background)
+├── Max 2 actions aligned right
+├── Destructive action can be on left
+```
+
+### Pull to Refresh
+
+```
+Android uses SwipeRefreshLayout pattern:
+
+┌─────────────────────────────────────┐
+│         ○ (Spinner)                 │ ← Circular progress
+├─────────────────────────────────────┤
+│                                     │
+│         Content                     │
+│                                     │
+└─────────────────────────────────────┘
+
+Spinner: Material circular indicator
+Position: Top center, pulls down with content
+```
+
+### Ripple Effect
+
+```
+Every touchable element needs ripple:
+
+Touch down → Ripple expands from touch point
+Touch up → Ripple completes and fades
+
+Color: 
+├── On light: Black at ~12% opacity
+├── On dark: White at ~12% opacity
+├── On colored: Appropriate contrast
+
+This is MANDATORY for Android feel.
+```
+
+---
+
+## 8. Material Symbols
+
+### Usage Guidelines
+
+```
+Material Symbols: Google's icon library
+
+Styles:
+├── Outlined: Default, most common
+├── Rounded: Softer, friendly
+├── Sharp: Angular, precise
+
+Variable font axes:
+├── FILL: 0 (outline) to 1 (filled)
+├── wght: 100-700 (weight)
+├── GRAD: -25 to 200 (emphasis)
+├── opsz: 20, 24, 40, 48 (optical size)
+```
+
+### Icon Sizes
+
+| Size | Usage |
+|------|-------|
+| 20dp | Dense UI, inline |
+| 24dp | Standard (most common) |
+| 40dp | Larger touch targets |
+| 48dp | Emphasis, standalone |
+
+### States
+
+```
+Icon States:
+├── Default: Full opacity
+├── Disabled: 38% opacity
+├── Hover/Focus: Container highlight
+├── Selected: Filled variant + tint
+
+Active vs Inactive:
+├── Inactive: Outlined
+├── Active: Filled + indicator
+```
+
+---
+
+## 9. Android Accessibility
+
+### TalkBack Requirements
+
+```
+Every interactive element needs:
+├── contentDescription (what it is)
+├── Correct semantics (button, checkbox, etc.)
+├── State announcements (selected, disabled)
+└── Grouping where logical
+
+Jetpack Compose:
+Modifier.semantics {
+    contentDescription = "Play button"
+    role = Role.Button
+}
+
+React Native:
+accessibilityLabel="Play button"
+accessibilityRole="button"
+accessibilityState={{ disabled: false }}
+```
+
+### Touch Target Size
+
+```
+MANDATORY: 48dp × 48dp minimum
+
+Even if visual element is smaller:
+├── Icon: 24dp visual, 48dp touch area
+├── Checkbox: 20dp visual, 48dp touch area
+└── Add padding to reach 48dp
+
+Spacing between targets: 8dp minimum
+```
+
+### Font Scaling
+
+```
+Android supports font scaling:
+├── 85% (smaller)
+├── 100% (default)
+├── 115%, 130%, 145%...
+├── Up to 200% (largest)
+
+RULE: Test your UI at 200% font scale.
+Use sp units and avoid fixed heights.
+```
+
+### Reduce Motion
+
+```kotlin
+// Check motion preference
+val reduceMotion = Settings.Global.getFloat(
+    contentResolver,
+    Settings.Global.ANIMATOR_DURATION_SCALE,
+    1f
+) == 0f
+
+if (reduceMotion) {
+    // Skip or reduce animations
+}
+```
+
+---
+
+## 10. Android Checklist
+
+### Before Every Android Screen
+
+- [ ] Using Material 3 components
+- [ ] Touch targets ≥ 48dp
+- [ ] Ripple effect on all touchables
+- [ ] Roboto or Material type scale
+- [ ] Semantic colors (dynamic color support)
+- [ ] Back navigation works correctly
+
+### Before Android Release
+
+- [ ] Dark theme tested
+- [ ] Dynamic color tested (if supported)
+- [ ] All font sizes tested (200% scale)
+- [ ] TalkBack tested
+- [ ] Predictive back implemented (Android 14+)
+- [ ] Edge-to-edge display (Android 15+)
+- [ ] Different screen sizes tested (phones, tablets)
+- [ ] Navigation patterns match platform (back, gestures)
+
+---
+
+> **Remember:** Android users expect Material Design. Custom designs that ignore Material patterns feel foreign and broken. Use Material components as your foundation, customize thoughtfully.
+
+
+---
+
+# iOS Platform Guidelines
+
+> Human Interface Guidelines (HIG) essentials, iOS design conventions, SF Pro typography, and native patterns.
+> **Read this file when building for iPhone/iPad.**
+
+---
+
+## 1. Human Interface Guidelines Philosophy
+
+### Core Apple Design Principles
+
+```
+CLARITY:
+├── Text is legible at every size
+├── Icons are precise and lucid
+├── Adornments are subtle and appropriate
+└── Focus on functionality drives design
+
+DEFERENCE:
+├── UI helps people understand and interact
+├── Content fills the screen
+├── UI never competes with content
+└── Translucency hints at more content
+
+DEPTH:
+├── Distinct visual layers convey hierarchy
+├── Transitions provide sense of depth
+├── Touch reveals functionality
+└── Content is elevated over UI
+```
+
+### iOS Design Values
+
+| Value | Implementation |
+|-------|----------------|
+| **Aesthetic Integrity** | Design matches function (game ≠ productivity) |
+| **Consistency** | Use system controls, familiar patterns |
+| **Direct Manipulation** | Touch directly affects content |
+| **Feedback** | Actions are acknowledged |
+| **Metaphors** | Real-world comparisons aid understanding |
+| **User Control** | User initiates actions, can cancel |
+
+---
+
+## 2. iOS Typography
+
+### SF Pro Font Family
+
+```
+iOS System Fonts:
+├── SF Pro Text: Body text (< 20pt)
+├── SF Pro Display: Large titles (≥ 20pt)
+├── SF Pro Rounded: Friendly contexts
+├── SF Mono: Code, tabular data
+└── SF Compact: Apple Watch, smaller screens
+```
+
+### iOS Type Scale (Dynamic Type)
+
+| Style | Default Size | Weight | Usage |
+|-------|--------------|--------|-------|
+| **Large Title** | 34pt | Bold | Navigation bar (scroll collapse) |
+| **Title 1** | 28pt | Bold | Page titles |
+| **Title 2** | 22pt | Bold | Section headers |
+| **Title 3** | 20pt | Semibold | Subsection headers |
+| **Headline** | 17pt | Semibold | Emphasized body |
+| **Body** | 17pt | Regular | Primary content |
+| **Callout** | 16pt | Regular | Secondary content |
+| **Subhead** | 15pt | Regular | Tertiary content |
+| **Footnote** | 13pt | Regular | Caption, timestamps |
+| **Caption 1** | 12pt | Regular | Annotations |
+| **Caption 2** | 11pt | Regular | Fine print |
+
+### Dynamic Type Support (MANDATORY)
+
+```swift
+// ❌ WRONG: Fixed font size
+Text("Hello")
+    .font(.system(size: 17))
+
+// ✅ CORRECT: Dynamic Type
+Text("Hello")
+    .font(.body) // Scales with user settings
+
+// React Native equivalent
+<Text style={{ fontSize: 17 }}> // ❌ Fixed
+<Text style={styles.body}> // Use a dynamic scale system
+```
+
+### Font Weight Usage
+
+| Weight | iOS Constant | Use Case |
+|--------|--------------|----------|
+| Regular (400) | `.regular` | Body text |
+| Medium (500) | `.medium` | Buttons, emphasis |
+| Semibold (600) | `.semibold` | Subheadings |
+| Bold (700) | `.bold` | Titles, key info |
+| Heavy (800) | `.heavy` | Rarely, marketing |
+
+---
+
+## 3. iOS Color System
+
+### System Colors (Semantic)
+
+```
+Use semantic colors for automatic dark mode:
+
+Primary:
+├── .label → Primary text
+├── .secondaryLabel → Secondary text
+├── .tertiaryLabel → Tertiary text
+├── .quaternaryLabel → Watermarks
+
+Backgrounds:
+├── .systemBackground → Main background
+├── .secondarySystemBackground → Grouped content
+├── .tertiarySystemBackground → Elevated content
+
+Fills:
+├── .systemFill → Large shapes
+├── .secondarySystemFill → Medium shapes
+├── .tertiarySystemFill → Small shapes
+├── .quaternarySystemFill → Subtle shapes
+```
+
+### System Accent Colors
+
+| Color | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| Blue | #007AFF | #0A84FF | Links, highlights, default tint |
+| Green | #34C759 | #30D158 | Success, positive |
+| Red | #FF3B30 | #FF453A | Errors, destructive |
+| Orange | #FF9500 | #FF9F0A | Warnings |
+| Yellow | #FFCC00 | #FFD60A | Attention |
+| Purple | #AF52DE | #BF5AF2 | Special features |
+| Pink | #FF2D55 | #FF375F | Affection, favorites |
+| Teal | #5AC8FA | #64D2FF | Information |
+
+### Dark Mode Considerations
+
+```
+iOS Dark Mode is not inverted light mode:
+
+LIGHT MODE:              DARK MODE:
+├── White backgrounds    ├── True black (#000) or near-black
+├── High saturation      ├── Desaturated colors
+├── Black text           ├── White/light gray text
+└── Drop shadows         └── Glows or no shadows
+
+RULE: Always use semantic colors for automatic adaptation.
+```
+
+---
+
+## 4. iOS Layout & Spacing
+
+### Safe Areas
+
+```
+┌─────────────────────────────────────┐
+│░░░░░░░░░░░ Status Bar ░░░░░░░░░░░░░│ ← Top safe area inset
+├─────────────────────────────────────┤
+│                                     │
+│                                     │
+│         Safe Content Area           │
+│                                     │
+│                                     │
+├─────────────────────────────────────┤
+│░░░░░░░░░ Home Indicator ░░░░░░░░░░░│ ← Bottom safe area inset
+└─────────────────────────────────────┘
+
+RULE: Never place interactive content in unsafe areas.
+```
+
+### Standard Margins & Padding
+
+| Element | Margin | Notes |
+|---------|--------|-------|
+| Screen edge → content | 16pt | Standard horizontal margin |
+| Grouped table sections | 16pt top/bottom | Breathing room |
+| List item padding | 16pt horizontal | Standard cell padding |
+| Card internal padding | 16pt | Content within cards |
+| Button internal padding | 12pt vertical, 16pt horizontal | Minimum |
+
+### iOS Grid System
+
+```
+iPhone Grid (Standard):
+├── 16pt margins (left/right)
+├── 8pt minimum spacing
+├── Content in 8pt multiples
+
+iPhone Grid (Compact):
+├── 8pt margins (when needed)
+├── 4pt minimum spacing
+
+iPad Grid:
+├── 20pt margins (or more)
+├── Consider multi-column layouts
+```
+
+---
+
+## 5. iOS Navigation Patterns
+
+### Navigation Types
+
+| Pattern | Use Case | Implementation |
+|---------|----------|----------------|
+| **Tab Bar** | 3-5 top-level sections | Bottom, always visible |
+| **Navigation Controller** | Hierarchical drill-down | Stack-based, back button |
+| **Modal** | Focused task, interruption | Sheet or full-screen |
+| **Sidebar** | iPad, multi-column | Left sidebar (iPad) |
+
+### Tab Bar Guidelines
+
+```
+┌─────────────────────────────────────┐
+│                                     │
+│         Content Area                │
+│                                     │
+├─────────────────────────────────────┤
+│  🏠     🔍     ➕     ❤️     👤    │ ← Tab bar (49pt height)
+│ Home   Search  New   Saved  Profile │
+└─────────────────────────────────────┘
+
+Rules:
+├── 3-5 items maximum
+├── Icons: SF Symbols or custom (25×25pt)
+├── Labels: Always include (accessibility)
+├── Active state: Filled icon + tint color
+└── Tab bar always visible (don't hide on scroll)
+```
+
+### Navigation Bar Guidelines
+
+```
+┌─────────────────────────────────────┐
+│ < Back     Page Title      Edit    │ ← Navigation bar (44pt)
+├─────────────────────────────────────┤
+│                                     │
+│         Content Area                │
+│                                     │
+└─────────────────────────────────────┘
+
+Rules:
+├── Back button: System chevron + previous title (or "Back")
+├── Title: Centered, dynamic font
+├── Right actions: Max 2 items
+├── Large title: Collapses on scroll (optional)
+└── Prefer text buttons over icons (clarity)
+```
+
+### Modal Presentations
+
+| Style | Use Case | Appearance |
+|-------|----------|------------|
+| **Sheet (default)** | Secondary tasks | Card slides up, parent visible |
+| **Full Screen** | Immersive tasks | Covers entire screen |
+| **Popover** | iPad, quick info | Arrow-pointed bubble |
+| **Alert** | Critical interruption | Centered dialog |
+| **Action Sheet** | Choices from context | Bottom sheet with options |
+
+### Gestures
+
+| Gesture | iOS Convention |
+|---------|----------------|
+| **Edge swipe (left)** | Navigate back |
+| **Pull down (sheet)** | Dismiss modal |
+| **Long press** | Context menu |
+| **Deep press** | Peek/Pop (legacy) |
+| **Two-finger swipe** | Scroll in nested scroll |
+
+---
+
+## 6. iOS Components
+
+### Buttons
+
+```
+Button Styles (UIKit/SwiftUI):
+
+┌──────────────────────────────┐
+│         Tinted               │ ← Primary action (filled)
+├──────────────────────────────┤
+│         Bordered             │ ← Secondary action (outline)
+├──────────────────────────────┤
+│         Plain                │ ← Tertiary action (text only)
+└──────────────────────────────┘
+
+Sizes:
+├── Mini: Tight spaces
+├── Small: Compact UI
+├── Medium: Inline actions
+├── Large: Primary CTAs (44pt minimum height)
+```
+
+### Lists & Tables
+
+```
+List Styles:
+
+.plain         → No separators, edge-to-edge
+.insetGrouped  → Rounded cards (default iOS 14+)
+.grouped       → Full-width sections
+.sidebar       → iPad sidebar navigation
+
+Cell Accessories:
+├── Disclosure indicator (>) → Navigates to detail
+├── Detail button (i) → Shows info without navigation
+├── Checkmark (✓) → Selection
+├── Reorder (≡) → Drag to reorder
+└── Delete (-) → Swipe/edit mode delete
+```
+
+### Text Fields
+
+```
+iOS Text Field Anatomy:
+
+┌─────────────────────────────────────┐
+│ 🔍 Search...                    ✕  │
+└─────────────────────────────────────┘
+  ↑                               ↑
+  Leading icon                   Clear button
+
+Borders: Rounded rectangle
+Height: 36pt minimum
+Placeholder: Secondary text color
+Clear button: Appears when has text
+```
+
+### Segmented Controls
+
+```
+When to Use:
+├── 2-5 related options
+├── Filter content
+├── Switch views
+
+┌───────┬───────┬───────┐
+│  All  │ Active│ Done  │
+└───────┴───────┴───────┘
+
+Rules:
+├── Equal width segments
+├── Text or icons (not both mixed)
+├── Max 5 segments
+└── Consider tabs if more complex
+```
+
+---
+
+## 7. iOS Specific Patterns
+
+### Pull to Refresh
+
+```
+Native UIRefreshControl behavior:
+├── Pull beyond threshold → Spinner appears
+├── Release → Refresh action triggered
+├── Loading state → Spinner spins
+├── Complete → Spinner disappears
+
+RULE: Always use native UIRefreshControl (don't custom build).
+```
+
+### Swipe Actions
+
+```
+iOS swipe actions:
+
+← Swipe Left (Destructive)      Swipe Right (Constructive) →
+┌─────────────────────────────────────────────────────────────┐
+│                    List Item Content                        │
+└─────────────────────────────────────────────────────────────┘
+
+Left swipe reveals: Archive, Delete, Flag
+Right swipe reveals: Pin, Star, Mark as Read
+
+Full swipe: Triggers first action
+```
+
+### Context Menus
+
+```
+Long press → Context menu appears
+
+┌─────────────────────────────┐
+│       Preview Card          │
+├─────────────────────────────┤
+│  📋 Copy                    │
+│  📤 Share                   │
+│  ➕ Add to...               │
+├─────────────────────────────┤
+│  🗑️ Delete          (Red)   │
+└─────────────────────────────┘
+
+Rules:
+├── Preview: Show enlarged content
+├── Actions: Related to content
+├── Destructive: Last, in red
+└── Max ~8 actions (scrollable if more)
+```
+
+### Sheets & Half-Sheets
+
+```
+iOS 15+ Sheets:
+
+┌─────────────────────────────────────┐
+│                                     │
+│        Parent View (dimmed)          │
+│                                     │
+├─────────────────────────────────────┤
+│  ═══  (Grabber)                     │ ← Drag to resize
+│                                     │
+│        Sheet Content                │
+│                                     │
+│                                     │
+└─────────────────────────────────────┘
+
+Detents:
+├── .medium → Half screen
+├── .large → Full screen (with safe area)
+├── Custom → Specific height
+```
+
+---
+
+## 8. SF Symbols
+
+### Usage Guidelines
+
+```
+SF Symbols: Apple's icon library (5000+ icons)
+
+Weights: Match text weight
+├── Ultralight / Thin / Light
+├── Regular / Medium / Semibold
+├── Bold / Heavy / Black
+
+Scales:
+├── .small → Inline with small text
+├── .medium → Standard UI
+├── .large → Emphasis, standalone
+```
+
+### Symbol Configurations
+
+```swift
+// SwiftUI
+Image(systemName: "star.fill")
+    .font(.title2)
+    .foregroundStyle(.yellow)
+
+// With rendering mode
+Image(systemName: "heart.fill")
+    .symbolRenderingMode(.multicolor)
+
+// Animated (iOS 17+)
+Image(systemName: "checkmark.circle")
+    .symbolEffect(.bounce)
+```
+
+### Symbol Best Practices
+
+| Guideline | Implementation |
+|-----------|----------------|
+| Match text weight | Symbol weight = font weight |
+| Use standard symbols | Users recognize them |
+| Multicolor when meaningful | Not just decoration |
+| Fallback for older iOS | Check availability |
+
+---
+
+## 9. iOS Accessibility
+
+### VoiceOver Requirements
+
+```
+Every interactive element needs:
+├── Accessibility label (what it is)
+├── Accessibility hint (what it does) - optional
+├── Accessibility traits (button, link, etc.)
+└── Accessibility value (current state)
+
+SwiftUI:
+.accessibilityLabel("Play")
+.accessibilityHint("Plays the selected track")
+
+React Native:
+accessibilityLabel="Play"
+accessibilityHint="Plays the selected track"
+accessibilityRole="button"
+```
+
+### Dynamic Type Scaling
+
+```
+MANDATORY: Support Dynamic Type
+
+Users can set text size from:
+├── xSmall → 14pt body
+├── Small → 15pt body
+├── Medium → 16pt body
+├── Large (Default) → 17pt body
+├── xLarge → 19pt body
+├── xxLarge → 21pt body
+├── xxxLarge → 23pt body
+├── Accessibility sizes → up to 53pt
+
+Your app MUST scale gracefully at all sizes.
+```
+
+### Reduce Motion
+
+```
+Respect motion preferences:
+
+@Environment(\.accessibilityReduceMotion) var reduceMotion
+
+if reduceMotion {
+    // Use instant transitions
+} else {
+    // Use animations
+}
+
+React Native:
+import { AccessibilityInfo } from 'react-native';
+AccessibilityInfo.isReduceMotionEnabled()
+```
+
+---
+
+## 10. iOS Checklist
+
+### Before Every iOS Screen
+
+- [ ] Using SF Pro or SF Symbols
+- [ ] Dynamic Type supported
+- [ ] Safe areas respected
+- [ ] Navigation follows HIG (back gesture works)
+- [ ] Tab bar items ≤ 5
+- [ ] Touch targets ≥ 44pt
+
+### Before iOS Release
+
+- [ ] Dark mode tested
+- [ ] All text sizes tested (Accessibility Inspector)
+- [ ] VoiceOver tested
+- [ ] Edge swipe back works everywhere
+- [ ] Keyboard avoidance implemented
+- [ ] Notch/Dynamic Island handled
+- [ ] Home indicator area respected
+- [ ] Native components used where possible
+
+---
+
+> **Remember:** iOS users have strong expectations from other iOS apps. Deviating from HIG patterns feels "broken" to them. When in doubt, use the native component.
+
+
+---
+
+# Touch Psychology Reference
+
+> Deep dive into mobile touch interaction, Fitts' Law for touch, thumb zone anatomy, gesture psychology, and haptic feedback.
+> **This is the mobile equivalent of ux-psychology.md - CRITICAL for all mobile work.**
+
+---
+
+## 1. Fitts' Law for Touch
+
+### The Fundamental Difference
+
+```
+DESKTOP (Mouse/Trackpad):
+├── Cursor size: 1 pixel (precision)
+├── Visual feedback: Hover states
+├── Error cost: Low (easy to retry)
+└── Target acquisition: Fast, precise
+
+MOBILE (Finger):
+├── Contact area: ~7mm diameter (imprecise)
+├── Visual feedback: No hover, only tap
+├── Error cost: High (frustrating retries)
+├── Occlusion: Finger covers the target
+└── Target acquisition: Slower, needs larger targets
+```
+
+### Fitts' Law Formula Adapted
+
+```
+Touch acquisition time = a + b × log₂(1 + D/W)
+
+Where:
+├── D = Distance to target
+├── W = Width of target
+└── For touch: W must be MUCH larger than desktop
+```
+
+### Minimum Touch Target Sizes
+
+| Platform | Minimum | Recommended | Use For |
+|----------|---------|-------------|---------|
+| **iOS (HIG)** | 44pt × 44pt | 48pt+ | All tappable elements |
+| **Android (Material)** | 48dp × 48dp | 56dp+ | All tappable elements |
+| **WCAG 2.2** | 44px × 44px | - | Accessibility compliance |
+| **Critical Actions** | - | 56-64px | Primary CTAs, destructive actions |
+
+### Visual Size vs Hit Area
+
+```
+┌─────────────────────────────────────┐
+│                                     │
+│    ┌─────────────────────────┐      │
+│    │                         │      │
+│    │    [  BUTTON  ]         │ ← Visual: 36px
+│    │                         │      │
+│    └─────────────────────────┘      │
+│                                     │ ← Hit area: 48px (padding extends)
+└─────────────────────────────────────┘
+
+✅ CORRECT: Visual can be smaller if hit area is minimum 44-48px
+❌ WRONG: Making hit area same as small visual element
+```
+
+### Application Rules
+
+| Element | Visual Size | Hit Area |
+|---------|-------------|----------|
+| Icon buttons | 24-32px | 44-48px (padding) |
+| Text links | Any | 44px height minimum |
+| List items | Full width | 48-56px height |
+| Checkboxes/Radio | 20-24px | 44-48px tap area |
+| Close/X buttons | 24px | 44px minimum |
+| Tab bar items | Icon 24-28px | Full tab width, 49px height (iOS) |
+
+---
+
+## 2. Thumb Zone Anatomy
+
+### One-Handed Phone Usage
+
+```
+Research shows: 49% of users hold phone one-handed.
+
+┌─────────────────────────────────────┐
+│                                     │
+│  ┌─────────────────────────────┐    │
+│  │       HARD TO REACH         │    │ ← Status bar, top nav
+│  │      (requires stretch)     │    │    Put: Back, menu, settings
+│  │                             │    │
+│  ├─────────────────────────────┤    │
+│  │                             │    │
+│  │       OK TO REACH           │    │ ← Content area
+│  │      (comfortable)          │    │    Put: Secondary actions, content
+│  │                             │    │
+│  ├─────────────────────────────┤    │
+│  │                             │    │
+│  │       EASY TO REACH         │    │ ← Tab bar, FAB zone
+│  │      (thumb's arc)          │    │    Put: PRIMARY CTAs!
+│  │                             │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│          [    HOME    ]             │
+└─────────────────────────────────────┘
+```
+
+### Thumb Arc (Right-Handed User)
+
+```
+Right hand holding phone:
+
+┌───────────────────────────────┐
+│  STRETCH      STRETCH    OK   │
+│                               │
+│  STRETCH        OK       EASY │
+│                               │
+│    OK          EASY      EASY │
+│                               │
+│   EASY         EASY      EASY │
+└───────────────────────────────┘
+
+Left hand is mirrored.
+→ Design for BOTH hands or assume right-dominant
+```
+
+### Placement Guidelines
+
+| Element Type | Ideal Position | Reason |
+|--------------|----------------|--------|
+| **Primary CTA** | Bottom center/right | Easy thumb reach |
+| **Tab bar** | Bottom | Natural thumb position |
+| **FAB** | Bottom right | Easy for right hand |
+| **Navigation** | Top (stretch) | Less frequent use |
+| **Destructive actions** | Top left | Hard to reach = harder to accidentally tap |
+| **Dismiss/Cancel** | Top left | Convention + safety |
+| **Confirm/Done** | Top right or bottom | Convention |
+
+### Large Phone Considerations (>6")
+
+```
+On large phones, top 40% becomes "dead zone" for one-handed use.
+
+Solutions:
+├── Reachability features (iOS)
+├── Pull-down interfaces (drawer pulls content down)
+├── Bottom sheet navigation
+├── Floating action buttons
+└── Gesture-based alternatives to top actions
+```
+
+---
+
+## 3. Touch vs Click Psychology
+
+### Expectation Differences
+
+| Aspect | Click (Desktop) | Touch (Mobile) |
+|--------|-----------------|----------------|
+| **Feedback timing** | Can wait 100ms | Expect instant (<50ms) |
+| **Visual feedback** | Hover → Click | Immediate tap response |
+| **Error tolerance** | Easy retry | Frustrating, feels broken |
+| **Precision** | High | Low |
+| **Context menu** | Right-click | Long press |
+| **Cancel action** | ESC key | Swipe away, outside tap |
+
+### Touch Feedback Requirements
+
+```
+Tap → Immediate visual change (< 50ms)
+├── Highlight state (background color change)
+├── Scale down slightly (0.95-0.98)
+├── Ripple effect (Android Material)
+├── Haptic feedback for confirmation
+└── Never nothing!
+
+Loading → Show within 100ms
+├── If action takes > 100ms
+├── Show spinner/progress
+├── Disable button (prevent double tap)
+└── Optimistic UI when possible
+```
+
+### The "Fat Finger" Problem
+
+```
+Problem: Finger occludes target during tap
+├── User can't see exactly where they're tapping
+├── Visual feedback appears UNDER finger
+└── Increases error rate
+
+Solutions:
+├── Show feedback ABOVE touch point (tooltips)
+├── Use cursor-like offset for precision tasks
+├── Magnification loupe for text selection
+└── Large enough targets that precision doesn't matter
+```
+
+---
+
+## 4. Gesture Psychology
+
+### Gesture Discoverability Problem
+
+```
+Problem: Gestures are INVISIBLE.
+├── User must discover/remember them
+├── No hover/visual hint
+├── Different mental model than tap
+└── Many users never discover gestures
+
+Solution: Always provide visible alternative
+├── Swipe to delete → Also show delete button or menu
+├── Pull to refresh → Also show refresh button
+├── Pinch to zoom → Also show zoom controls
+└── Gestures as shortcuts, not only way
+```
+
+### Common Gesture Conventions
+
+| Gesture | Universal Meaning | Usage |
+|---------|-------------------|-------|
+| **Tap** | Select, activate | Primary action |
+| **Double tap** | Zoom in, like/favorite | Quick action |
+| **Long press** | Context menu, selection mode | Secondary options |
+| **Swipe horizontal** | Navigation, delete, actions | List actions |
+| **Swipe down** | Refresh, dismiss | Pull to refresh |
+| **Pinch** | Zoom in/out | Maps, images |
+| **Two-finger scroll** | Scroll within scroll | Nested scrolls |
+
+### Gesture Affordance Design
+
+```
+Swipe actions need visual hints:
+
+┌─────────────────────────────────────────┐
+│  ┌───┐                                  │
+│  │ ≡ │  Item with hidden actions...   → │ ← Edge hint (partial color)
+│  └───┘                                  │
+└─────────────────────────────────────────┘
+
+✅ Good: Slight color peek at edge suggesting swipe
+✅ Good: Drag handle icon ( ≡ ) suggesting reorder
+✅ Good: Onboarding tooltip explaining gesture
+❌ Bad: Hidden gestures with no visual affordance
+```
+
+### Platform Gesture Differences
+
+| Gesture | iOS | Android |
+|---------|-----|---------|
+| **Back** | Edge swipe from left | System back button/gesture |
+| **Share** | Action sheet | Share sheet |
+| **Context menu** | Long press / Force touch | Long press |
+| **Dismiss modal** | Swipe down | Back button or swipe |
+| **Delete in list** | Swipe left, tap delete | Swipe left, immediate or undo |
+
+---
+
+## 5. Haptic Feedback Patterns
+
+### Why Haptics Matter
+
+```
+Haptics provide:
+├── Confirmation without looking
+├── Richer, more premium feel
+├── Accessibility (blind users)
+├── Reduced error rate
+└── Emotional satisfaction
+
+Without haptics:
+├── Feels "cheap" or web-like
+├── User unsure if action registered
+└── Missed opportunity for delight
+```
+
+### iOS Haptic Types
+
+| Type | Intensity | Use Case |
+|------|-----------|----------|
+| `selection` | Light | Picker scroll, toggle, selection |
+| `light` | Light | Minor actions, hover equivalent |
+| `medium` | Medium | Standard tap confirmation |
+| `heavy` | Strong | Important completed, drop |
+| `success` | Pattern | Task completed successfully |
+| `warning` | Pattern | Warning, attention needed |
+| `error` | Pattern | Error occurred |
+
+### Android Haptic Types
+
+| Type | Use Case |
+|------|----------|
+| `CLICK` | Standard tap feedback |
+| `HEAVY_CLICK` | Important actions |
+| `DOUBLE_CLICK` | Confirm actions |
+| `TICK` | Scroll/scrub feedback |
+| `LONG_PRESS` | Long press activation |
+| `REJECT` | Error/invalid action |
+
+### Haptic Usage Guidelines
+
+```
+✅ DO use haptics for:
+├── Button taps
+├── Toggle switches
+├── Picker/slider values
+├── Pull to refresh trigger
+├── Successful action completion
+├── Errors and warnings
+├── Swipe action thresholds
+└── Important state changes
+
+❌ DON'T use haptics for:
+├── Every scroll position
+├── Every list item
+├── Background events
+├── Passive displays
+└── Too frequently (haptic fatigue)
+```
+
+### Haptic Intensity Mapping
+
+| Action Importance | Haptic Level | Example |
+|-------------------|--------------|---------|
+| Minor/Browsing | Light / None | Scrolling, hovering |
+| Standard Action | Medium / Selection | Tap, toggle |
+| Significant Action | Heavy / Success | Complete, confirm |
+| Critical/Destructive | Heavy / Warning | Delete, payment |
+| Error | Error pattern | Failed action |
+
+---
+
+## 6. Mobile Cognitive Load
+
+### How Mobile Differs from Desktop
+
+| Factor | Desktop | Mobile | Implication |
+|--------|---------|--------|-------------|
+| **Attention** | Focused sessions | Interrupted constantly | Design for micro-sessions |
+| **Context** | Controlled environment | Anywhere, any condition | Handle bad lighting, noise |
+| **Multitasking** | Multiple windows | One app visible | Complete task in-app |
+| **Input speed** | Fast (keyboard) | Slow (touch typing) | Minimize input, smart defaults |
+| **Error recovery** | Easy (undo, back) | Harder (no keyboard shortcuts) | Prevent errors, easy recovery |
+
+### Reducing Mobile Cognitive Load
+
+```
+1. ONE PRIMARY ACTION per screen
+   └── Clear what to do next
+   
+2. PROGRESSIVE DISCLOSURE
+   └── Show only what's needed now
+   
+3. SMART DEFAULTS
+   └── Pre-fill what you can
+   
+4. CHUNKING
+   └── Break long forms into steps
+   
+5. RECOGNITION over RECALL
+   └── Show options, don't make user remember
+   
+6. CONTEXT PERSISTENCE
+   └── Save state on interrupt/background
+```
+
+### Miller's Law for Mobile
+
+```
+Desktop: 7±2 items in working memory
+Mobile: Reduce to 5±1 (more distractions)
+
+Navigation: Max 5 tab bar items
+Options: Max 5 per menu level
+Steps: Max 5 visible steps in progress
+```
+
+### Hick's Law for Mobile
+
+```
+More choices = slower decisions
+
+Mobile impact: Even worse than desktop
+├── Smaller screen = less overview
+├── Scrolling required = items forgotten
+├── Interruptions = lost context
+└── Decision fatigue faster
+
+Solution: Progressive disclosure
+├── Start with 3-5 options
+├── "More" for additional
+├── Smart ordering (most used first)
+└── Previous selections remembered
+```
+
+---
+
+## 7. Touch Accessibility
+
+### Motor Impairment Considerations
+
+```
+Users with motor impairments may:
+├── Have tremors (need larger targets)
+├── Use assistive devices (different input method)
+├── Have limited reach (one-handed necessity)
+├── Need more time (avoid timeouts)
+└── Make accidental touches (need confirmation)
+
+Design responses:
+├── Generous touch targets (48dp+)
+├── Adjustable timing for gestures
+├── Undo for destructive actions
+├── Switch control support
+└── Voice control support
+```
+
+### Touch Target Spacing (A11y)
+
+```
+WCAG 2.2 Success Criterion 2.5.8:
+
+Touch targets MUST have:
+├── Width: ≥ 44px
+├── Height: ≥ 44px
+├── Spacing: ≥ 8px from adjacent targets
+
+OR the target is:
+├── Inline (within text)
+├── User-controlled (user can resize)
+├── Essential (no alternative design)
+```
+
+### Accessible Touch Patterns
+
+| Pattern | Accessible Implementation |
+|---------|---------------------------|
+| Swipe actions | Provide menu alternative |
+| Drag and drop | Provide select + move option |
+| Pinch zoom | Provide zoom buttons |
+| Force touch | Provide long press alternative |
+| Shake gesture | Provide button alternative |
+
+---
+
+## 8. Emotion in Touch
+
+### The Premium Feel
+
+```
+What makes touch feel "premium":
+├── Instant response (< 50ms)
+├── Appropriate haptic feedback
+├── Smooth 60fps animations
+├── Correct resistance/physics
+├── Sound feedback (when appropriate)
+└── Attention to spring physics
+```
+
+### Emotional Touch Feedback
+
+| Emotion | Touch Response |
+|---------|----------------|
+| Success | Haptic success + confetti/check |
+| Error | Haptic error + shake animation |
+| Warning | Haptic warning + attention color |
+| Delight | Unexpected smooth animation |
+| Power | Heavy haptic on significant action |
+
+### Trust Building Through Touch
+
+```
+Trust signals in touch interactions:
+├── Consistent behavior (same action = same response)
+├── Reliable feedback (never fails silently)
+├── Secure feel for sensitive actions
+├── Professional animations (not janky)
+└── No accidental actions (confirmation for destructive)
+```
+
+---
+
+## 9. Touch Psychology Checklist
+
+### Before Every Screen
+
+- [ ] **All touch targets ≥ 44-48px?**
+- [ ] **Primary CTA in thumb zone?**
+- [ ] **Destructive actions require confirmation?**
+- [ ] **Gesture alternatives exist (visible buttons)?**
+- [ ] **Haptic feedback on important actions?**
+- [ ] **Immediate visual feedback on tap?**
+- [ ] **Loading states for actions > 100ms?**
+
+### Before Release
+
+- [ ] **Tested on smallest supported device?**
+- [ ] **Tested one-handed on large phone?**
+- [ ] **All gestures have visible alternatives?**
+- [ ] **Haptics work correctly (test on device)?**
+- [ ] **Touch targets tested with accessibility settings?**
+- [ ] **No tiny close buttons or icons?**
+
+---
+
+## 10. Quick Reference Card
+
+### Touch Target Sizes
+
+```
+                     iOS        Android     WCAG
+Minimum:           44pt       48dp       44px
+Recommended:       48pt+      56dp+      -
+Spacing:           8pt+       8dp+       8px+
+```
+
+### Thumb Zone Actions
+
+```
+TOP:      Navigation, settings, back (infrequent)
+MIDDLE:   Content, secondary actions
+BOTTOM:   Primary CTA, tab bar, FAB (frequent)
+```
+
+### Haptic Selection
+
+```
+Light:    Selection, toggle, minor
+Medium:   Tap, standard action
+Heavy:    Confirm, complete, drop
+Success:  Task done
+Error:    Failed action
+Warning:  Attention needed
+```
+
+---
+
+> **Remember:** Every touch is a conversation between user and device. Make it feel natural, responsive, and respectful of human fingers—not precise cursor points.

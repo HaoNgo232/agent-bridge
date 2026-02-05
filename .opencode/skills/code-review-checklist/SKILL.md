@@ -1,7 +1,9 @@
 ---
 name: code-review-checklist
 description: Code review guidelines covering code quality, security, and best practices.
+allowed-tools: Read, Glob, Grep
 ---
+
 # Code Review Checklist
 
 ## Quick Review Checklist

@@ -1,12 +1,7 @@
 ---
-name: clean-code
-description: Pragmatic coding standards - concise, direct, no over-engineering, no unnecessary comments
-usage: "Use this skill for Pragmatic coding standards - concise, direct, no over-engineering, no unnecessary comments tasks."
-applyTo:
-  - "**/*"
+description: Skill documentation for clean code
+name: Clean Code - Pragmatic AI Coding Standards
 ---
-
-# Instructions
 
 # Clean Code - Pragmatic AI Coding Standards
 

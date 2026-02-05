@@ -1,12 +1,7 @@
 ---
-name: testing-patterns
-description: Testing patterns and principles. Unit, integration, mocking strategies.
-usage: "Use this skill for Testing patterns and principles. Unit, integration, mocking strategies. tasks."
-applyTo:
-  - "**/*.test.{ts,tsx,js,jsx}, **/test_*.py, **/tests/**, **/__tests__/**"
+description: Skill documentation for testing patterns
+name: Testing Patterns
 ---
-
-# Instructions
 
 # Testing Patterns
 

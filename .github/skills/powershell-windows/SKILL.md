@@ -1,10 +1,7 @@
 ---
-name: powershell-windows
-description: PowerShell Windows patterns. Critical pitfalls, operator syntax, error handling.
-usage: "Use this skill for PowerShell Windows patterns. Critical pitfalls, operator syntax, error handling. tasks."
+description: Skill documentation for powershell windows
+name: PowerShell Windows Patterns
 ---
-
-# Instructions
 
 # PowerShell Windows Patterns
 

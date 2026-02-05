@@ -1,10 +1,7 @@
 ---
-name: mcp-builder
-description: MCP (Model Context Protocol) server building principles. Tool design, resource patterns, best practices.
-usage: "Use this skill for MCP (Model Context Protocol) server building principles. Tool design, resource patterns, best practices. tasks."
+description: Skill documentation for mcp builder
+name: MCP Builder
 ---
-
-# Instructions
 
 # MCP Builder
 

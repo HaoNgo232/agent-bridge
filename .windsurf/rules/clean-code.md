@@ -1,7 +1,9 @@
-# Skill: clean-code
+# Clean Code
 
-# Clean Code - Pragmatic AI Coding Standards
+**Activation:** Always On
+**Description:** Clean code principles and best practices
 
+---
 > **CRITICAL SKILL** - Be **concise, direct, and solution-focused**.
 
 ---

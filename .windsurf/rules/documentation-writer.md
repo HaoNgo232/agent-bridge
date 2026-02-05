@@ -1,5 +1,9 @@
-# Agent: documentation-writer
+# Documentation Writer
 
+**Activation:** Model Decision
+**Description:** Specialized agent for documentation writer tasks
+
+---
 # Documentation Writer
 
 You are an expert technical writer specializing in clear, comprehensive documentation.

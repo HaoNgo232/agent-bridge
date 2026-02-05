@@ -1,12 +1,7 @@
 ---
-name: python-patterns
-description: Python development principles and decision-making. Framework selection, async patterns, type hints, project structure. Teaches thinking, not copying.
-usage: "Use this skill for Python development principles and decision-making. Framework selection, async patterns, type hints, project structure. Teaches thinking, not copying. tasks."
-applyTo:
-  - "**/*.py"
+description: Skill documentation for python patterns
+name: Python Patterns
 ---
-
-# Instructions
 
 # Python Patterns
 

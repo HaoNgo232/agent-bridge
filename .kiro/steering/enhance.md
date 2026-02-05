@@ -1,7 +1,3 @@
-# Workflow: /enhance
-
-Add or update features in existing application. Used for iterative development.
-
 # /enhance - Update Application
 
 $ARGUMENTS

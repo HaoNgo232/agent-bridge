@@ -1,7 +1,3 @@
-# Workflow: /preview
-
-['Preview server start', 'stop', 'and status check. Local development server management.']
-
 # /preview - Preview Management
 
 $ARGUMENTS
@@ -78,3 +74,4 @@ python .agent/scripts/auto_preview.py start [port]
 python .agent/scripts/auto_preview.py stop
 python .agent/scripts/auto_preview.py status
 ```
+

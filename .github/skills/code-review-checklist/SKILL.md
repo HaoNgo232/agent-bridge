@@ -1,10 +1,7 @@
 ---
-name: code-review-checklist
-description: Code review guidelines covering code quality, security, and best practices.
-usage: "Use this skill for Code review guidelines covering code quality, security, and best practices. tasks."
+description: Skill documentation for code review checklist
+name: Code Review Checklist
 ---
-
-# Instructions
 
 # Code Review Checklist
 

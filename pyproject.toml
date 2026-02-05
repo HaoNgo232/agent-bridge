@@ -11,6 +11,9 @@ requires-python = ">=3.8"
 authors = [
     { name = "Hao Ngo", email = "hao@example.com" }
 ]
+dependencies = [
+    "PyYAML",
+]
 keywords = ["ai", "agents", "kiro", "copilot", "converter"]
 classifiers = [
     "Programming Language :: Python :: 3",

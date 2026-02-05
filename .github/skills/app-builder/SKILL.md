@@ -1,10 +1,7 @@
 ---
-name: app-builder
-description: Main application building orchestrator. Creates full-stack applications from natural language requests. Determines project type, selects tech stack, coordinates agents.
-usage: "Use this skill for Main application building orchestrator. Creates full-stack applications from natural language requests. Determines project type, selects tech stack, coordinates agents. tasks."
+description: Skill documentation for app builder
+name: App Builder - Application Building Orchestrator
 ---
-
-# Instructions
 
 # App Builder - Application Building Orchestrator
 

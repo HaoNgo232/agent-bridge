@@ -1,10 +1,7 @@
 ---
-name: nodejs-best-practices
-description: Node.js development principles and decision-making. Framework selection, async patterns, security, and architecture. Teaches thinking, not copying.
-usage: "Use this skill for Node.js development principles and decision-making. Framework selection, async patterns, security, and architecture. Teaches thinking, not copying. tasks."
+description: Skill documentation for nodejs best practices
+name: Node.js Best Practices
 ---
-
-# Instructions
 
 # Node.js Best Practices
 
