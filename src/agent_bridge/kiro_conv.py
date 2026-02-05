@@ -208,9 +208,9 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
         if desc_match:
             metadata["description"] = desc_match.group(1).strip()[:200]
     
-    # Use content as instructions (without frontmatter)
-    instructions = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-    metadata["instructions"] = instructions.strip()
+    # Use content as prompt (without frontmatter)
+    prompt = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+    metadata["prompt"] = prompt.strip()
     
     return metadata
 
@@ -224,28 +224,21 @@ def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any]) -> Dict[
     agent_json = {
         "name": metadata.get("name") or agent_slug.replace("-", " ").title(),
         "description": metadata.get("description") or f"Specialized agent for {agent_slug.replace('-', ' ')}",
-        "instructions": metadata.get("instructions", ""),
+        "prompt": metadata.get("prompt", ""),
         
-        # Tool configuration
+        # Tool configuration (Kiro uses list of tool names/patterns)
         "tools": config.get("tools", DEFAULT_AGENT_CONFIG["tools"]),
         
-        # Security restrictions
-        "allowedCommands": config.get("allowedCommands", []),
-        "allowedPaths": config.get("allowedPaths", ["**/*"]),
-        
-        # Auto-approve for efficiency (safe tools)
-        "autoApprove": config.get("autoApprove", []),
+        # Additional settings supported by Kiro
+        "includeMcpJson": True
     }
     
-    # Add deny flags if present
-    if config.get("denyWrite"):
-        agent_json["denyTools"] = ["fs_write"]
-    
-    # Add delegation capability for orchestrators
-    if config.get("canDelegateToAgents"):
-        agent_json["canDelegateToAgents"] = config["canDelegateToAgents"]
-    
+    # Optional: Map model if present in metadata
+    if metadata.get("model"):
+        agent_json["model"] = metadata["model"]
+        
     return agent_json
+
 
 
 # =============================================================================
