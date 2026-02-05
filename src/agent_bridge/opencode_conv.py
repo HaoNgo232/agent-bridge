@@ -170,6 +170,9 @@ def convert_opencode(source_dir: str, output_unused: str):
 
             meta, body = parse_frontmatter(orchestrator_out.read_text(encoding='utf-8'))
             
+            # Ensure meta is a dict
+            if not isinstance(meta, dict): meta = {}
+            
             # Update permissions for the custom orchestrator
             if "permission" not in meta: meta["permission"] = {}
             meta["permission"]["task"] = subagent_names

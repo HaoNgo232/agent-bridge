@@ -20,10 +20,9 @@ def parse_frontmatter(content: str) -> Tuple[Dict[str, Any], str]:
         frontmatter_raw = parts[1].strip()
         body = parts[2].strip()
         metadata = {}
-        for line in frontmatter_raw.split('\n'):
-            if ':' in line:
-                key, value = line.split(':', 1)
-                metadata[key.strip()] = value.strip()
+        import yaml
+        metadata = yaml.safe_load(frontmatter_raw)
+        if not isinstance(metadata, dict): metadata = {}
         return metadata, body
     except:
         return {}, content
