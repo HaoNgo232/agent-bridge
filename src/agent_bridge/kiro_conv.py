@@ -185,9 +185,9 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
     if fm_match:
         try:
             existing = yaml.safe_load(fm_match.group(1))
-            if existing:
+            if existing and isinstance(existing, dict):
                 metadata.update(existing)
-        except:
+        except (yaml.YAMLError, ValueError, TypeError):
             pass
     
     # Extract name from H1
@@ -400,7 +400,8 @@ def convert_workflow_to_prompt(source_path: Path, dest_path: Path) -> bool:
         content_final = content_clean.replace("$ARGUMENTS", "{{args}}").strip()
         
         # Build final output
-        output = f"---\n{yaml.dump(prompt_fm, sort_keys=False)}---\n\n{content_final}\n"
+        fm_yaml = yaml.dump(prompt_fm, sort_keys=False).rstrip('\n')
+        output = f"---\n{fm_yaml}\n---\n\n{content_final}\n"
         
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")

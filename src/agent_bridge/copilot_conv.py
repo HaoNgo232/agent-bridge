@@ -141,6 +141,21 @@ AGENT_HANDOFFS_MAP = {
 # METADATA EXTRACTION
 # =============================================================================
 
+# Pre-compiled regex patterns for performance
+_RE_FRONTMATTER = re.compile(r'^---\n(.*?)\n---\n', re.DOTALL)
+_RE_H1_NAME = re.compile(r'^#\s+(.+?)(?:\s*[-–—]\s*(.+))?$', re.MULTILINE)
+_RE_ROLE_PATTERNS = [
+    re.compile(r'(?:You are|Role:|##\s*Role)[:\s]*(.+?)(?:\n\n|\n##|\n#\s)', re.IGNORECASE | re.DOTALL),
+    re.compile(r'(?:Purpose|Mission)[:\s]*(.+?)(?:\n\n|\n##)', re.IGNORECASE | re.DOTALL),
+    re.compile(r'^>\s*(.+?)$', re.MULTILINE),
+]
+_RE_SKILL_PATTERNS = [
+    re.compile(r'skills?[:\s]+\[([^\]]+)\]', re.IGNORECASE),
+    re.compile(r'`([a-z][a-z0-9\-]+)`\s*skill', re.IGNORECASE),
+    re.compile(r'uses?\s+(?:the\s+)?`([a-z][a-z0-9\-]+)`', re.IGNORECASE),
+]
+
+
 def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
     """Extract metadata from agent markdown content."""
     metadata = {
@@ -151,7 +166,7 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
     }
     
     # Check for existing YAML frontmatter
-    fm_match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+    fm_match = _RE_FRONTMATTER.match(content)
     if fm_match:
         try:
             existing = yaml.safe_load(fm_match.group(1))
@@ -167,7 +182,7 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
             pass
     
     # Extract name from first H1 heading
-    name_match = re.search(r'^#\s+(.+?)(?:\s*[-–—]\s*(.+))?$', content, re.MULTILINE)
+    name_match = _RE_H1_NAME.search(content)
     if name_match:
         metadata["name"] = name_match.group(1).strip()
         if name_match.group(2) and not metadata.get("description"):
@@ -178,25 +193,15 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
         metadata["name"] = filename.replace('.md', '').replace('-', ' ').title()
     
     # Extract role description
-    role_patterns = [
-        r'(?:You are|Role:|##\s*Role)[:\s]*(.+?)(?:\n\n|\n##|\n#\s)',
-        r'(?:Purpose|Mission)[:\s]*(.+?)(?:\n\n|\n##)',
-        r'^>\s*(.+?)$',  # Blockquote as description
-    ]
-    for pattern in role_patterns:
-        role_match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+    for pattern in _RE_ROLE_PATTERNS:
+        role_match = pattern.search(content)
         if role_match and not metadata.get("role"):
             metadata["role"] = role_match.group(1).strip()[:300]
             break
     
     # Extract skill references
-    skill_patterns = [
-        r'skills?[:\s]+\[([^\]]+)\]',
-        r'`([a-z][a-z0-9\-]+)`\s*skill',
-        r'uses?\s+(?:the\s+)?`([a-z][a-z0-9\-]+)`',
-    ]
-    for pattern in skill_patterns:
-        for match in re.finditer(pattern, content, re.IGNORECASE):
+    for pattern in _RE_SKILL_PATTERNS:
+        for match in pattern.finditer(content):
             skills_str = match.group(1)
             for skill in re.split(r'[,\s]+', skills_str):
                 skill = skill.strip().strip('`"\'')

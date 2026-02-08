@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for explorer agent tasks
-globs: 
-alwaysApply: false
+name: Explorer Agent
+description: Specialized assistant for Explorer Agent activities
 ---
 
 # Explorer Agent - Advanced Discovery & Research
@@ -69,3 +68,6 @@ When in discovery mode, you MUST NOT just report facts; you must engage the user
 - To research the feasibility of a third-party integration.
 - For deep-dive architectural audits.
 - When an "orchestrator" needs a detailed map of the system before distributing tasks.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

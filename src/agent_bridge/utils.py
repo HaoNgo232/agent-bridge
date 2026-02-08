@@ -2,17 +2,24 @@ import yaml
 import sys
 import json
 import os
+import re
 import shutil
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
+
+# Configure module logger
+logger = logging.getLogger("agent_bridge")
 
 # ANSI colors
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
+    CYAN = '\033[96m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     RED = '\033[91m'
+    BOLD = '\033[1m'
     ENDC = '\033[0m'
 
 def ask_user(question: str, default: bool = True) -> bool:
@@ -141,6 +148,36 @@ def print_info(text: str) -> None:
 # FILE UTILITIES
 # =============================================================================
 
+def validate_path_within_project(path: Path, project_root: Path = None) -> bool:
+    """
+    Validate that a path stays within the project root.
+    Prevents path traversal attacks (e.g., ../../etc/passwd).
+    """
+    project_root = project_root or Path.cwd()
+    try:
+        resolved = path.resolve()
+        project_resolved = project_root.resolve()
+        return str(resolved).startswith(str(project_resolved))
+    except (OSError, ValueError):
+        return False
+
+def safe_read_text(path: Path, encoding: str = "utf-8") -> Optional[str]:
+    """
+    Safely read text file with encoding fallback.
+    Returns None if file cannot be read.
+    """
+    for enc in [encoding, "utf-8-sig", "latin-1"]:
+        try:
+            return path.read_text(encoding=enc)
+        except UnicodeDecodeError:
+            continue
+        except (OSError, IOError) as e:
+            print(f"  Error reading {path}: {e}")
+            return None
+    print(f"  Error: Could not decode {path} with any known encoding")
+    return None
+
+
 def safe_copy(src: Path, dest: Path, overwrite: bool = True) -> bool:
     """Safely copy file or directory."""
     try:
@@ -185,6 +222,40 @@ def ensure_dir(path: Path) -> bool:
     except Exception as e:
         print(f"  Error creating directory {path}: {e}")
         return False
+
+
+# =============================================================================
+# COMMON CONVERTER HELPERS
+# =============================================================================
+
+_RE_FRONTMATTER_STRIP = re.compile(r'^---\n.*?\n---\n*', re.DOTALL)
+_RE_H1 = re.compile(r'^#\s+(.+)$', re.MULTILINE)
+
+
+def strip_frontmatter(content: str) -> str:
+    """Remove YAML frontmatter from markdown content."""
+    return _RE_FRONTMATTER_STRIP.sub('', content)
+
+
+def resolve_source_root(source_dir: str) -> Optional[Path]:
+    """
+    Resolve source root containing .agent/ directory.
+    Returns None if no source found.
+    """
+    root_path = Path(source_dir).resolve()
+    
+    if root_path.name == ".agent":
+        return root_path.parent
+    elif (root_path / ".agent").exists():
+        return root_path
+    else:
+        master_path = get_master_agent_dir()
+        if master_path.exists():
+            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
+            return master_path.parent
+    
+    print(f"{Colors.RED}❌ Error: No agent knowledge source found.{Colors.ENDC}")
+    return None
 
 
 # =============================================================================

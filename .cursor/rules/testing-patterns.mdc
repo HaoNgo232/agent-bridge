@@ -1,5 +1,5 @@
 ---
-description: 
+description: Testing frameworks and patterns
 globs: **/*.test.*,**/*.spec.*,**/__tests__/**/*,**/tests/**/*
 alwaysApply: false
 ---
@@ -176,3 +176,6 @@ alwaysApply: false
 ---
 
 > **Remember:** Tests are documentation. If someone can't understand what the code does from the tests, rewrite them.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

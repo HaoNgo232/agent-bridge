@@ -1,5 +1,5 @@
 ---
-description: 
+description: Mobile development for iOS/Android
 globs: **/App.tsx,**/app.json,**/*.native.*,**/android/**/*,**/ios/**/*
 alwaysApply: false
 ---
@@ -6124,3 +6124,6 @@ Warning:  Attention needed
 ---
 
 > **Remember:** Every touch is a conversation between user and device. Make it feel natural, responsive, and respectful of human fingers—not precise cursor points.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

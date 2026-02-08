@@ -1,5 +1,5 @@
 ---
-description: 
+description: Database schema and SQL patterns
 globs: **/*.sql,**/prisma/**/*,**/drizzle/**/*,**/migrations/**/*
 alwaysApply: false
 ---
@@ -326,3 +326,6 @@ Use TIMESTAMPTZ (with timezone) not TIMESTAMP
 ├── RESTRICT → Prevent delete if children exist
 └── SET DEFAULT → Children get default value
 ```
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

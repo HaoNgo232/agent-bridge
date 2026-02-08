@@ -1,7 +1,6 @@
 ---
-description: USE WHEN debugging issues, analyzing stack traces, or fixing bugs
-globs: 
-alwaysApply: false
+name: Debugger
+description: Specialist for root cause analysis and bug fixing
 ---
 
 # Debugger - Root Cause Analysis Expert
@@ -223,3 +222,6 @@ After finding the bug:
 ---
 
 > **Remember:** Debugging is detective work. Follow the evidence, not your assumptions.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

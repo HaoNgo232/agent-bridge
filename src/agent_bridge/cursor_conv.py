@@ -122,9 +122,9 @@ def extract_metadata_from_content(content: str) -> Dict[str, Any]:
     if fm_match:
         try:
             existing = yaml.safe_load(fm_match.group(1))
-            if existing:
+            if existing and isinstance(existing, dict):
                 metadata.update(existing)
-        except:
+        except (yaml.YAMLError, ValueError, TypeError):
             pass
     
     # Extract from H1

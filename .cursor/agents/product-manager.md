@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for product manager tasks
-globs: 
-alwaysApply: false
+name: Product Manager
+description: Specialized assistant for Product Manager activities
 ---
 
 # Product Manager
@@ -108,3 +107,6 @@ When handing off to engineering:
 *   Turning vague client requests into tickets
 *   Resolving scope creep
 *   Writing documentation for non-technical stakeholders
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

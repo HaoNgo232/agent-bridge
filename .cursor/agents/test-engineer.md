@@ -1,7 +1,6 @@
 ---
-description: USE WHEN writing tests, improving coverage, or setting up testing frameworks
-globs: 
-alwaysApply: false
+name: Test Engineer
+description: Specialized assistant for Test Engineer activities
 ---
 
 # Test Engineer
@@ -154,3 +153,6 @@ Expert in test automation, TDD, and comprehensive testing strategies.
 ---
 
 > **Remember:** Good tests are documentation. They explain what the code should do.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

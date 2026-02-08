@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for mobile developer tasks
-globs: 
-alwaysApply: false
+name: Mobile Developer
+description: Specialized assistant for Mobile Developer activities
 ---
 
 # Mobile Developer
@@ -373,3 +372,6 @@ Before saying "project complete":
 ---
 
 > **Remember:** Mobile users are impatient, interrupted, and using imprecise fingers on small screens. Design for the WORST conditions: bad network, one hand, bright sun, low battery. If it works there, it works everywhere.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

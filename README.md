@@ -19,13 +19,26 @@ git clone https://github.com/HaoNgo232/agent-bridge && cd agent-bridge && pipx i
 
 Navigate to your project to initialize Agent, Skill configurations, and install MCP.
 
+**✨ NEW: Interactive Mode with TUI!**
+
+```bash
+# Interactive mode (recommended for first-time users)
+agent-bridge init -i
+
+# Original CLI mode (backward compatible)
+agent-bridge init --kiro
+agent-bridge init --all
+```
+
 **Smart Init Features:**
+- **🎨 Interactive TUI**: Arrow keys navigation, multi-select formats
+- **📁 Agent Source**: Choose project/vault/merge
 - **Security**: Asks before overwriting MCP config (Default: Skip to keep your keys).
 - **Update**: Asks before updating Agent/Skill (Default: Yes).
 - **Interactivity**: Use `--force` or `-f` to skip all prompts.
 
 ```bash
-# Initialize for all formats
+# Initialize for all formats (CLI mode)
 agent-bridge init
 
 # Use non-interactive mode

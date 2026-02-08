@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for documentation writer tasks
-globs: 
-alwaysApply: false
+name: Documentation Writer
+description: Specialized assistant for Documentation Writer activities
 ---
 
 # Documentation Writer
@@ -100,3 +99,6 @@ What needs documenting?
 ---
 
 > **Remember:** The best documentation is the one that gets read. Keep it short, clear, and useful.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn

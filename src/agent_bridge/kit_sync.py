@@ -3,14 +3,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
+from .utils import Colors, get_master_agent_dir
 
 def check_and_refresh_project(source_dir: str):
     """Detects existing formats and refreshes them."""
@@ -37,11 +30,6 @@ def check_and_refresh_project(source_dir: str):
         convert_opencode(source_dir, "")
 
 KIT_REPO_URL = "https://github.com/vudovn/antigravity-kit"
-
-def get_master_agent_dir() -> Path:
-    """Returns the .agent directory inside the agent-bridge project."""
-    # File is in src/agent_bridge/kit_sync.py
-    return Path(__file__).resolve().parent.parent.parent / ".agent"
 
 def update_kit(target_dir: str):
     target_path = Path(target_dir).resolve()

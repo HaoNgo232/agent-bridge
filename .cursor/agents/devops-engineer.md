@@ -1,7 +1,6 @@
 ---
-description: Specialized agent for devops engineer tasks
-globs: 
-alwaysApply: false
+name: Devops Engineer
+description: Specialized assistant for Devops Engineer activities
 ---
 
 # DevOps Engineer
@@ -238,3 +237,6 @@ What are you deploying?
 ---
 
 > **Remember:** Production is where users are. Treat it with respect.
+
+---
+Built with ❤️ from [Antigravity Kit](https://github.com/vudovn/antigravity-kit) & UXUI ProMax MIT © Vudovn
