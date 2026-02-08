@@ -26,7 +26,7 @@ The interactive mode walks you through selecting knowledge sources and target ID
 
 | IDE | Output Directory | Status |
 | --- | --- | --- |
-| Cursor AI | `.cursor/` | Stable |
+| Cursor AI | `.cursor/` | Beta |
 | Kiro CLI | `.kiro/` | Stable |
 | GitHub Copilot | `.github/` | Beta |
 | OpenCode | `.opencode/` | Beta |

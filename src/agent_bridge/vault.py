@@ -10,10 +10,9 @@ Vault config stored in: ~/.config/agent-bridge/vaults.json
 import json
 import shutil
 import subprocess
-import tempfile
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, List, Optional
 
 VAULTS_CONFIG_DIR = Path.home() / ".config" / "agent-bridge"
 VAULTS_CONFIG_FILE = VAULTS_CONFIG_DIR / "vaults.json"
@@ -32,6 +31,7 @@ DEFAULT_VAULT = {
 @dataclass
 class Vault:
     """Represents a single vault source."""
+
     name: str
     url: str  # Git URL or local path
     description: str = ""
@@ -152,7 +152,8 @@ class VaultManager:
                 # Pull latest
                 subprocess.run(
                     ["git", "-C", str(cache_dir), "pull", "--ff-only"],
-                    check=True, capture_output=True,
+                    check=True,
+                    capture_output=True,
                 )
             else:
                 # Fresh clone
@@ -161,7 +162,8 @@ class VaultManager:
                     shutil.rmtree(cache_dir)
                 subprocess.run(
                     ["git", "clone", "--depth", "1", vault.url, str(cache_dir)],
-                    check=True, capture_output=True,
+                    check=True,
+                    capture_output=True,
                 )
 
             agent_dir = cache_dir / vault.agent_subdir

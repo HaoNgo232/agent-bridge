@@ -11,17 +11,16 @@ Output structure:
 Reference: https://kiro.dev/docs/cli/custom-agents/configuration-reference/
 """
 
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 import json
-import os
 import re
 import shutil
 import subprocess
-from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
+from pathlib import Path
+from typing import Any, Dict, List
 
 import yaml
 
+from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
 
 # =============================================================================
 # KIRO AGENT CONFIGURATION
@@ -29,14 +28,14 @@ import yaml
 
 # Tool permissions mapping
 KIRO_TOOLS = [
-    "fs_read",      # Read files
-    "fs_write",     # Write files
-    "fs_list",      # List directory
-    "bash",         # Execute shell commands
-    "web_search",   # Web search
-    "web_fetch",    # Fetch URLs
+    "fs_read",  # Read files
+    "fs_write",  # Write files
+    "fs_list",  # List directory
+    "bash",  # Execute shell commands
+    "web_search",  # Web search
+    "web_fetch",  # Fetch URLs
     "code_search",  # Search code
-    "use_mcp",      # Use MCP tools
+    "use_mcp",  # Use MCP tools
 ]
 
 # Agent role -> configuration mapping
@@ -44,9 +43,17 @@ AGENT_CONFIG_MAP = {
     "frontend-specialist": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "npm *", "npx *", "yarn *", "pnpm *",
-            "node *", "tsc *", "eslint *", "prettier *",
-            "git status", "git diff *", "git log *",
+            "npm *",
+            "npx *",
+            "yarn *",
+            "pnpm *",
+            "node *",
+            "tsc *",
+            "eslint *",
+            "prettier *",
+            "git status",
+            "git diff *",
+            "git log *",
         ],
         "allowedPaths": ["src/**", "components/**", "pages/**", "app/**", "public/**", "styles/**"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -54,10 +61,17 @@ AGENT_CONFIG_MAP = {
     "backend-specialist": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "npm *", "node *", "python *", "pip *",
-            "docker *", "docker-compose *",
-            "git status", "git diff *", "git log *",
-            "curl *", "wget *",
+            "npm *",
+            "node *",
+            "python *",
+            "pip *",
+            "docker *",
+            "docker-compose *",
+            "git status",
+            "git diff *",
+            "git log *",
+            "curl *",
+            "wget *",
         ],
         "allowedPaths": ["src/**", "api/**", "server/**", "lib/**", "services/**"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -65,9 +79,13 @@ AGENT_CONFIG_MAP = {
     "database-architect": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "npx prisma *", "npx drizzle-kit *",
-            "psql *", "mysql *", "sqlite3 *",
-            "git status", "git diff *",
+            "npx prisma *",
+            "npx drizzle-kit *",
+            "psql *",
+            "mysql *",
+            "sqlite3 *",
+            "git status",
+            "git diff *",
         ],
         "allowedPaths": ["prisma/**", "drizzle/**", "migrations/**", "db/**", "schema/**"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -75,9 +93,12 @@ AGENT_CONFIG_MAP = {
     "security-auditor": {
         "tools": ["fs_read", "fs_list", "code_search", "web_search"],
         "allowedCommands": [
-            "npm audit", "yarn audit",
-            "git log *", "git diff *",
-            "grep *", "find *",
+            "npm audit",
+            "yarn audit",
+            "git log *",
+            "git diff *",
+            "grep *",
+            "find *",
         ],
         "allowedPaths": ["**/*"],  # Read-only access to all
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -86,10 +107,15 @@ AGENT_CONFIG_MAP = {
     "test-engineer": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "npm test *", "npm run test *", "npx jest *", "npx vitest *",
-            "npx playwright *", "npx cypress *",
+            "npm test *",
+            "npm run test *",
+            "npx jest *",
+            "npx vitest *",
+            "npx playwright *",
+            "npx cypress *",
             "python -m pytest *",
-            "git status", "git diff *",
+            "git status",
+            "git diff *",
         ],
         "allowedPaths": ["tests/**", "test/**", "__tests__/**", "*.test.*", "*.spec.*"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -97,9 +123,14 @@ AGENT_CONFIG_MAP = {
     "devops-engineer": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "docker *", "docker-compose *",
-            "kubectl *", "helm *",
-            "terraform *", "aws *", "gcloud *", "az *",
+            "docker *",
+            "docker-compose *",
+            "kubectl *",
+            "helm *",
+            "terraform *",
+            "aws *",
+            "gcloud *",
+            "az *",
             "git *",
         ],
         "allowedPaths": [".github/**", "docker/**", "k8s/**", "terraform/**", "infra/**"],
@@ -108,8 +139,10 @@ AGENT_CONFIG_MAP = {
     "documentation-writer": {
         "tools": ["fs_read", "fs_write", "fs_list", "code_search", "web_search"],
         "allowedCommands": [
-            "git status", "git log *",
-            "npx typedoc *", "npx jsdoc *",
+            "git status",
+            "git log *",
+            "npx typedoc *",
+            "npx jsdoc *",
         ],
         "allowedPaths": ["docs/**", "*.md", "README*", "CHANGELOG*", "*.mdx"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -117,9 +150,14 @@ AGENT_CONFIG_MAP = {
     "explorer-agent": {
         "tools": ["fs_read", "fs_list", "code_search", "web_search"],
         "allowedCommands": [
-            "git log *", "git status",
-            "find *", "grep *", "tree *",
-            "cat *", "head *", "tail *",
+            "git log *",
+            "git status",
+            "find *",
+            "grep *",
+            "tree *",
+            "cat *",
+            "head *",
+            "tail *",
         ],
         "allowedPaths": ["**/*"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -128,8 +166,10 @@ AGENT_CONFIG_MAP = {
     "project-planner": {
         "tools": ["fs_read", "fs_list", "code_search", "web_search"],
         "allowedCommands": [
-            "git log *", "git status",
-            "find *", "tree *",
+            "git log *",
+            "git status",
+            "find *",
+            "tree *",
         ],
         "allowedPaths": ["**/*"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -145,9 +185,13 @@ AGENT_CONFIG_MAP = {
     "debugger": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
         "allowedCommands": [
-            "node --inspect *", "python -m pdb *",
-            "npm run *", "node *",
-            "git diff *", "git log *", "git blame *",
+            "node --inspect *",
+            "python -m pdb *",
+            "npm run *",
+            "node *",
+            "git diff *",
+            "git log *",
+            "git blame *",
         ],
         "allowedPaths": ["**/*"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -155,8 +199,10 @@ AGENT_CONFIG_MAP = {
     "performance-optimizer": {
         "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search", "web_fetch"],
         "allowedCommands": [
-            "npx lighthouse *", "npm run build *",
-            "node --prof *", "python -m cProfile *",
+            "npx lighthouse *",
+            "npm run build *",
+            "node --prof *",
+            "python -m cProfile *",
         ],
         "allowedPaths": ["**/*"],
         "autoApprove": ["fs_read", "fs_list", "code_search"],
@@ -176,12 +222,13 @@ DEFAULT_AGENT_CONFIG = {
 # METADATA EXTRACTION
 # =============================================================================
 
+
 def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
     """Extract metadata from agent markdown content."""
     metadata = {"name": "", "description": "", "instructions": ""}
-    
+
     # Check existing frontmatter
-    fm_match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+    fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
     if fm_match:
         try:
             existing = yaml.safe_load(fm_match.group(1))
@@ -189,38 +236,41 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
                 metadata.update(existing)
         except (yaml.YAMLError, ValueError, TypeError):
             pass
-    
+
     # Extract name from H1
-    name_match = re.search(r'^#\s+(.+?)(?:\s*[-–—]\s*(.+))?$', content, re.MULTILINE)
+    name_match = re.search(r"^#\s+(.+?)(?:\s*[-–—]\s*(.+))?$", content, re.MULTILINE)
     if name_match:
         metadata["name"] = name_match.group(1).strip()
         if name_match.group(2):
             metadata["description"] = name_match.group(2).strip()
-    
+
     # Fallback name
     if not metadata["name"]:
-        metadata["name"] = filename.replace('.md', '').replace('-', ' ').title()
-    
+        metadata["name"] = filename.replace(".md", "").replace("-", " ").title()
+
     # Extract description from content
     if not metadata.get("description"):
-        desc_match = re.search(r'(?:You are|Role:|Description:)\s*(.+?)(?:\n\n|\n#)', 
-                               content, re.IGNORECASE | re.DOTALL)
+        desc_match = re.search(
+            r"(?:You are|Role:|Description:)\s*(.+?)(?:\n\n|\n#)", content, re.IGNORECASE | re.DOTALL
+        )
         if desc_match:
             metadata["description"] = desc_match.group(1).strip()[:200]
-    
+
     # Use content as prompt (without frontmatter)
-    prompt = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+    prompt = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
     metadata["prompt"] = prompt.strip()
-    
+
     return metadata
 
 
-def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any], mcp_server_names: List[str] = None) -> Dict[str, Any]:
+def generate_kiro_agent_json(
+    agent_slug: str, metadata: Dict[str, Any], mcp_server_names: List[str] = None
+) -> Dict[str, Any]:
     """Generate professional Kiro agent JSON following the latest official spec."""
-    
+
     # Get role-specific config or default
     config = AGENT_CONFIG_MAP.get(agent_slug, DEFAULT_AGENT_CONFIG)
-    
+
     # Tool normalization (Internal -> Kiro Standard)
     TOOL_MAP = {
         "fs_read": "read",
@@ -228,16 +278,16 @@ def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any], mcp_serv
         "fs_list": "list",
         "bash": "shell",
         "web_search": "search",
-        "code_search": "code_search"
+        "code_search": "code_search",
     }
-    
+
     # Normalize base tools and auto-approve tools
     original_tools = config.get("tools", DEFAULT_AGENT_CONFIG["tools"])
     base_tools = [TOOL_MAP.get(t, t) for t in original_tools]
-    
+
     original_auto = config.get("autoApprove", DEFAULT_AGENT_CONFIG["autoApprove"])
     allowed_tools = [TOOL_MAP.get(t, t) for t in original_auto]
-    
+
     # Auto-trust MCP servers (Official Spec: @server/*)
     if mcp_server_names:
         for mcp in mcp_server_names:
@@ -249,76 +299,57 @@ def generate_kiro_agent_json(agent_slug: str, metadata: Dict[str, Any], mcp_serv
         "name": metadata.get("name") or agent_slug.replace("-", " ").title(),
         "description": metadata.get("description") or f"Specialized agent for {agent_slug.replace('-', ' ')}",
         "prompt": metadata.get("prompt", ""),
-        
         # Tools available to the agent (Kiro spec: tools)
         "tools": base_tools,
-        
         # Tools allowed without confirmation (Kiro spec: allowedTools)
         "allowedTools": allowed_tools,
-        
         # Persistent knowledge files (Kiro spec: resources with file:// URIs)
-        "resources": [
-            "file://.kiro/steering/**/*.md",
-            "file://.kiro/skills/**/SKILL.md"
-        ],
+        "resources": ["file://.kiro/steering/**/*.md", "file://.kiro/skills/**/SKILL.md"],
     }
-    
+
     # Build toolsSettings for granular control (Official Spec)
     tools_settings = {}
-    
+
     # 1. Shell settings
     if "shell" in base_tools and config.get("allowedCommands"):
-        tools_settings["shell"] = {
-            "allowedCommands": config["allowedCommands"],
-            "autoAllowReadonly": True
-        }
-    
+        tools_settings["shell"] = {"allowedCommands": config["allowedCommands"], "autoAllowReadonly": True}
+
     # 2. File Read settings
     if "read" in base_tools and config.get("allowedPaths"):
-        tools_settings["read"] = {
-            "allowedPaths": config["allowedPaths"],
-            "autoAllowReadonly": True
-        }
-        
+        tools_settings["read"] = {"allowedPaths": config["allowedPaths"], "autoAllowReadonly": True}
+
     # 3. File Write settings
     if "write" in base_tools and config.get("allowedPaths"):
-        tools_settings["write"] = {
-            "allowedPaths": config["allowedPaths"]
-        }
+        tools_settings["write"] = {"allowedPaths": config["allowedPaths"]}
 
     if tools_settings:
         agent_json["toolsSettings"] = tools_settings
-    
+
     # Optional: Map model if present in metadata
     if metadata.get("model"):
         agent_json["model"] = metadata["model"]
     elif config.get("model"):
         agent_json["model"] = config["model"]
-        
+
     return agent_json
-
-
-
 
 
 # =============================================================================
 # CONVERSION FUNCTIONS
 # =============================================================================
 
+
 def convert_agent_to_kiro(source_path: Path, dest_path: Path, mcp_server_names: List[str] = None) -> bool:
     """Convert agent to Kiro JSON format with full configuration."""
     try:
         content = source_path.read_text(encoding="utf-8")
         agent_slug = source_path.stem.lower()
-        
+
         metadata = extract_agent_metadata(content, source_path.name)
         agent_json = generate_kiro_agent_json(agent_slug, metadata, mcp_server_names)
-        
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        dest_path.write_text(
-            json.dumps(agent_json, indent=2, ensure_ascii=False),
-            encoding="utf-8"
-        )
+        dest_path.write_text(json.dumps(agent_json, indent=2, ensure_ascii=False), encoding="utf-8")
         return True
     except Exception as e:
         print(f"  Error converting agent {source_path.name}: {e}")
@@ -331,18 +362,19 @@ def convert_skill_to_kiro(source_dir: Path, dest_dir: Path) -> bool:
         skill_name = source_dir.name
         dest_skill_dir = dest_dir / skill_name
         dest_skill_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Copy all files
         for item in source_dir.iterdir():
             if item.is_dir():
                 shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
             else:
                 shutil.copy2(item, dest_skill_dir / item.name)
-        
+
         return True
     except Exception as e:
         print(f"  Error converting skill {source_dir.name}: {e}")
         return False
+
 
 def convert_workflow_to_prompt(source_path: Path, dest_path: Path) -> bool:
     """
@@ -351,11 +383,11 @@ def convert_workflow_to_prompt(source_path: Path, dest_path: Path) -> bool:
     """
     try:
         content = source_path.read_text(encoding="utf-8")
-        workflow_name = source_path.stem.lower()
-        
+        source_path.stem.lower()
+
         # Extract existing frontmatter for description
         description = "Custom workflow prompt"
-        fm_match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+        fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
         if fm_match:
             try:
                 fm_data = yaml.safe_load(fm_match.group(1))
@@ -363,34 +395,28 @@ def convert_workflow_to_prompt(source_path: Path, dest_path: Path) -> bool:
                     description = fm_data["description"]
             except (yaml.YAMLError, ValueError, TypeError):
                 pass
-            
+
         # Build Kiro Prompt frontmatter
         prompt_fm = {
             "description": description,
-            "arguments": [
-                {
-                    "name": "args",
-                    "description": "Arguments for the workflow",
-                    "required": False
-                }
-            ]
+            "arguments": [{"name": "args", "description": "Arguments for the workflow", "required": False}],
         }
-        
+
         # If content has $ARGUMENTS, it's a good sign it needs args
         has_args = "$ARGUMENTS" in content
         if not has_args:
             prompt_fm["arguments"] = []
-            
+
         # Clean content (remove old frontmatter)
-        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-        
+        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
+
         # Replace $ARGUMENTS with {{args}} for Kiro template syntax
         content_final = content_clean.replace("$ARGUMENTS", "{{args}}").strip()
-        
+
         # Build final output
-        fm_yaml = yaml.dump(prompt_fm, sort_keys=False).rstrip('\n')
+        fm_yaml = yaml.dump(prompt_fm, sort_keys=False).rstrip("\n")
         output = f"---\n{fm_yaml}\n---\n\n{content_final}\n"
-        
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")
         return True
@@ -403,14 +429,14 @@ def convert_workflow_to_steering(source_path: Path, dest_path: Path) -> bool:
     """Convert workflow to Kiro steering file with proper inclusion frontmatter."""
     try:
         content = source_path.read_text(encoding="utf-8")
-        
+
         # Remove frontmatter if exists
-        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL).strip()
-        
+        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+
         # Kiro steering files require inclusion frontmatter
         # Default to 'always' for workflow-derived steering
         steering_frontmatter = "---\ninclusion: always\n---\n\n"
-        
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(f"{steering_frontmatter}{content_clean}\n", encoding="utf-8")
         return True
@@ -422,43 +448,43 @@ def convert_workflow_to_steering(source_path: Path, dest_path: Path) -> bool:
 def copy_rules_to_steering(source_dir: Path, dest_dir: Path) -> bool:
     """
     Copy rules files into Kiro steering directory with proper frontmatter.
-    
+
     Per Kiro spec, steering files need inclusion frontmatter to control
     when they are loaded. Rules are treated as 'always' inclusion by default.
-    
+
     Args:
         source_dir: Source rules directory (.agent/rules)
         dest_dir: Destination steering directory (.kiro/steering)
-    
+
     Returns:
         True on success, False on error
     """
     try:
         dest_dir.mkdir(parents=True, exist_ok=True)
-        
+
         STEERING_FRONTMATTER = "---\ninclusion: always\n---\n\n"
-        
+
         for item in source_dir.iterdir():
-            if item.is_file() and item.suffix == '.md':
+            if item.is_file() and item.suffix == ".md":
                 dest_item = dest_dir / item.name
                 content = item.read_text(encoding="utf-8")
-                
+
                 # Check if content already has frontmatter
-                has_fm = re.match(r'^---\n', content)
+                has_fm = re.match(r"^---\n", content)
                 if has_fm:
                     # Check if it already has inclusion field
-                    fm_match = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
-                    if fm_match and 'inclusion' in fm_match.group(1):
+                    fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+                    if fm_match and "inclusion" in fm_match.group(1):
                         # Already has proper steering frontmatter, copy as-is
                         dest_item.write_text(content, encoding="utf-8")
                     else:
                         # Has frontmatter but no inclusion — strip and add proper one
-                        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+                        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
                         dest_item.write_text(f"{STEERING_FRONTMATTER}{content_clean}", encoding="utf-8")
                 else:
                     # No frontmatter at all — add steering frontmatter
                     dest_item.write_text(f"{STEERING_FRONTMATTER}{content}", encoding="utf-8")
-        
+
         return True
     except Exception as e:
         print(f"  Error copying rules to steering: {e}")
@@ -468,27 +494,27 @@ def copy_rules_to_steering(source_dir: Path, dest_dir: Path) -> bool:
 def copy_architecture_to_steering(source_file: Path, dest_dir: Path) -> bool:
     """
     Copy ARCHITECTURE.md into Kiro steering directory with inclusion frontmatter.
-    
+
     Per Kiro spec, architecture docs belong in .kiro/steering/
     as project knowledge/conventions. They use 'always' inclusion.
-    
+
     Args:
         source_file: Source ARCHITECTURE.md file
         dest_dir: Destination steering directory (.kiro/steering)
-    
+
     Returns:
         True on success, False on error
     """
     try:
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest_file = dest_dir / source_file.name
-        
+
         content = source_file.read_text(encoding="utf-8")
-        
+
         # Add steering frontmatter if not present
-        if not re.match(r'^---\n.*?inclusion.*?\n---', content, re.DOTALL):
+        if not re.match(r"^---\n.*?inclusion.*?\n---", content, re.DOTALL):
             content = f"---\ninclusion: always\n---\n\n{content}"
-        
+
         dest_file.write_text(content, encoding="utf-8")
         return True
     except Exception as e:
@@ -499,11 +525,11 @@ def copy_architecture_to_steering(source_file: Path, dest_dir: Path) -> bool:
 def copy_mcp_config(source_file: Path, dest_file: Path) -> bool:
     """
     Copy MCP config file into Kiro settings.
-    
+
     Args:
         source_file: Source mcp_config.json file
         dest_file: Destination mcp.json (in .kiro/settings/)
-    
+
     Returns:
         True on success, False on error
     """
@@ -519,74 +545,62 @@ def copy_mcp_config(source_file: Path, dest_file: Path) -> bool:
 def fetch_external_skill_resources(project_root: Path, verbose: bool = True) -> bool:
     """
     Install ui-ux-pro-max skill resources using uipro CLI.
-    
+
     See: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
-    
+
     If uipro CLI is not installed, prompts before auto-installing globally.
     Then runs: uipro init --ai kiro
-    
+
     Args:
         project_root: Project root directory
         verbose: Print progress messages
-    
+
     Returns:
         True on success, False on error
     """
     try:
         # Check if uipro CLI is installed
-        check_result = subprocess.run(
-            ["uipro", "--version"],
-            capture_output=True,
-            text=True,
-            cwd=str(project_root)
-        )
-        
+        check_result = subprocess.run(["uipro", "--version"], capture_output=True, text=True, cwd=str(project_root))
+
         # If not found, auto-install
         if check_result.returncode != 0:
             if verbose:
-                print(f"  📦 uipro CLI not found, installing globally...")
-            
+                print("  📦 uipro CLI not found, installing globally...")
+
             # Install globally via npm
-            install_result = subprocess.run(
-                ["npm", "install", "-g", "uipro-cli"],
-                capture_output=True,
-                text=True
-            )
-            
+            install_result = subprocess.run(["npm", "install", "-g", "uipro-cli"], capture_output=True, text=True)
+
             if install_result.returncode != 0:
                 if verbose:
                     print(f"  ⚠️  Failed to install uipro-cli: {install_result.stderr}")
-                    print(f"  💡 Try manually: npm install -g uipro-cli")
+                    print("  💡 Try manually: npm install -g uipro-cli")
                 return False
-            
+
             if verbose:
-                print(f"  ✓ uipro-cli installed successfully")
-        
+                print("  ✓ uipro-cli installed successfully")
+
         if verbose:
-            print(f"  📥 Installing ui-ux-pro-max via uipro CLI...")
-        
+            print("  📥 Installing ui-ux-pro-max via uipro CLI...")
+
         # Run uipro init for Kiro
         result = subprocess.run(
-            ["uipro", "init", "--ai", "kiro"],
-            capture_output=True,
-            text=True,
-            cwd=str(project_root)
+            ["uipro", "init", "--ai", "kiro"], capture_output=True, text=True, cwd=str(project_root)
         )
-        
+
         if result.returncode != 0:
             if verbose:
                 print(f"  ⚠️  uipro init failed: {result.stderr}")
             return False
-        
+
         if verbose:
-            print(f"  ✓ ui-ux-pro-max installed via uipro CLI")
-        
+            print("  ✓ ui-ux-pro-max installed via uipro CLI")
+
         return True
-        
+
     except FileNotFoundError as e:
         if verbose:
             if "npm" in str(e):
-                print(f"  ⚠️  npm not found. Please install Node.js first.")
+                print("  ⚠️  npm not found. Please install Node.js first.")
             else:
                 print(f"  ⚠️  Command not found: {e}")
         return False
@@ -596,63 +610,52 @@ def fetch_external_skill_resources(project_root: Path, verbose: bool = True) -> 
         return False
 
 
-
-
-
 def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
     """
     Main conversion function for Kiro CLI format.
-    
+
     Converts per Kiro official spec (https://kiro.dev/docs/cli/):
     - agents/ -> .kiro/agents/ (JSON format)
     - skills/ -> .kiro/skills/ (full copy)
     - workflows/ -> .kiro/prompts/ (custom commands via @)
     - rules/ -> .kiro/steering/ (system prompts)
     - mcp_config.json -> .kiro/settings/mcp.json
-    
+
     NOTE: scripts/, .shared/, ARCHITECTURE.md are NOT converted (not part of Kiro spec).
-    
+
     Args:
         source_root: Path to project root containing .agent/
         dest_root: Path to output root
         verbose: Print progress messages
-    
+
     Returns:
         Dict with conversion statistics
     """
-    stats = {
-        "agents": 0, 
-        "skills": 0, 
-        "prompts": 0,
-        "steering": 0,
-        "mcp": 0,
-        "warnings": [],
-        "errors": []
-    }
-    
+    stats = {"agents": 0, "skills": 0, "prompts": 0, "steering": 0, "mcp": 0, "warnings": [], "errors": []}
+
     # Define source and destination paths
     agent_root = source_root / ".agent"
     kiro_root = dest_root / ".kiro"
-    
+
     agents_src = agent_root / "agents"
     agents_dest = kiro_root / "agents"
-    
+
     skills_src = agent_root / "skills"
     skills_dest = kiro_root / "skills"
-    
+
     workflows_src = agent_root / "workflows"
     steering_dest = kiro_root / "steering"
-    
+
     rules_src = agent_root / "rules"
-    architecture_src = agent_root / "ARCHITECTURE.md"
-    
+    agent_root / "ARCHITECTURE.md"
+
     mcp_src = agent_root / "mcp_config.json"
     mcp_dest = kiro_root / "settings" / "mcp.json"
-    
+
     # Components not part of Kiro spec (skipped)
     scripts_src = agent_root / "scripts"
     shared_src = agent_root / ".shared"
-    
+
     # Load MCP config to get server names for auto-trust
     mcp_server_names = []
     if mcp_src.exists():
@@ -667,7 +670,7 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
     if agents_src.exists():
         if verbose:
             print("Converting agents to Kiro JSON format...")
-        
+
         for agent_file in agents_src.glob("*.md"):
             dest_file = agents_dest / f"{agent_file.stem}.json"
             if convert_agent_to_kiro(agent_file, dest_file, mcp_server_names):
@@ -676,12 +679,12 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
                     print(f"  ✓ {agent_file.stem}.json")
             else:
                 stats["errors"].append(f"agent:{agent_file.name}")
-    
+
     # Convert skills
     if skills_src.exists():
         if verbose:
             print("Converting skills to Kiro format...")
-        
+
         for skill_dir in skills_src.iterdir():
             if skill_dir.is_dir():
                 if convert_skill_to_kiro(skill_dir, skills_dest):
@@ -690,13 +693,13 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
                         print(f"  ✓ {skill_dir.name}")
                 else:
                     stats["errors"].append(f"skill:{skill_dir.name}")
-    
+
     # Convert workflows to Prompts (per Kiro spec)
     prompts_dest = dest_root / ".kiro" / "prompts"
     if workflows_src.exists():
         if verbose:
             print("Converting workflows to prompts...")
-        
+
         for workflow_file in workflows_src.glob("*.md"):
             dest_file = prompts_dest / workflow_file.name
             if convert_workflow_to_prompt(workflow_file, dest_file):
@@ -705,12 +708,12 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
                     print(f"  ✓ @{workflow_file.stem}")
             else:
                 stats["errors"].append(f"prompt:{workflow_file.name}")
-    
+
     # Copy rules to steering (per Kiro spec)
     if rules_src.exists():
         if verbose:
             print("Copying rules to steering...")
-        
+
         if copy_rules_to_steering(rules_src, steering_dest):
             rule_count = len(list(rules_src.glob("*.md")))
             stats["steering"] += rule_count
@@ -718,40 +721,38 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
                 print(f"  ✓ {rule_count} rule file(s) → steering/")
         else:
             stats["errors"].append("rules:copy_failed")
-    
+
     # Copy MCP config
     if mcp_src.exists():
         if verbose:
             print("Copying MCP configuration...")
-        
+
         if copy_mcp_config(mcp_src, mcp_dest):
             stats["mcp"] = 1
             if verbose:
-                print(f"  ✓ MCP config → settings/mcp.json")
+                print("  ✓ MCP config → settings/mcp.json")
         else:
             stats["errors"].append("mcp:copy_failed")
-    
+
     # Install ui-ux-pro-max skill via uipro CLI (if workflow exists)
     ui_ux_workflow = workflows_src / "ui-ux-pro-max.md" if workflows_src.exists() else None
     if ui_ux_workflow and ui_ux_workflow.exists():
         if verbose:
             print("Installing ui-ux-pro-max skill...")
-        
+
         if fetch_external_skill_resources(source_root, verbose):
             # CLI will auto-create .kiro/skills/ui-ux-pro-max/
             pass
         else:
             stats["warnings"].append("ui-ux-pro-max install failed (install uipro CLI: npm install -g uipro-cli)")
 
-    
     # Warnings for components not converted
     if scripts_src.exists():
         stats["warnings"].append("scripts/ not converted (not part of Kiro spec)")
-    
+
     if shared_src.exists():
         stats["warnings"].append(".shared/ not converted (use external repos like ui-ux-pro-max)")
 
-    
     # Final summary
     if verbose:
         print(f"\n{Colors.GREEN}✨ Kiro conversion complete (Official Spec):{Colors.ENDC}")
@@ -760,29 +761,29 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
         print(f"  • {stats['prompts']} prompts (@workflows)")
         print(f"  • {stats['steering']} steering files (system prompts)")
         print(f"  • {stats['mcp']} MCP config")
-        
+
         if stats["warnings"]:
             print(f"\n{Colors.YELLOW}⚠️  Warnings:{Colors.ENDC}")
             for warning in stats["warnings"]:
                 print(f"    - {warning}")
-        
+
         if stats["errors"]:
             print(f"\n{Colors.RED}  ⚠️  Errors: {len(stats['errors'])}{Colors.ENDC}")
             for error in stats["errors"]:
                 print(f"    - {error}")
-    
-    return stats
 
+    return stats
 
 
 # =============================================================================
 # CLI ENTRY POINTS
 # =============================================================================
 
+
 def convert_kiro(source_dir: str, output_dir: str, force: bool = False):
     """Bridge for CLI compatibility."""
     root_path = Path(source_dir).resolve()
-    
+
     # Check for .agent in local or master
     if root_path.name == ".agent":
         source_root = root_path.parent
@@ -799,13 +800,16 @@ def convert_kiro(source_dir: str, output_dir: str, force: bool = False):
 
     # Confirmation for Kiro Overwrite
     if (Path(".").resolve() / ".kiro").exists() and not force:
-        if not ask_user(f"Found existing '.kiro'. Update configuration (agents, skills, prompts, steering)?", default=True):
-             print(f"{Colors.YELLOW}⏭️  Skipping Kiro update.{Colors.ENDC}")
-             return
+        if not ask_user(
+            "Found existing '.kiro'. Update configuration (agents, skills, prompts, steering)?", default=True
+        ):
+            print(f"{Colors.YELLOW}⏭️  Skipping Kiro update.{Colors.ENDC}")
+            return
 
     print(f"{Colors.HEADER}🏗️  Converting to Kiro Format (Professional Spec)...{Colors.ENDC}")
     convert_to_kiro(source_root, Path("."), verbose=True)
     print(f"{Colors.GREEN}✅ Kiro conversion complete!{Colors.ENDC}")
+
 
 def copy_mcp_kiro(root_path: Path, force: bool = False):
     """Bridge for CLI compatibility."""
@@ -814,26 +818,27 @@ def copy_mcp_kiro(root_path: Path, force: bool = False):
         if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
             print(f"{Colors.YELLOW}🔒 Kept existing Kiro MCP config.{Colors.ENDC}")
             return
-    
+
     source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
     if install_mcp_for_ide(source_root, root_path, "kiro"):
         print(f"{Colors.BLUE}  🔌 Integrated MCP config into Kiro settings.{Colors.ENDC}")
 
+
 def init_kiro(project_path: Path = None, force: bool = False) -> bool:
     """Initialize Kiro configuration in project."""
     project_path = project_path or Path.cwd()
-    
+
     if not (project_path / ".agent").exists():
         print("Error: .agent directory not found. Run 'agent-bridge update' first.")
         return False
-    
+
     # Check for existing .kiro directory
     kiro_dir = project_path / ".kiro"
     if kiro_dir.exists() and not force:
-        if not ask_user(f"Found existing '.kiro'. Update configuration?", default=True):
+        if not ask_user("Found existing '.kiro'. Update configuration?", default=True):
             print(f"{Colors.YELLOW}⏭️  Skipping Kiro initialization.{Colors.ENDC}")
             return False
-    
+
     stats = convert_to_kiro(project_path, project_path)
     return len(stats["errors"]) == 0
 
@@ -841,16 +846,16 @@ def init_kiro(project_path: Path = None, force: bool = False) -> bool:
 def clean_kiro(project_path: Path = None) -> bool:
     """Remove Kiro configuration from project."""
     project_path = project_path or Path.cwd()
-    
+
     paths_to_remove = [
         project_path / ".kiro" / "agents",
         project_path / ".kiro" / "skills",
         project_path / ".kiro" / "steering",
     ]
-    
+
     for path in paths_to_remove:
         if path.exists():
             shutil.rmtree(path)
             print(f"  Removed {path}")
-    
+
     return True

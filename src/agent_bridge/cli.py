@@ -1,28 +1,33 @@
 import argparse
-import sys
 import shutil
+import sys
 from pathlib import Path
+
 import questionary
-from questionary import Style, Separator
-from .utils import Colors, ask_user
-from .kiro_conv import convert_kiro, copy_mcp_kiro
+from questionary import Separator, Style
+
 from .copilot_conv import convert_copilot, copy_mcp_copilot
-from .opencode_conv import convert_opencode, copy_mcp_opencode
 from .cursor_conv import convert_cursor, copy_mcp_cursor
-from .windsurf_conv import convert_windsurf, copy_mcp_windsurf
+from .kiro_conv import convert_kiro, copy_mcp_kiro
 from .kit_sync import update_kit
+from .opencode_conv import convert_opencode, copy_mcp_opencode
+from .utils import Colors
+from .windsurf_conv import convert_windsurf, copy_mcp_windsurf
 
 # Cấu hình phong cách tùy chỉnh cho Questionary (loại bỏ triệt để nền màu xanh)
-CUSTOM_STYLE = Style([
-    ('qmark', 'fg:#00d4ff bold'),                # Dấu hỏi
-    ('question', 'bold'),                         # Nội dung câu hỏi
-    ('answer', 'fg:#00d4ff bold'),               # Câu trả lời đã chọn
-    ('pointer', 'fg:#00d4ff bold'),              # Con trỏ mũi tên (>)
-    ('highlighted', 'fg:#00d4ff bold bg:default'), # Tùy chọn đang được trỏ tới (ép buộc nền mặc định)
-    ('selected', 'fg:#00d4ff bold bg:default'),    # Tùy chọn đã được chọn (ép buộc nền mặc định)
-    ('checkbox', 'fg:#888888'),                  # Checkbox chưa chọn
-    ('checkbox-selected', 'fg:#00d4ff bold'),    # Checkbox đã chọn
-])
+CUSTOM_STYLE = Style(
+    [
+        ("qmark", "fg:#00d4ff bold"),  # Dấu hỏi
+        ("question", "bold"),  # Nội dung câu hỏi
+        ("answer", "fg:#00d4ff bold"),  # Câu trả lời đã chọn
+        ("pointer", "fg:#00d4ff bold"),  # Con trỏ mũi tên (>)
+        ("highlighted", "fg:#00d4ff bold bg:default"),  # Tùy chọn đang được trỏ tới (ép buộc nền mặc định)
+        ("selected", "fg:#00d4ff bold bg:default"),  # Tùy chọn đã được chọn (ép buộc nền mặc định)
+        ("checkbox", "fg:#888888"),  # Checkbox chưa chọn
+        ("checkbox-selected", "fg:#00d4ff bold"),  # Checkbox đã chọn
+    ]
+)
+
 
 def _tui_add_vault(has_local_agent: bool) -> str:
     """Interactive TUI flow for adding a custom vault. Returns source_choice or None to cancel."""
@@ -54,11 +59,14 @@ def _tui_add_vault(has_local_agent: bool) -> str:
         return None
 
     # Optional description
-    vault_desc = questionary.text(
-        "Description (optional):",
-        default="",
-        style=CUSTOM_STYLE,
-    ).ask() or ""
+    vault_desc = (
+        questionary.text(
+            "Description (optional):",
+            default="",
+            style=CUSTOM_STYLE,
+        ).ask()
+        or ""
+    )
 
     # Priority
     vault_priority = questionary.text(
@@ -84,7 +92,9 @@ def _tui_add_vault(has_local_agent: bool) -> str:
     results = vm.sync(name=vault_name)
     vault_result = results.get(vault_name, {})
     if vault_result.get("status") == "ok":
-        print(f"  {Colors.GREEN}Synced: {vault_result.get('agents', 0)} agents, {vault_result.get('skills', 0)} skills{Colors.ENDC}\n")
+        print(
+            f"  {Colors.GREEN}Synced: {vault_result.get('agents', 0)} agents, {vault_result.get('skills', 0)} skills{Colors.ENDC}\n"
+        )
     else:
         print(f"  {Colors.RED}Sync issue: {vault_result.get('status', 'unknown')}{Colors.ENDC}")
         print(f"  {Colors.YELLOW}Continuing anyway — you can retry with 'agent-bridge vault sync'{Colors.ENDC}\n")
@@ -108,6 +118,7 @@ def _get_vault_agent_dir() -> Path:
     """Lấy đường dẫn thư mục agent từ bộ nhớ đệm của vault chính."""
     try:
         from .vault import VaultManager
+
         vm = VaultManager()
         for vault in vm.enabled_vaults:
             if vault.is_local:
@@ -118,9 +129,10 @@ def _get_vault_agent_dir() -> Path:
                 return source
     except ImportError:
         pass
-    
+
     # Fallback to legacy master dir
     from .utils import get_master_agent_dir
+
     master = get_master_agent_dir()
     if master.exists():
         return master
@@ -134,20 +146,21 @@ def _fetch_vault_to_project(agent_dir: Path, overwrite: bool = False):
         print(f"{Colors.YELLOW}Vault not synced yet. Running sync...{Colors.ENDC}")
         try:
             from .vault import VaultManager
+
             vm = VaultManager()
             vm.sync()
             vault_source = _get_vault_agent_dir()
         except Exception as e:
             print(f"{Colors.RED}Vault sync failed: {e}{Colors.ENDC}")
             return
-    
+
     if not vault_source or not vault_source.exists():
         print(f"{Colors.RED}No vault source available.{Colors.ENDC}")
         return
-    
+
     if agent_dir.exists() and overwrite:
         shutil.rmtree(agent_dir)
-    
+
     if not agent_dir.exists():
         shutil.copytree(vault_source, agent_dir)
         print(f"{Colors.GREEN}Vault copied to .agent/{Colors.ENDC}")
@@ -161,14 +174,14 @@ def _merge_vault_to_project(agent_dir: Path):
     if not vault_source or not vault_source.exists():
         print(f"{Colors.YELLOW}No vault to merge from. Run 'agent-bridge vault sync' first.{Colors.ENDC}")
         return
-    
+
     for subdir in ["agents", "skills", "workflows"]:
         src = vault_source / subdir
         dst = agent_dir / subdir
         if not src.exists():
             continue
         dst.mkdir(parents=True, exist_ok=True)
-        
+
         for item in src.iterdir():
             dest_item = dst / item.name
             if dest_item.exists():
@@ -177,7 +190,7 @@ def _merge_vault_to_project(agent_dir: Path):
                 shutil.copytree(item, dest_item)
             else:
                 shutil.copy2(item, dest_item)
-    
+
     print(f"{Colors.GREEN}Vault merged into .agent/{Colors.ENDC}")
 
 
@@ -224,7 +237,7 @@ def _main_inner():
     # OpenCode Subcommand
     opencode_parser = subparsers.add_parser("opencode", help="Convert to OpenCode format")
     opencode_parser.add_argument("--source", default=".agent", help="Source directory")
- 
+
     # Clean Subcommand
     clean_parser = subparsers.add_parser("clean", help="Remove generated IDE configuration folders")
     clean_parser.add_argument("--copilot", action="store_true", help="Clean Copilot")
@@ -233,7 +246,7 @@ def _main_inner():
     clean_parser.add_argument("--cursor", action="store_true", help="Clean Cursor")
     clean_parser.add_argument("--windsurf", action="store_true", help="Clean Windsurf")
     clean_parser.add_argument("--all", action="store_true", help="Clean all IDE formats")
- 
+
     # List Subcommand
     subparsers.add_parser("list", help="List supported IDE formats")
 
@@ -241,7 +254,7 @@ def _main_inner():
     vault_parser = subparsers.add_parser("vault", help="Manage knowledge vault sources")
     vault_sub = vault_parser.add_subparsers(dest="vault_action", help="Vault action")
 
-    vault_list_parser = vault_sub.add_parser("list", help="List registered vaults")
+    vault_sub.add_parser("list", help="List registered vaults")
 
     vault_add_parser = vault_sub.add_parser("add", help="Register a new vault source")
     vault_add_parser.add_argument("name", help="Vault name (unique identifier)")
@@ -266,15 +279,15 @@ def _main_inner():
     mcp_parser.add_argument("--force", "-f", action="store_true", help="Force overwrite without prompt")
 
     args = parser.parse_args()
-    
+
     # --- DISPATCH COMMANDS ---
     if args.format == "init":
         print(f"{Colors.HEADER}🚀 Initializing AI for current project...{Colors.ENDC}")
-        
+
         SOURCE_DIR = args.source
         project_path = Path.cwd()
         agent_dir = project_path / SOURCE_DIR
-        
+
         # Determine if we should use interactive mode
         # TUI is DEFAULT unless:
         # 1. User specified format flags (--kiro, --cursor, etc.)
@@ -282,14 +295,14 @@ def _main_inner():
         # 3. User used --force (implies non-interactive)
         has_format_flags = args.copilot or args.kiro or args.opencode or args.cursor or args.windsurf or args.all
         use_interactive = not has_format_flags and not args.no_interactive and not args.force
-        
+
         # Interactive mode with Questionary (DEFAULT)
         if use_interactive:
             print(f"\n{Colors.CYAN}Agent Bridge - Interactive Setup{Colors.ENDC}\n")
-            
-# 1. Agent source selection
+
+            # 1. Agent source selection
             has_local_agent = agent_dir.exists()
-            
+
             if has_local_agent:
                 source_choice = questionary.select(
                     "Agent source:",
@@ -300,7 +313,7 @@ def _main_inner():
                         Separator(),
                         questionary.Choice("Add your own vault first...", value="add_vault"),
                     ],
-                    style=CUSTOM_STYLE
+                    style=CUSTOM_STYLE,
                 ).ask()
             else:
                 source_choice = questionary.select(
@@ -309,50 +322,51 @@ def _main_inner():
                         questionary.Choice("Use default vault (Antigravity Kit)", value="vault"),
                         questionary.Choice("Add your own vault...", value="add_vault"),
                     ],
-                    style=CUSTOM_STYLE
+                    style=CUSTOM_STYLE,
                 ).ask()
-            
+
             if not source_choice:
                 print(f"{Colors.YELLOW}Cancelled.{Colors.ENDC}")
                 return
-            
+
             # 1b. Handle "Add your own vault" flow
             if source_choice == "add_vault":
                 source_choice = _tui_add_vault(has_local_agent)
                 if not source_choice:
                     return
-            
+
             # 2. Format selection (multi-select with sensible defaults) offer to add one
             if source_choice in ("vault", "merge"):
                 try:
                     from .vault import VaultManager
+
                     vm = VaultManager()
                     if not vm.enabled_vaults:
                         print(f"\n  {Colors.YELLOW}No vaults registered yet.{Colors.ENDC}")
                         add_vault = questionary.confirm(
-                            "Add a vault source now?",
-                            default=True,
-                            style=CUSTOM_STYLE
+                            "Add a vault source now?", default=True, style=CUSTOM_STYLE
                         ).ask()
-                        
+
                         if add_vault:
                             vault_url = questionary.text(
                                 "Git URL or local path:",
                                 default="https://github.com/vudovn/antigravity-kit",
-                                style=CUSTOM_STYLE
+                                style=CUSTOM_STYLE,
                             ).ask()
-                            
+
                             if vault_url:
                                 vault_name = questionary.text(
                                     "Vault name:",
                                     default=vault_url.rstrip("/").split("/")[-1].replace(".git", ""),
-                                    style=CUSTOM_STYLE
+                                    style=CUSTOM_STYLE,
                                 ).ask()
-                                
+
                                 if vault_name:
                                     try:
                                         vm.add(vault_name, vault_url)
-                                        print(f"  {Colors.GREEN}Vault '{vault_name}' registered. Syncing...{Colors.ENDC}")
+                                        print(
+                                            f"  {Colors.GREEN}Vault '{vault_name}' registered. Syncing...{Colors.ENDC}"
+                                        )
                                         vm.sync(name=vault_name)
                                     except ValueError as e:
                                         print(f"  {Colors.YELLOW}{e}{Colors.ENDC}")
@@ -361,7 +375,7 @@ def _main_inner():
                             return
                 except ImportError:
                     pass
-            
+
             # 2. Format selection (multi-select with sensible defaults)
             format_choices = questionary.checkbox(
                 "Select target IDE formats:",
@@ -373,13 +387,13 @@ def _main_inner():
                     questionary.Choice("Windsurf (.windsurf/)"),
                 ],
                 style=CUSTOM_STYLE,
-                instruction="Space=toggle, Enter=confirm"
+                instruction="Space=toggle, Enter=confirm",
             ).ask()
-            
+
             if not format_choices:
                 print(f"\n{Colors.YELLOW}No format selected. Use Space to toggle, then Enter.{Colors.ENDC}")
                 return
-            
+
             # Map choices to format flags
             formats = {
                 "kiro": "Kiro (.kiro/)" in format_choices,
@@ -388,37 +402,35 @@ def _main_inner():
                 "opencode": "OpenCode (.opencode/)" in format_choices,
                 "windsurf": "Windsurf (.windsurf/)" in format_choices,
             }
-            
+
             selected_names = [k for k, v in formats.items() if v]
-            
+
             # 3. Confirmation
             print(f"\n  Source:  {Colors.CYAN}{source_choice}{Colors.ENDC}")
             print(f"  Target:  {Colors.CYAN}{', '.join(selected_names)}{Colors.ENDC}")
-            
-            confirm = questionary.confirm(
-                "Proceed?",
-                default=True,
-                style=CUSTOM_STYLE
-            ).ask()
-            
+
+            confirm = questionary.confirm("Proceed?", default=True, style=CUSTOM_STYLE).ask()
+
             if not confirm:
                 print(f"{Colors.YELLOW}Cancelled.{Colors.ENDC}")
                 return
-            
+
             # Handle source choice using VaultManager
             if source_choice == "vault" or (source_choice == "merge" and not agent_dir.exists()):
                 _fetch_vault_to_project(agent_dir, overwrite=(source_choice == "vault"))
             elif source_choice == "merge":
                 _merge_vault_to_project(agent_dir)
-            
+
             # Final check: do we actually have .agent now?
             if not agent_dir.exists():
                 print(f"{Colors.RED}No agent source available. Run 'agent-bridge vault sync' first.{Colors.ENDC}")
                 return
-            
+
         else:
             # CLI mode (when flags are provided)
-            select_all = args.all or (not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf)
+            select_all = args.all or (
+                not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf
+            )
             formats = {
                 "kiro": select_all or args.kiro,
                 "cursor": select_all or args.cursor,
@@ -426,40 +438,42 @@ def _main_inner():
                 "opencode": select_all or args.opencode,
                 "windsurf": select_all or args.windsurf,
             }
-        
+
         # Convert to selected formats
         print(f"\n{Colors.CYAN}🔄 Converting agents...{Colors.ENDC}\n")
-        
+
         if formats["copilot"]:
             convert_copilot(SOURCE_DIR, "", force=args.force)
             copy_mcp_copilot(Path("."), force=args.force)
             print(f"{Colors.GREEN}✅ Copilot format created{Colors.ENDC}")
-            
+
         if formats["kiro"]:
             convert_kiro(SOURCE_DIR, ".kiro", force=args.force)
             copy_mcp_kiro(Path("."), force=args.force)
             print(f"{Colors.GREEN}✅ Kiro format created{Colors.ENDC}")
-            
+
         if formats["opencode"]:
             convert_opencode(SOURCE_DIR, "", force=args.force)
             copy_mcp_opencode(Path("."), force=args.force)
             print(f"{Colors.GREEN}✅ OpenCode format created{Colors.ENDC}")
-            
+
         if formats["cursor"]:
             convert_cursor(SOURCE_DIR, "", force=args.force)
             copy_mcp_cursor(Path("."), force=args.force)
             print(f"{Colors.GREEN}✅ Cursor format created{Colors.ENDC}")
-            
+
         if formats["windsurf"]:
             convert_windsurf(SOURCE_DIR, "", force=args.force)
             copy_mcp_windsurf(Path("."), force=args.force)
             print(f"{Colors.GREEN}✅ Windsurf format created{Colors.ENDC}")
-            
+
         print(f"\n{Colors.GREEN}🎉 Initialization complete!{Colors.ENDC}")
 
     elif args.format == "mcp":
         print(f"{Colors.HEADER}⚙️ Installing MCP configuration...{Colors.ENDC}")
-        install_all = args.all or (not args.cursor and not args.windsurf and not args.opencode and not args.copilot and not args.kiro)
+        install_all = args.all or (
+            not args.cursor and not args.windsurf and not args.opencode and not args.copilot and not args.kiro
+        )
 
         if install_all or args.cursor:
             copy_mcp_cursor(Path("."), force=args.force)
@@ -493,6 +507,7 @@ def _main_inner():
         convert_opencode(args.source, "")
     elif args.format == "vault":
         from .vault import VaultManager
+
         vm = VaultManager()
 
         if args.vault_action == "list":
@@ -514,7 +529,7 @@ def _main_inner():
             try:
                 vault = vm.add(args.name, args.url, args.description, args.priority)
                 print(f"{Colors.GREEN}✅ Vault '{vault.name}' registered.{Colors.ENDC}")
-                print(f"   Run 'agent-bridge vault sync' to download it.")
+                print("   Run 'agent-bridge vault sync' to download it.")
             except ValueError as e:
                 print(f"{Colors.RED}❌ {e}{Colors.ENDC}")
 
@@ -538,24 +553,27 @@ def _main_inner():
 
     elif args.format == "clean":
         import os
+
         print(f"{Colors.YELLOW}🧹 Cleaning up IDE configurations...{Colors.ENDC}")
-        clean_all = args.all or (not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf)
-        
+        clean_all = args.all or (
+            not args.copilot and not args.kiro and not args.opencode and not args.cursor and not args.windsurf
+        )
+
         if clean_all or args.copilot:
             github_agents = Path(".github/agents")
             github_skills = Path(".github/skills")
-            if github_agents.exists(): 
+            if github_agents.exists():
                 shutil.rmtree(github_agents)
                 print("  🗑️  Removed .github/agents")
             if github_skills.exists():
                 shutil.rmtree(github_skills)
                 print("  🗑️  Removed .github/skills")
-                
+
         if clean_all or args.kiro:
             if Path(".kiro").exists():
                 shutil.rmtree(".kiro")
                 print("  🗑️  Removed .kiro")
-                
+
         if clean_all or args.opencode:
             if Path(".opencode").exists():
                 shutil.rmtree(".opencode")
@@ -568,7 +586,7 @@ def _main_inner():
             if Path(".cursor").exists():
                 shutil.rmtree(".cursor")
                 print("  🗑️  Removed .cursor")
-        
+
         if clean_all or args.windsurf:
             if Path(".windsurf").exists():
                 shutil.rmtree(".windsurf")

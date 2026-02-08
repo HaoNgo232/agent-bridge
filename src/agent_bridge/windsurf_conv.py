@@ -12,16 +12,12 @@ Reference: https://docs.windsurf.com/windsurf/cascade/memories
 Activation modes: Manual, Always On, Model Decision, Glob
 """
 
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-import json
-import os
 import re
 import shutil
+from pathlib import Path
+from typing import Any, Dict, List
+
 from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
-
-import yaml
-
 
 # =============================================================================
 # WINDSURF RULE CONFIGURATION
@@ -45,7 +41,6 @@ SKILL_ACTIVATION_MAP = {
         "description": "Agent behavioral guidelines",
         "globs": [],
     },
-    
     # Glob-based rules
     "nextjs-react-expert": {
         "mode": "glob",
@@ -82,7 +77,6 @@ SKILL_ACTIVATION_MAP = {
         "description": "Mobile development patterns",
         "globs": ["**/App.tsx", "**/app.json", "**/android/**/*", "**/ios/**/*"],
     },
-    
     # Model Decision rules (AI decides)
     "architecture": {
         "mode": "model",
@@ -119,7 +113,6 @@ SKILL_ACTIVATION_MAP = {
         "description": "SEO optimization - use when improving search engine optimization",
         "globs": [],
     },
-    
     # Manual rules (explicit @mention)
     "red-team-tactics": {
         "mode": "manual",
@@ -138,25 +131,21 @@ SKILL_ACTIVATION_MAP = {
 # RULE FORMAT HELPERS
 # =============================================================================
 
-def generate_windsurf_rule_header(
-    name: str,
-    mode: str,
-    description: str,
-    globs: List[str] = None
-) -> str:
+
+def generate_windsurf_rule_header(name: str, mode: str, description: str, globs: List[str] = None) -> str:
     """
     Generate Windsurf rule header with activation mode.
-    
+
     Format:
     # Rule Name
-    
+
     **Activation:** Always On | Glob: pattern | Model Decision | Manual
     **Description:** ...
-    
+
     ---
     """
     lines = [f"# {name}", ""]
-    
+
     # Activation mode
     if mode == "always":
         lines.append("**Activation:** Always On")
@@ -169,20 +158,20 @@ def generate_windsurf_rule_header(
         lines.append("**Activation:** Model Decision")
     else:
         lines.append("**Activation:** Manual (@mention)")
-    
+
     # Description
     if description:
         lines.append(f"**Description:** {description}")
-    
+
     lines.extend(["", "---", ""])
-    
+
     return "\n".join(lines)
 
 
 def generate_workflow_content(name: str, steps: List[str], description: str = "") -> str:
     """
     Generate Windsurf workflow markdown.
-    
+
     Workflows are invoked via /workflow-name command.
     """
     lines = [
@@ -193,19 +182,19 @@ def generate_workflow_content(name: str, steps: List[str], description: str = ""
         "## Steps",
         "",
     ]
-    
+
     for i, step in enumerate(steps, 1):
         lines.append(f"{i}. {step}")
-    
-    lines.extend([
-        "",
-        "---",
-        "",
-        "*Invoke this workflow with* `/{}` *in Cascade.*".format(
-            name.lower().replace(" ", "-")
-        ),
-    ])
-    
+
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "*Invoke this workflow with* `/{}` *in Cascade.*".format(name.lower().replace(" ", "-")),
+        ]
+    )
+
     return "\n".join(lines)
 
 
@@ -213,33 +202,37 @@ def generate_workflow_content(name: str, steps: List[str], description: str = ""
 # CONVERSION FUNCTIONS
 # =============================================================================
 
+
 def convert_skill_to_windsurf_rule(source_dir: Path, dest_path: Path) -> bool:
     """Convert skill to Windsurf rule with activation mode."""
     try:
         skill_name = source_dir.name
-        
+
         # Find SKILL.md
         skill_file = source_dir / "SKILL.md"
         if not skill_file.exists():
             md_files = list(source_dir.glob("*.md"))
             skill_file = md_files[0] if md_files else None
-        
+
         if not skill_file:
             return False
-        
+
         content = skill_file.read_text(encoding="utf-8")
-        
+
         # Get activation config
-        config = SKILL_ACTIVATION_MAP.get(skill_name, {
-            "mode": "model",
-            "description": f"Rules for {skill_name.replace('-', ' ')}",
-            "globs": [],
-        })
-        
+        config = SKILL_ACTIVATION_MAP.get(
+            skill_name,
+            {
+                "mode": "model",
+                "description": f"Rules for {skill_name.replace('-', ' ')}",
+                "globs": [],
+            },
+        )
+
         # Remove existing frontmatter/header
-        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-        content_clean = re.sub(r'^#\s+.+\n*', '', content_clean)  # Remove first H1
-        
+        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
+        content_clean = re.sub(r"^#\s+.+\n*", "", content_clean)  # Remove first H1
+
         # Generate header with activation mode
         header = generate_windsurf_rule_header(
             name=skill_name.replace("-", " ").title(),
@@ -247,14 +240,14 @@ def convert_skill_to_windsurf_rule(source_dir: Path, dest_path: Path) -> bool:
             description=config.get("description", ""),
             globs=config.get("globs", []),
         )
-        
+
         # Merge additional .md files
         for md_file in sorted(source_dir.glob("*.md")):
             if md_file.name != "SKILL.md":
                 additional = md_file.read_text(encoding="utf-8")
-                additional_clean = re.sub(r'^---\n.*?\n---\n*', '', additional, flags=re.DOTALL)
+                additional_clean = re.sub(r"^---\n.*?\n---\n*", "", additional, flags=re.DOTALL)
                 content_clean += f"\n\n---\n\n{additional_clean}"
-        
+
         # Windsurf has a per-rule character limit
         # See: https://docs.windsurf.com/windsurf/cascade/memories#rule-limits
         WINDSURF_RULE_MAX_CHARS = 12000
@@ -262,8 +255,8 @@ def convert_skill_to_windsurf_rule(source_dir: Path, dest_path: Path) -> bool:
 
         output = f"{header}{content_clean.strip()}\n"
         if len(output) > WINDSURF_RULE_MAX_CHARS:
-            output = output[:WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
-        
+            output = output[: WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")
         return True
@@ -278,10 +271,10 @@ def convert_agent_to_windsurf_rule(source_path: Path, dest_path: Path) -> bool:
         content = source_path.read_text(encoding="utf-8")
         agent_slug = source_path.stem.lower()
         agent_name = agent_slug.replace("-", " ").title()
-        
+
         # Remove existing frontmatter
-        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-        
+        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
+
         # Generate header
         header = generate_windsurf_rule_header(
             name=agent_name,
@@ -289,14 +282,14 @@ def convert_agent_to_windsurf_rule(source_path: Path, dest_path: Path) -> bool:
             description=f"Specialized agent for {agent_slug.replace('-', ' ')} tasks",
             globs=[],
         )
-        
+
         WINDSURF_RULE_MAX_CHARS = 12000
         WINDSURF_TRUNCATE_SUFFIX = "\n\n... (truncated to fit Windsurf rule limit)\n"
-        
+
         output = f"{header}{content_clean.strip()}\n"
         if len(output) > WINDSURF_RULE_MAX_CHARS:
-            output = output[:WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
-        
+            output = output[: WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")
         return True
@@ -310,36 +303,37 @@ def convert_workflow_to_windsurf(source_path: Path, dest_path: Path) -> bool:
     try:
         content = source_path.read_text(encoding="utf-8")
         workflow_name = source_path.stem.replace("-", " ").title()
-        
+
         # Extract steps from markdown
         steps = []
-        step_matches = re.findall(r'^\d+\.\s+(.+)$', content, re.MULTILINE)
+        step_matches = re.findall(r"^\d+\.\s+(.+)$", content, re.MULTILINE)
         if step_matches:
             steps = step_matches
         else:
             # Extract from headers
-            header_matches = re.findall(r'^##\s+(?:Step\s+\d+[:\s]*)?(.+)$', content, re.MULTILINE)
+            header_matches = re.findall(r"^##\s+(?:Step\s+\d+[:\s]*)?(.+)$", content, re.MULTILINE)
             steps = header_matches if header_matches else ["Follow the instructions below"]
-        
+
         # Extract description
-        desc_match = re.search(r'^>\s*(.+?)$|^(?:Description|Purpose)[:\s]*(.+?)(?:\n|$)', 
-                               content, re.MULTILINE | re.IGNORECASE)
+        desc_match = re.search(
+            r"^>\s*(.+?)$|^(?:Description|Purpose)[:\s]*(.+?)(?:\n|$)", content, re.MULTILINE | re.IGNORECASE
+        )
         description = ""
         if desc_match:
             description = (desc_match.group(1) or desc_match.group(2) or "").strip()
-        
+
         # Remove existing frontmatter
-        content_clean = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
-        
+        content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
+
         # Build workflow output
         output = generate_workflow_content(workflow_name, steps, description)
         output += f"\n\n---\n\n## Full Instructions\n\n{content_clean.strip()}\n"
-        
+
         WINDSURF_RULE_MAX_CHARS = 12000
         WINDSURF_TRUNCATE_SUFFIX = "\n\n... (truncated to fit Windsurf rule limit)\n"
         if len(output) > WINDSURF_RULE_MAX_CHARS:
-            output = output[:WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
-        
+            output = output[: WINDSURF_RULE_MAX_CHARS - len(WINDSURF_TRUNCATE_SUFFIX)] + WINDSURF_TRUNCATE_SUFFIX
+
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         dest_path.write_text(output, encoding="utf-8")
         return True
@@ -352,7 +346,7 @@ def create_windsurfrules(dest_root: Path, source_root: Path) -> bool:
     """Create legacy .windsurfrules file from project's actual agent knowledge."""
     try:
         parts = ["# Project Rules for Windsurf", ""]
-        
+
         # Pull from always-on skills first (these are the most relevant)
         skills_src = source_root / ".agent" / "skills"
         if skills_src.exists():
@@ -361,10 +355,10 @@ def create_windsurfrules(dest_root: Path, source_root: Path) -> bool:
                 if skill_file.exists():
                     content = skill_file.read_text(encoding="utf-8")
                     # Strip frontmatter
-                    content = re.sub(r'^---\n.*?\n---\n*', '', content, flags=re.DOTALL)
+                    content = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
                     parts.append(content.strip())
                     parts.append("")
-        
+
         # Add from AGENTS.md or ARCHITECTURE.md if present
         for candidate in ["AGENTS.md", ".agent/ARCHITECTURE.md"]:
             candidate_path = source_root / candidate
@@ -373,12 +367,12 @@ def create_windsurfrules(dest_root: Path, source_root: Path) -> bool:
                 parts.append(content[:3000].strip())
                 parts.append("")
                 break
-        
+
         # Enforce max size for .windsurfrules (6000 chars is reasonable for root file)
         output = "\n".join(parts)
         if len(output) > 6000:
             output = output[:5950] + "\n\n... (see .windsurf/rules/ for full details)\n"
-        
+
         (dest_root / ".windsurfrules").write_text(output, encoding="utf-8")
         return True
     except Exception as e:
@@ -389,29 +383,29 @@ def create_windsurfrules(dest_root: Path, source_root: Path) -> bool:
 def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
     """
     Main conversion function for Windsurf format.
-    
+
     Args:
         source_root: Path to project root containing .agent/
         dest_root: Path to output root
         verbose: Print progress messages
-    
+
     Returns:
         Dict with conversion statistics
     """
     stats = {"rules": 0, "workflows": 0, "errors": []}
-    
+
     agents_src = source_root / ".agent" / "agents"
     skills_src = source_root / ".agent" / "skills"
     workflows_src = source_root / ".agent" / "workflows"
-    
+
     rules_dest = dest_root / ".windsurf" / "rules"
     workflows_dest = dest_root / ".windsurf" / "workflows"
-    
+
     # Convert agents to rules
     if agents_src.exists():
         if verbose:
             print("Converting agents to Windsurf rules...")
-        
+
         for agent_file in agents_src.glob("*.md"):
             dest_file = rules_dest / agent_file.name
             if convert_agent_to_windsurf_rule(agent_file, dest_file):
@@ -420,12 +414,12 @@ def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True
                     print(f"  ✓ {agent_file.name}")
             else:
                 stats["errors"].append(f"rule:{agent_file.name}")
-    
+
     # Convert skills to rules
     if skills_src.exists():
         if verbose:
             print("Converting skills to Windsurf rules...")
-        
+
         for skill_dir in skills_src.iterdir():
             if skill_dir.is_dir():
                 dest_file = rules_dest / f"{skill_dir.name}.md"
@@ -435,12 +429,12 @@ def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True
                         print(f"  ✓ {skill_dir.name}.md")
                 else:
                     stats["errors"].append(f"rule:{skill_dir.name}")
-    
+
     # Convert workflows
     if workflows_src.exists():
         if verbose:
             print("Converting workflows to Windsurf format...")
-        
+
         for workflow_file in workflows_src.glob("*.md"):
             dest_file = workflows_dest / workflow_file.name
             if convert_workflow_to_windsurf(workflow_file, dest_file):
@@ -449,17 +443,17 @@ def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True
                     print(f"  ✓ {workflow_file.name}")
             else:
                 stats["errors"].append(f"workflow:{workflow_file.name}")
-    
+
     # Create legacy .windsurfrules
     if create_windsurfrules(dest_root, source_root):
         if verbose:
             print("  ✓ .windsurfrules (legacy)")
-    
+
     if verbose:
         print(f"\nWindsurf conversion complete: {stats['rules']} rules, {stats['workflows']} workflows")
         if stats["errors"]:
             print(f"  Errors: {len(stats['errors'])}")
-    
+
     return stats
 
 
@@ -467,10 +461,11 @@ def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True
 # CLI ENTRY POINTS
 # =============================================================================
 
+
 def convert_windsurf(source_dir: str, output_dir: str, force: bool = False):
     """Bridge for CLI compatibility."""
     root_path = Path(source_dir).resolve()
-    
+
     # Check for .agent in local or master
     if root_path.name == ".agent":
         source_root = root_path.parent
@@ -488,13 +483,14 @@ def convert_windsurf(source_dir: str, output_dir: str, force: bool = False):
     # Confirmation for Windsurf Overwrite
     windsurf_dir = Path(".windsurf").resolve()
     if windsurf_dir.exists() and not force:
-        if not ask_user(f"Found existing '.windsurf'. Update rules & workflows?", default=True):
-             print(f"{Colors.YELLOW}⏭️  Skipping Windsurf update.{Colors.ENDC}")
-             return
+        if not ask_user("Found existing '.windsurf'. Update rules & workflows?", default=True):
+            print(f"{Colors.YELLOW}⏭️  Skipping Windsurf update.{Colors.ENDC}")
+            return
 
     print(f"{Colors.HEADER}🏗️  Converting to Windsurf Format (Professional Spec)...{Colors.ENDC}")
     convert_to_windsurf(source_root, Path("."), verbose=True)
     print(f"{Colors.GREEN}✅ Windsurf conversion complete!{Colors.ENDC}")
+
 
 def copy_mcp_windsurf(root_path: Path, force: bool = False):
     """Bridge for CLI compatibility."""
@@ -503,20 +499,21 @@ def copy_mcp_windsurf(root_path: Path, force: bool = False):
         if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
             print(f"{Colors.YELLOW}🔒 Kept existing Windsurf MCP config.{Colors.ENDC}")
             return
-    
+
     source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
     if install_mcp_for_ide(source_root, root_path, "windsurf"):
         print(f"{Colors.BLUE}  🔌 Integrated MCP config into Windsurf (.windsurf/mcp_config.json).{Colors.ENDC}")
+
 
 def init_windsurf(project_path: Path = None) -> bool:
     # Existing user function...
     """Initialize Windsurf configuration in project."""
     project_path = project_path or Path.cwd()
-    
+
     if not (project_path / ".agent").exists():
         print("Error: .agent directory not found. Run 'agent-bridge update' first.")
         return False
-    
+
     stats = convert_to_windsurf(project_path, project_path)
     return len(stats["errors"]) == 0
 
@@ -524,13 +521,13 @@ def init_windsurf(project_path: Path = None) -> bool:
 def clean_windsurf(project_path: Path = None) -> bool:
     """Remove Windsurf configuration from project."""
     project_path = project_path or Path.cwd()
-    
+
     paths_to_remove = [
         project_path / ".windsurf" / "rules",
         project_path / ".windsurf" / "workflows",
         project_path / ".windsurfrules",
     ]
-    
+
     for path in paths_to_remove:
         if path.exists():
             if path.is_dir():
@@ -538,5 +535,5 @@ def clean_windsurf(project_path: Path = None) -> bool:
             else:
                 path.unlink()
             print(f"  Removed {path}")
-    
+
     return True

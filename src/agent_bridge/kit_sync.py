@@ -5,11 +5,11 @@ Syncs knowledge from vault sources to local .agent/ directory.
 Uses VaultManager for multi-source support.
 """
 
-import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
 from .utils import Colors, get_master_agent_dir
 
 # Legacy constant kept for backward compatibility
@@ -19,9 +19,9 @@ KIT_REPO_URL = "https://github.com/vudovn/antigravity-kit"
 def check_and_refresh_project(source_dir: str):
     """Detects existing IDE formats and refreshes them."""
     from .copilot_conv import convert_copilot
+    from .cursor_conv import convert_cursor
     from .kiro_conv import convert_kiro
     from .opencode_conv import convert_opencode
-    from .cursor_conv import convert_cursor
     from .windsurf_conv import convert_windsurf
 
     cwd = Path.cwd()
@@ -67,6 +67,7 @@ def update_kit(target_dir: str):
 
     try:
         from .vault import VaultManager
+
         vm = VaultManager()
 
         # Step 1: Sync all vaults
@@ -82,7 +83,7 @@ def update_kit(target_dir: str):
         # Step 2: Merge into project .agent/
         print(f"{Colors.BLUE}  📂 Merging vaults into {target_path}...{Colors.ENDC}")
         target_path.mkdir(parents=True, exist_ok=True)
-        merge_counts = vm.merge_to_project(target_path)
+        vm.merge_to_project(target_path)
 
         # Step 3: Sync config files from primary vault
         _sync_config_files(vm, target_path)
@@ -132,7 +133,8 @@ def _legacy_update(target_path: Path):
             print(f"{Colors.BLUE}  📥 Cloning repository...{Colors.ENDC}")
             subprocess.run(
                 ["git", "clone", "--depth", "1", KIT_REPO_URL, str(tmp_path)],
-                check=True, capture_output=True,
+                check=True,
+                capture_output=True,
             )
 
             repo_agent_dir = tmp_path / ".agent"

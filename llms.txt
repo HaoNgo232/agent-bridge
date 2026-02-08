@@ -1,14 +1,56 @@
-# Agent Bridge - Project Context
+# Agent Bridge
 
-## Purpose
-A specialized tool to bridge the gap between Antigravity (Markdown-based) agents and various AI IDE configurations.
+> Universal converter for AI agent knowledge - Transform `.agent/` format to multiple IDE formats
 
-## Architecture
-- `cli.py`: Central command dispatcher using `argparse`.
-- `kiro_conv.py`: Handles complex mapping for Kiro CLI (tools, skills as resources, steering).
-- `copilot_conv.py`: Aggregates knowledge into a single repository-wide instruction file for GitHub Copilot.
+## Quick Links
 
-## Usage Principles
-- Input: `.agent/` folder containing `agents/`, `skills/`, and `workflows/`.
-- Output: Standardized formats for Kiro and Copilot.
-- Smart Model Selection: Logic to use cheaper models for non-coding agents.
+- Documentation: README.md
+- AI Agent Guide: AGENTS.md
+- Setup Guide: QUICK_CHECK.md
+- Lint Setup: LINT_SETUP.md
+
+## Core Modules
+
+- CLI: src/agent_bridge/cli.py
+- Converters: src/agent_bridge/*_conv.py
+- Vault System: src/agent_bridge/vault.py
+- Utilities: src/agent_bridge/utils.py
+
+## Key Features
+
+1. Multi-Format Support (5 IDEs)
+2. Interactive TUI (Questionary)
+3. Vault Management
+4. MCP Integration
+5. Automated Linting (Ruff)
+
+## Quick Start
+
+```bash
+# Interactive setup
+agent-bridge init
+
+# Quick check
+make setup
+
+# Lint code
+make check
+```
+
+## For AI Agents
+
+Read `AGENTS.md` for comprehensive project understanding, architecture, and development guidelines.
+
+## Supported IDEs
+
+- Kiro CLI (.kiro/)
+- Cursor IDE (.cursor/)
+- GitHub Copilot (.github/)
+- OpenCode IDE (.opencode/)
+- Windsurf IDE (.windsurf/)
+
+---
+
+**Version**: 1.0.0
+**License**: MIT
+**Maintainer**: HaoNgo232
