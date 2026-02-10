@@ -26,22 +26,38 @@ from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
 # KIRO AGENT CONFIGURATION
 # =============================================================================
 
-# Tool permissions mapping
-KIRO_TOOLS = [
-    "fs_read",  # Read files
-    "fs_write",  # Write files
-    "fs_list",  # List directory
-    "bash",  # Execute shell commands
-    "web_search",  # Web search
-    "web_fetch",  # Fetch URLs
-    "code_search",  # Search code
-    "use_mcp",  # Use MCP tools
+# Danh sach built-in tools cua Kiro CLI (theo official spec)
+# Ref: https://kiro.dev/docs/cli/reference/built-in-tools
+KIRO_BUILT_IN_TOOLS = [
+    "read",       # Doc file
+    "write",      # Ghi file
+    "shell",      # Thuc thi lenh shell
+    "search",     # Tim kiem code trong project
+    "knowledge",  # Truy cap knowledge base
 ]
 
-# Agent role -> configuration mapping
+# Map ten tool noi bo (Antigravity Kit) sang ten Kiro built-in
+INTERNAL_TO_KIRO_TOOL_MAP = {
+    "fs_read": "read",
+    "fs_write": "write",
+    "fs_list": "read",       # Kiro khong co "list" rieng, dung "read" thay the
+    "bash": "shell",
+    "code_search": "search",
+    "web_search": "search",  # Web search khong phai built-in, fallback sang search
+    "web_fetch": "shell",    # Khong co built-in, dung shell (curl/wget) thay the
+    "use_mcp": None,         # Khong can map, MCP tools dung @server pattern
+}
+
+# Cau hinh theo tung vai tro agent (su dung ten Kiro built-in tools)
+# Ref: https://kiro.dev/docs/cli/custom-agents/configuration-reference
+#
+# - tools: danh sach tools agent duoc phep su dung
+# - allowedTools: TU DONG = tools (auto-approve toan bo, khong can xac nhan)
+# - allowedCommands: cac lenh shell duoc phep chay
+# - allowedPaths: cac duong dan file duoc phep truy cap
 AGENT_CONFIG_MAP = {
     "frontend-specialist": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "npm *",
             "npx *",
@@ -56,10 +72,9 @@ AGENT_CONFIG_MAP = {
             "git log *",
         ],
         "allowedPaths": ["src/**", "components/**", "pages/**", "app/**", "public/**", "styles/**"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "backend-specialist": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "npm *",
             "node *",
@@ -74,10 +89,9 @@ AGENT_CONFIG_MAP = {
             "wget *",
         ],
         "allowedPaths": ["src/**", "api/**", "server/**", "lib/**", "services/**"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "database-architect": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "npx prisma *",
             "npx drizzle-kit *",
@@ -88,10 +102,9 @@ AGENT_CONFIG_MAP = {
             "git diff *",
         ],
         "allowedPaths": ["prisma/**", "drizzle/**", "migrations/**", "db/**", "schema/**"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "security-auditor": {
-        "tools": ["fs_read", "fs_list", "code_search", "web_search"],
+        "tools": ["read", "search"],
         "allowedCommands": [
             "npm audit",
             "yarn audit",
@@ -100,12 +113,11 @@ AGENT_CONFIG_MAP = {
             "grep *",
             "find *",
         ],
-        "allowedPaths": ["**/*"],  # Read-only access to all
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
-        "denyWrite": True,  # Custom flag to prevent writes
+        "allowedPaths": ["**/*"],
+        "denyWrite": True,
     },
     "test-engineer": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "npm test *",
             "npm run test *",
@@ -118,10 +130,9 @@ AGENT_CONFIG_MAP = {
             "git diff *",
         ],
         "allowedPaths": ["tests/**", "test/**", "__tests__/**", "*.test.*", "*.spec.*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "devops-engineer": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "docker *",
             "docker-compose *",
@@ -134,10 +145,9 @@ AGENT_CONFIG_MAP = {
             "git *",
         ],
         "allowedPaths": [".github/**", "docker/**", "k8s/**", "terraform/**", "infra/**"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "documentation-writer": {
-        "tools": ["fs_read", "fs_write", "fs_list", "code_search", "web_search"],
+        "tools": ["read", "write", "search", "knowledge"],
         "allowedCommands": [
             "git status",
             "git log *",
@@ -145,10 +155,9 @@ AGENT_CONFIG_MAP = {
             "npx jsdoc *",
         ],
         "allowedPaths": ["docs/**", "*.md", "README*", "CHANGELOG*", "*.mdx"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "explorer-agent": {
-        "tools": ["fs_read", "fs_list", "code_search", "web_search"],
+        "tools": ["read", "search", "knowledge"],
         "allowedCommands": [
             "git log *",
             "git status",
@@ -160,11 +169,10 @@ AGENT_CONFIG_MAP = {
             "tail *",
         ],
         "allowedPaths": ["**/*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
         "denyWrite": True,
     },
     "project-planner": {
-        "tools": ["fs_read", "fs_list", "code_search", "web_search"],
+        "tools": ["read", "search", "knowledge"],
         "allowedCommands": [
             "git log *",
             "git status",
@@ -172,18 +180,14 @@ AGENT_CONFIG_MAP = {
             "tree *",
         ],
         "allowedPaths": ["**/*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
-        "canDelegateToAgents": ["*"],  # Can invoke any agent
     },
     "orchestrator": {
-        "tools": ["fs_read", "fs_list", "code_search"],
+        "tools": ["read", "search", "knowledge"],
         "allowedCommands": ["git status", "git log *"],
         "allowedPaths": ["**/*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
-        "canDelegateToAgents": ["*"],
     },
     "debugger": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "node --inspect *",
             "python -m pdb *",
@@ -194,10 +198,9 @@ AGENT_CONFIG_MAP = {
             "git blame *",
         ],
         "allowedPaths": ["**/*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
     "performance-optimizer": {
-        "tools": ["fs_read", "fs_write", "fs_list", "bash", "code_search", "web_fetch"],
+        "tools": ["read", "write", "shell", "search"],
         "allowedCommands": [
             "npx lighthouse *",
             "npm run build *",
@@ -205,16 +208,14 @@ AGENT_CONFIG_MAP = {
             "python -m cProfile *",
         ],
         "allowedPaths": ["**/*"],
-        "autoApprove": ["fs_read", "fs_list", "code_search"],
     },
 }
 
-# Default config for unknown agents
+# Cau hinh mac dinh cho cac agent khong co trong AGENT_CONFIG_MAP
 DEFAULT_AGENT_CONFIG = {
-    "tools": ["fs_read", "fs_list", "code_search"],
+    "tools": ["read", "search"],
     "allowedCommands": ["git status", "git log *"],
     "allowedPaths": ["**/*"],
-    "autoApprove": ["fs_read", "fs_list"],
 }
 
 
@@ -266,70 +267,109 @@ def extract_agent_metadata(content: str, filename: str) -> Dict[str, Any]:
 def generate_kiro_agent_json(
     agent_slug: str, metadata: Dict[str, Any], mcp_server_names: List[str] = None
 ) -> Dict[str, Any]:
-    """Generate professional Kiro agent JSON following the latest official spec."""
+    """
+    Tao JSON cau hinh agent theo Kiro CLI official spec.
 
-    # Get role-specific config or default
+    Ref: https://kiro.dev/docs/cli/custom-agents/configuration-reference
+
+    Cac truong chinh:
+    - tools: danh sach tools agent co the su dung
+    - allowedTools: tools duoc AUTO-APPROVE (khong can xac nhan nguoi dung)
+    - toolsSettings: cai dat chi tiet cho tung tool (allowedCommands, allowedPaths)
+    - includeMcpJson: cho phep load MCP servers tu config files
+    - hooks: lifecycle hooks (agentSpawn, userPromptSubmit, ...)
+    - resources: file:// URIs cho knowledge base
+    - model: model su dung ("inherit" = ke thua tu project config)
+
+    Args:
+        agent_slug: ten agent dang slug (vd: "frontend-specialist")
+        metadata: metadata trich xuat tu agent markdown
+        mcp_server_names: danh sach ten MCP servers de auto-trust
+
+    Returns:
+        Dict cau hinh agent JSON theo Kiro spec
+    """
+    # Lay cau hinh theo vai tro hoac dung mac dinh
     config = AGENT_CONFIG_MAP.get(agent_slug, DEFAULT_AGENT_CONFIG)
 
-    # Tool normalization (Internal -> Kiro Standard)
-    TOOL_MAP = {
-        "fs_read": "read",
-        "fs_write": "write",
-        "fs_list": "list",
-        "bash": "shell",
-        "web_search": "search",
-        "code_search": "code_search",
-    }
+    # Lay danh sach tools (da dung ten Kiro built-in truc tiep)
+    base_tools = list(config.get("tools", DEFAULT_AGENT_CONFIG["tools"]))
 
-    # Normalize base tools and auto-approve tools
-    original_tools = config.get("tools", DEFAULT_AGENT_CONFIG["tools"])
-    base_tools = [TOOL_MAP.get(t, t) for t in original_tools]
+    # Them MCP servers vao danh sach tools (Kiro spec: @server_name)
+    if mcp_server_names:
+        for mcp in mcp_server_names:
+            mcp_tool_ref = f"@{mcp}"
+            if mcp_tool_ref not in base_tools:
+                base_tools.append(mcp_tool_ref)
 
-    original_auto = config.get("autoApprove", DEFAULT_AGENT_CONFIG["autoApprove"])
-    allowed_tools = [TOOL_MAP.get(t, t) for t in original_auto]
+    # === ALLOWED TOOLS (Auto-approve) ===
+    # Auto-approve TOAN BO tools ma agent duoc cung cap (built-in + MCP)
+    # Nguoi dung khong can xac nhan thu cong - dung git de rollback neu can
+    allowed_tools = list(base_tools)
 
-    # Auto-trust MCP servers (Official Spec: @server/*)
+    # Them wildcard pattern cho MCP servers de auto-approve moi tool cua server
     if mcp_server_names:
         for mcp in mcp_server_names:
             trust_pattern = f"@{mcp}/*"
             if trust_pattern not in allowed_tools:
                 allowed_tools.append(trust_pattern)
 
+    # === XAY DUNG AGENT JSON ===
     agent_json = {
         "name": metadata.get("name") or agent_slug.replace("-", " ").title(),
         "description": metadata.get("description") or f"Specialized agent for {agent_slug.replace('-', ' ')}",
         "prompt": metadata.get("prompt", ""),
-        # Tools available to the agent (Kiro spec: tools)
+        # Tools agent co the su dung (Kiro spec: tools)
         "tools": base_tools,
-        # Tools allowed without confirmation (Kiro spec: allowedTools)
+        # Tools duoc auto-approve - KHONG can xac nhan (Kiro spec: allowedTools)
         "allowedTools": allowed_tools,
-        # Persistent knowledge files (Kiro spec: resources with file:// URIs)
+        # Load MCP servers tu .kiro/settings/mcp.json va global config
+        "includeMcpJson": True,
+        # Knowledge files (Kiro spec: resources voi file:// URIs)
         "resources": ["file://.kiro/steering/**/*.md", "file://.kiro/skills/**/SKILL.md"],
+        # Lifecycle hooks - chay lenh khi agent khoi dong
+        "hooks": {
+            "agentSpawn": [
+                {
+                    "command": "git status --short 2>/dev/null || true",
+                    "timeout_ms": 3000,
+                }
+            ]
+        },
     }
 
-    # Build toolsSettings for granular control (Official Spec)
+    # === TOOLS SETTINGS (cai dat chi tiet cho tung tool) ===
     tools_settings = {}
 
-    # 1. Shell settings
+    # Shell: gioi han cac lenh duoc phep chay
     if "shell" in base_tools and config.get("allowedCommands"):
-        tools_settings["shell"] = {"allowedCommands": config["allowedCommands"], "autoAllowReadonly": True}
+        tools_settings["shell"] = {
+            "allowedCommands": config["allowedCommands"],
+            "autoAllowReadonly": True,
+        }
 
-    # 2. File Read settings
+    # Read: gioi han cac duong dan duoc phep doc
     if "read" in base_tools and config.get("allowedPaths"):
-        tools_settings["read"] = {"allowedPaths": config["allowedPaths"], "autoAllowReadonly": True}
+        tools_settings["read"] = {
+            "allowedPaths": config["allowedPaths"],
+            "autoAllowReadonly": True,
+        }
 
-    # 3. File Write settings
-    if "write" in base_tools and config.get("allowedPaths"):
+    # Write: gioi han cac duong dan duoc phep ghi (chi khi agent co quyen write)
+    if "write" in base_tools and config.get("allowedPaths") and not config.get("denyWrite"):
         tools_settings["write"] = {"allowedPaths": config["allowedPaths"]}
 
     if tools_settings:
         agent_json["toolsSettings"] = tools_settings
 
-    # Optional: Map model if present in metadata
+    # === MODEL ===
+    # "inherit" = ke thua model tu project config, cho phep override theo agent
     if metadata.get("model"):
         agent_json["model"] = metadata["model"]
     elif config.get("model"):
         agent_json["model"] = config["model"]
+    else:
+        agent_json["model"] = "inherit"
 
     return agent_json
 
