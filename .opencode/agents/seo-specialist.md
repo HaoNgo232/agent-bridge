@@ -1,9 +1,9 @@
 ---
-description: Specialized agent for seo specialist
+description: Search engine optimization
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
   bash: false
 permission:
   edit: ask

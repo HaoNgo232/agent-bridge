@@ -48,175 +48,49 @@ INTERNAL_TO_KIRO_TOOL_MAP = {
     "use_mcp": None,         # Khong can map, MCP tools dung @server pattern
 }
 
-# Cau hinh theo tung vai tro agent (su dung ten Kiro built-in tools)
-# Ref: https://kiro.dev/docs/cli/custom-agents/configuration-reference
-#
-# - tools: danh sach tools agent duoc phep su dung
-# - allowedTools: TU DONG = tools (auto-approve toan bo, khong can xac nhan)
-# - allowedCommands: cac lenh shell duoc phep chay
-# - allowedPaths: cac duong dan file duoc phep truy cap
-AGENT_CONFIG_MAP = {
-    "frontend-specialist": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "npm *",
-            "npx *",
-            "yarn *",
-            "pnpm *",
-            "node *",
-            "tsc *",
-            "eslint *",
-            "prettier *",
-            "git status",
-            "git diff *",
-            "git log *",
-        ],
-        "allowedPaths": ["src/**", "components/**", "pages/**", "app/**", "public/**", "styles/**"],
-    },
-    "backend-specialist": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "npm *",
-            "node *",
-            "python *",
-            "pip *",
-            "docker *",
-            "docker-compose *",
-            "git status",
-            "git diff *",
-            "git log *",
-            "curl *",
-            "wget *",
-        ],
-        "allowedPaths": ["src/**", "api/**", "server/**", "lib/**", "services/**"],
-    },
-    "database-architect": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "npx prisma *",
-            "npx drizzle-kit *",
-            "psql *",
-            "mysql *",
-            "sqlite3 *",
-            "git status",
-            "git diff *",
-        ],
-        "allowedPaths": ["prisma/**", "drizzle/**", "migrations/**", "db/**", "schema/**"],
-    },
-    "security-auditor": {
-        "tools": ["read", "search"],
-        "allowedCommands": [
-            "npm audit",
-            "yarn audit",
-            "git log *",
-            "git diff *",
-            "grep *",
-            "find *",
-        ],
-        "allowedPaths": ["**/*"],
-        "denyWrite": True,
-    },
-    "test-engineer": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "npm test *",
-            "npm run test *",
-            "npx jest *",
-            "npx vitest *",
-            "npx playwright *",
-            "npx cypress *",
-            "python -m pytest *",
-            "git status",
-            "git diff *",
-        ],
-        "allowedPaths": ["tests/**", "test/**", "__tests__/**", "*.test.*", "*.spec.*"],
-    },
-    "devops-engineer": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "docker *",
-            "docker-compose *",
-            "kubectl *",
-            "helm *",
-            "terraform *",
-            "aws *",
-            "gcloud *",
-            "az *",
-            "git *",
-        ],
-        "allowedPaths": [".github/**", "docker/**", "k8s/**", "terraform/**", "infra/**"],
-    },
-    "documentation-writer": {
-        "tools": ["read", "write", "search", "knowledge"],
-        "allowedCommands": [
-            "git status",
-            "git log *",
-            "npx typedoc *",
-            "npx jsdoc *",
-        ],
-        "allowedPaths": ["docs/**", "*.md", "README*", "CHANGELOG*", "*.mdx"],
-    },
-    "explorer-agent": {
-        "tools": ["read", "search", "knowledge"],
-        "allowedCommands": [
-            "git log *",
-            "git status",
-            "find *",
-            "grep *",
-            "tree *",
-            "cat *",
-            "head *",
-            "tail *",
-        ],
-        "allowedPaths": ["**/*"],
-        "denyWrite": True,
-    },
-    "project-planner": {
-        "tools": ["read", "search", "knowledge"],
-        "allowedCommands": [
-            "git log *",
-            "git status",
-            "find *",
-            "tree *",
-        ],
-        "allowedPaths": ["**/*"],
-    },
-    "orchestrator": {
-        "tools": ["read", "search", "knowledge"],
-        "allowedCommands": ["git status", "git log *"],
-        "allowedPaths": ["**/*"],
-    },
-    "debugger": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "node --inspect *",
-            "python -m pdb *",
-            "npm run *",
-            "node *",
-            "git diff *",
-            "git log *",
-            "git blame *",
-        ],
-        "allowedPaths": ["**/*"],
-    },
-    "performance-optimizer": {
-        "tools": ["read", "write", "shell", "search"],
-        "allowedCommands": [
-            "npx lighthouse *",
-            "npm run build *",
-            "node --prof *",
-            "python -m cProfile *",
-        ],
-        "allowedPaths": ["**/*"],
-    },
-}
+# =============================================================================
+# KIRO CONFIG FROM CENTRAL REGISTRY
+# =============================================================================
+# Instead of a duplicate AGENT_CONFIG_MAP, we derive Kiro config from
+# the central AgentRole definitions in core/agent_registry.py.
 
-# Cau hinh mac dinh cho cac agent khong co trong AGENT_CONFIG_MAP
-DEFAULT_AGENT_CONFIG = {
-    "tools": ["read", "search"],
-    "allowedCommands": ["git status", "git log *"],
-    "allowedPaths": ["**/*"],
-}
+from .core.agent_registry import get_agent_role
+
+
+def _role_to_kiro_config(slug: str) -> dict:
+    """Derive Kiro tool/permission config from central AgentRole."""
+    role = get_agent_role(slug)
+    if not role:
+        return {
+            "tools": ["read", "search"],
+            "allowedCommands": ["git status", "git log *"],
+            "allowedPaths": ["**/*"],
+        }
+
+    tools = []
+    if role.can_read:
+        tools.append("read")
+    if role.can_write:
+        tools.append("write")
+    if role.can_execute:
+        tools.append("shell")
+    if role.can_search:
+        tools.append("search")
+    # Documentation/planning agents get knowledge tool
+    if role.slug in ("documentation-writer", "explorer-agent", "project-planner", "orchestrator"):
+        tools.append("knowledge")
+
+    config = {
+        "tools": tools,
+        "allowedCommands": role.allowed_commands or ["git status", "git log *"],
+        "allowedPaths": role.allowed_paths,
+    }
+
+    # Read-only agents
+    if not role.can_write:
+        config["denyWrite"] = True
+
+    return config
 
 
 # =============================================================================
@@ -289,11 +163,12 @@ def generate_kiro_agent_json(
     Returns:
         Dict cau hinh agent JSON theo Kiro spec
     """
-    # Lay cau hinh theo vai tro hoac dung mac dinh
-    config = AGENT_CONFIG_MAP.get(agent_slug, DEFAULT_AGENT_CONFIG)
+    # Derive config from central agent registry
+    config = _role_to_kiro_config(agent_slug)
 
     # Lay danh sach tools (da dung ten Kiro built-in truc tiep)
-    base_tools = list(config.get("tools", DEFAULT_AGENT_CONFIG["tools"]))
+    # Fallback cho truong hop config khong co tools (khong xay ra khi dung _role_to_kiro_config)
+    base_tools = list(config.get("tools", ["read", "search"]))
 
     # Them MCP servers vao danh sach tools (Kiro spec: @server_name)
     if mcp_server_names:

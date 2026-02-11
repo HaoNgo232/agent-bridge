@@ -2,9 +2,9 @@ from pathlib import Path
 
 import yaml
 
-from agent_bridge.copilot_conv import (
+from agent_bridge.converters.copilot import (
     AGENT_SUBAGENTS_MAP,
-    AGENT_TOOLS_MAP,
+    _role_to_copilot_tools,
     convert_skill_to_copilot,
     convert_to_copilot,
     generate_copilot_frontmatter,
@@ -180,17 +180,19 @@ def test_default_tools_for_unknown_agent_are_stable() -> None:
     assert parsed.get("tools") == ["search/codebase", "edit/editFiles", "web/fetch"]
 
 
-def test_agent_tools_map_contains_only_string_lists() -> None:
-    for agent_slug, tools in AGENT_TOOLS_MAP.items():
-        assert isinstance(agent_slug, str) and agent_slug
-        assert isinstance(tools, list)
-        assert all(isinstance(tool, str) and tool for tool in tools)
+def test_agent_tools_derived_from_registry_are_valid() -> None:
+    from agent_bridge.core.agent_registry import AGENT_ROLES
+
+    for agent_slug in AGENT_ROLES:
+        tools = _role_to_copilot_tools(agent_slug)
+        assert isinstance(tools, list), f"{agent_slug}: tools must be a list"
+        assert all(isinstance(tool, str) and tool for tool in tools), f"{agent_slug}: all tools must be non-empty strings"
 
 
 
 def test_copilot_workflow_conversion(tmp_path: Path) -> None:
     """Test workflow to prompt file conversion."""
-    from agent_bridge.copilot_conv import convert_workflow_to_prompt
+    from agent_bridge.converters.copilot import convert_workflow_to_prompt
 
     workflow_dir = tmp_path / ".agent" / "workflows"
     workflow_dir.mkdir(parents=True)
@@ -223,7 +225,7 @@ This helps you brainstorm ideas.
 
 def test_copilot_rule_conversion(tmp_path: Path) -> None:
     """Test rule to instruction file conversion."""
-    from agent_bridge.copilot_conv import convert_rule_to_instruction
+    from agent_bridge.converters.copilot import convert_rule_to_instruction
 
     rule_dir = tmp_path / ".agent" / "rules"
     rule_dir.mkdir(parents=True)

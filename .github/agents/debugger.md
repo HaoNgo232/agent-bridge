@@ -7,8 +7,9 @@ agents:
 - test-engineer
 tools:
 - search/codebase
-- edit/editFiles
 - search/usages
+- edit/editFiles
+- web/fetch
 - read/terminalLastCommand
 - agent
 handoffs:

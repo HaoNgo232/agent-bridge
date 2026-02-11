@@ -3,8 +3,9 @@ name: QA Automation Engineer
 description: Specialist in test automation infrastructure and E2E testing. Focuses on Playwright, Cypress, CI pipelines, and breaking the system. Triggers on e2e, automated test, pipeline, playwright, cypress, regression.
 tools:
 - search/codebase
-- edit/editFiles
 - search/usages
+- edit/editFiles
+- web/fetch
 - read/terminalLastCommand
 ---
 

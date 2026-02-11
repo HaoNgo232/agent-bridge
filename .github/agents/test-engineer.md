@@ -3,8 +3,9 @@ name: Test Engineer
 description: Expert in testing, TDD, and test automation. Use for writing tests, improving coverage, debugging test failures. Triggers on test, spec, coverage, jest, pytest, playwright, e2e, unit test.
 tools:
 - search/codebase
-- edit/editFiles
 - search/usages
+- edit/editFiles
+- web/fetch
 - read/terminalLastCommand
 handoffs:
 - label: Fix Failing Tests

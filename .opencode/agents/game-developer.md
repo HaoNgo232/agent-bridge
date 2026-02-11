@@ -1,10 +1,10 @@
 ---
-description: Specialized agent for game developer
+description: Game development specialist
 mode: subagent
 tools:
-  write: false
-  edit: false
-  bash: false
+  write: true
+  edit: true
+  bash: true
 permission:
   edit: ask
 ---

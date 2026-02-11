@@ -83,14 +83,15 @@ SKILLS_TOOLKIT_MAP = {
     "seo-fundamentals": "optimize for search engines",
 }
 
-# CUSTOM SUBAGENTS: Specialized personas
-AGENT_CONFIG_MAP = {
-    "frontend-specialist": "Specialist for frontend development (React, Next.js, UI/UX)",
-    "backend-specialist": "Specialist for backend systems (APIs, DBs, Server logic)",
-    "orchestrator": "High-level coordinator for complex, multi-step tasks",
-    "project-planner": "Specialist for architecture and technical planning",
-    "debugger": "Specialist for root cause analysis and bug fixing",
-}
+# Subagent descriptions — derived from central registry, with Cursor-specific fallback
+from .core.agent_registry import get_agent_role as _get_cursor_role
+
+
+def _get_cursor_agent_description(slug: str) -> str:
+    role = _get_cursor_role(slug)
+    if role:
+        return role.description
+    return f"Specialized assistant for {slug.replace('-', ' ')} activities"
 
 
 # =============================================================================
@@ -150,7 +151,7 @@ def convert_agent_to_cursor(source_path: Path, dest_path: Path) -> bool:
         agent_name = agent_slug.replace("-", " ").title()
 
         # Cursor Subagents frontmatter
-        description = AGENT_CONFIG_MAP.get(agent_slug, f"Specialized assistant for {agent_name} activities")
+        description = _get_cursor_agent_description(agent_slug)
 
         lines = ["---"]
         lines.append(f"name: {agent_name}")

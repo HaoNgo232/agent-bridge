@@ -3,6 +3,7 @@ name: SEO Specialist
 description: SEO and GEO (Generative Engine Optimization) expert. Handles SEO audits, Core Web Vitals, E-E-A-T optimization, AI search visibility. Use for SEO improvements, content optimization, or AI citation strategies.
 tools:
 - search/codebase
+- search/usages
 - edit/editFiles
 - web/fetch
 ---

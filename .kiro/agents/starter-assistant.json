@@ -1,0 +1,35 @@
+{
+  "name": "Starter Assistant",
+  "description": "Specialized agent for starter assistant",
+  "prompt": "# Starter Assistant\n\nHelper agent for new projects. Use when you need general guidance for setting up or exploring a codebase.\n\n## Purpose\n\nThis agent provides basic assistance for:\n- Understanding project structure\n- Setting up development environment\n- Following common best practices",
+  "tools": [
+    "read",
+    "search"
+  ],
+  "allowedTools": [
+    "read",
+    "search"
+  ],
+  "includeMcpJson": true,
+  "resources": [
+    "file://.kiro/steering/**/*.md",
+    "file://.kiro/skills/**/SKILL.md"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "git status --short 2>/dev/null || true",
+        "timeout_ms": 3000
+      }
+    ]
+  },
+  "toolsSettings": {
+    "read": {
+      "allowedPaths": [
+        "**/*"
+      ],
+      "autoAllowReadonly": true
+    }
+  },
+  "model": "inherit"
+}

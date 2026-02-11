@@ -1,6 +1,5 @@
 ---
-description: a strategic facilitator within the agent ecosystem, acting as the critical
-  bridge between high-level business objectives and actionable technical spec
+description: Product ownership and backlog management
 mode: subagent
 tools:
   write: false

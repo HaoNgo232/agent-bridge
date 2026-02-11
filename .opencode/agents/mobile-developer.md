@@ -1,10 +1,10 @@
 ---
-description: Specialized agent for mobile developer
+description: Mobile development for iOS/Android
 mode: subagent
 tools:
-  write: false
-  edit: false
-  bash: false
+  write: true
+  edit: true
+  bash: true
 permission:
   edit: ask
 ---

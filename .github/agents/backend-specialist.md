@@ -3,9 +3,9 @@ name: Backend Development Architect
 description: Expert backend architect for Node.js, Python, and modern serverless/edge systems. Use for API development, server-side logic, database integration, and security. Triggers on backend, server, api, endpoint, database, auth.
 tools:
 - search/codebase
+- search/usages
 - edit/editFiles
 - web/fetch
-- search/usages
 - read/terminalLastCommand
 ---
 

@@ -119,13 +119,33 @@ AGENT_CONFIG_MAP = {
     },
 }
 
-# Default config for unknown agents
-DEFAULT_AGENT_CONFIG = {
+# Default config for unknown agents — enriched from central registry
+from .core.agent_registry import get_agent_role as _get_oc_role
+
+_DEFAULT_AGENT_CONFIG = {
     "mode": "subagent",
     "description": "",
     "tools": {"write": False, "edit": False, "bash": False},
     "permission": {"edit": "ask"},
 }
+
+
+def _get_opencode_config(slug: str) -> dict:
+    """Get OpenCode config, falling back to central registry for description."""
+    if slug in AGENT_CONFIG_MAP:
+        return AGENT_CONFIG_MAP[slug].copy()
+    role = _get_oc_role(slug)
+    config = _DEFAULT_AGENT_CONFIG.copy()
+    if role:
+        config["description"] = role.description
+        config["mode"] = "primary" if role.category == "primary" else "subagent"
+        config["tools"] = {
+            "write": role.can_write,
+            "edit": role.can_write,
+            "bash": role.can_execute,
+        }
+        config["hidden"] = role.hidden
+    return config
 
 # Command templates from workflows
 WORKFLOW_TO_COMMAND_MAP = {
@@ -235,8 +255,8 @@ def convert_agent_to_opencode(source_path: Path, dest_path: Path) -> bool:
         content = source_path.read_text(encoding="utf-8")
         agent_slug = source_path.stem.lower()
 
-        # Get config
-        config = AGENT_CONFIG_MAP.get(agent_slug, DEFAULT_AGENT_CONFIG.copy())
+        # Get config (OpenCode-specific map → central registry fallback)
+        config = _get_opencode_config(agent_slug)
 
         # Extract description from content if not in config
         if not config.get("description"):

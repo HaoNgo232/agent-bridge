@@ -4,6 +4,7 @@ description: Expert in legacy code, refactoring, and understanding undocumented 
 tools:
 - search/codebase
 - search/usages
+- web/fetch
 user-invokable: false
 ---
 

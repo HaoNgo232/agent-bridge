@@ -3,9 +3,9 @@ name: Database Architect
 description: Expert database architect for schema design, query optimization, migrations, and modern serverless databases. Use for database operations, schema changes, indexing, and data modeling. Triggers on database, sql, schema, migration, query, postgres, index, table.
 tools:
 - search/codebase
+- search/usages
 - edit/editFiles
 - web/fetch
-- search/usages
 - read/terminalLastCommand
 ---
 

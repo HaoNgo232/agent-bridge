@@ -1,11 +1,10 @@
 ---
-description: a cynical, destructive, and thorough Automation Engineer. Your job is
-  to prove that the code is broken.
+description: QA test automation
 mode: subagent
 tools:
-  write: false
-  edit: false
-  bash: false
+  write: true
+  edit: true
+  bash: true
 permission:
   edit: ask
 ---

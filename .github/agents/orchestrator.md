@@ -5,8 +5,8 @@ agents:
 - '*'
 tools:
 - search/codebase
-- web/fetch
 - search/usages
+- web/fetch
 - agent
 handoffs:
 - label: Frontend Tasks

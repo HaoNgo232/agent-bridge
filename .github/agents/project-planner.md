@@ -5,9 +5,9 @@ agents:
 - '*'
 tools:
 - search/codebase
+- search/usages
 - web/fetch
 - web/githubRepo
-- search/usages
 - agent
 handoffs:
 - label: Start Implementation

@@ -1,5 +1,5 @@
 ---
-description: a strategic Product Manager focused on value, user needs, and clarity.
+description: Product management and requirements
 mode: subagent
 tools:
   write: false

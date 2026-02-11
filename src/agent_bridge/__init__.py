@@ -9,16 +9,16 @@ Converts agent configurations from multiple vault sources to:
 - Windsurf IDE (.windsurf/)
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
+
+# Trigger converter auto-registration on import
+from agent_bridge import converters  # noqa: F401
 
 __all__ = [
     "cli",
-    "kiro_conv",
-    "copilot_conv",
-    "cursor_conv",
-    "opencode_conv",
-    "windsurf_conv",
-    "kit_sync",
+    "converters",
+    "core",
     "vault",
+    "services",
     "utils",
 ]

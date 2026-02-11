@@ -1,5 +1,5 @@
 ---
-description: Specialized agent for penetration tester
+description: Security penetration testing
 mode: subagent
 tools:
   write: false
