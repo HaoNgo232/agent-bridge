@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 description: Testing patterns and principles. Unit, integration, mocking strategies.
 name: testing-patterns
 ---

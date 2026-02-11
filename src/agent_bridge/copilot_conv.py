@@ -310,6 +310,7 @@ def convert_skill_to_copilot(source_dir: Path, dest_dir: Path) -> bool:
     Spec: https://agentskills.io/
     - name: lowercase + hyphens, max 64 chars (required)
     - description: what + when to use, max 1024 chars (required)
+    - Other fields: preserved as-is
     """
     try:
         skill_name = source_dir.name
@@ -363,10 +364,16 @@ def convert_skill_to_copilot(source_dir: Path, dest_dir: Path) -> bool:
                 print(f"  ⚠ Skill {skill_name}: missing required fields (name or description)")
                 return False
 
+            # Build frontmatter: required fields first, then preserve others
             frontmatter = {
                 "name": normalized_name,
                 "description": skill_description,
             }
+            
+            # Preserve other fields (e.g., allowed-tools, custom metadata)
+            for key, value in existing_meta.items():
+                if key not in ("name", "description"):
+                    frontmatter[key] = value
 
             output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content.strip()}\n"
 

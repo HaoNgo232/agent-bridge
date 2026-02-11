@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 description: Game development orchestrator. Routes to platform-specific skills based
   on project needs.
 name: game-development

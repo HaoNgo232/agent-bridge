@@ -3,6 +3,7 @@ description: Automatic agent selection and intelligent task routing. Analyzes us
   requests and automatically selects the best specialist agent(s) without requiring
   explicit user mentions.
 name: intelligent-routing
+version: 1.0.0
 ---
 
 # Intelligent Agent Routing

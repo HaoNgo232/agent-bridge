@@ -1,7 +1,10 @@
 ---
+allowed-tools: Read, Write, Edit
 description: Pragmatic coding standards - concise, direct, no over-engineering, no
   unnecessary comments
 name: clean-code
+priority: CRITICAL
+version: 2.0
 ---
 
 # Clean Code - Pragmatic AI Coding Standards

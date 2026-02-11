@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 description: Test-Driven Development workflow principles. RED-GREEN-REFACTOR cycle.
 name: tdd-workflow
 ---

@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Write, Edit, Glob, Grep
 description: MCP (Model Context Protocol) server building principles. Tool design,
   resource patterns, best practices.
 name: mcp-builder

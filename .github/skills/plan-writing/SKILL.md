@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Glob, Grep
 description: Structured task planning with clear breakdowns, dependencies, and verification
   criteria. Use when implementing features, refactoring, or any multi-step work.
 name: plan-writing

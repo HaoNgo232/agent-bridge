@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Glob, Grep
 description: 4-phase systematic debugging methodology with root cause analysis and
   evidence-based verification. Use when debugging complex issues.
 name: systematic-debugging

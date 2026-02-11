@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Glob, Grep
 description: Generative Engine Optimization for AI search engines (ChatGPT, Claude,
   Perplexity).
 name: geo-fundamentals

@@ -1,4 +1,5 @@
 ---
+allowed-tools: Read, Glob, Grep
 description: Internationalization and localization patterns. Detecting hardcoded strings,
   managing translations, locale files, RTL support.
 name: i18n-localization
