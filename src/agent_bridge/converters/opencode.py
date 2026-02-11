@@ -7,7 +7,7 @@ from pathlib import Path
 
 from agent_bridge.core.converter import BaseConverter, converter_registry
 from agent_bridge.core.types import ConversionResult, IDEFormat
-from agent_bridge.opencode_conv import convert_to_opencode
+from agent_bridge.converters._opencode_impl import convert_to_opencode, copy_mcp_opencode
 
 
 class OpenCodeConverter(BaseConverter):
@@ -41,11 +41,7 @@ class OpenCodeConverter(BaseConverter):
     def install_mcp(
         self, source_root: Path, dest_root: Path, force: bool = False
     ) -> bool:
-        from agent_bridge.opencode_conv import copy_mcp_opencode
-
-        # copy_mcp_opencode nhan project root (dest_root) va tu tim .agent source
-        copy_mcp_opencode(dest_root, force)
-        return True
+        return copy_mcp_opencode(dest_root, force)
 
     def clean(self, project_path: Path) -> bool:
         for sub in ["agents", "commands", "skills"]:

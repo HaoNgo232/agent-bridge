@@ -22,8 +22,6 @@ from typing import Any, Dict
 
 import yaml
 
-from .utils import Colors, ask_user, get_master_agent_dir
-
 # =============================================================================
 # OPENCODE AGENT CONFIGURATION
 # =============================================================================
@@ -120,7 +118,7 @@ AGENT_CONFIG_MAP = {
 }
 
 # Default config for unknown agents — enriched from central registry
-from .core.agent_registry import get_agent_role as _get_oc_role
+from agent_bridge.core.agent_registry import get_agent_role as _get_oc_role
 
 _DEFAULT_AGENT_CONFIG = {
     "mode": "subagent",
@@ -456,61 +454,11 @@ def convert_to_opencode(source_root: Path, dest_root: Path, verbose: bool = True
     return stats
 
 
-# =============================================================================
-# CLI ENTRY POINTS
-# =============================================================================
+def copy_mcp_opencode(root_path: Path, force: bool = False) -> bool:
+    """Tich hop MCP config vao opencode.json."""
+    from agent_bridge.utils import get_master_agent_dir, load_mcp_config
 
-
-def convert_opencode(source_dir: str, output_unused: str, force: bool = False):
-    """Bridge for CLI compatibility."""
-    root_path = Path(source_dir).resolve()
-
-    # Check for .agent in local or master
-    if root_path.name == ".agent":
-        source_root = root_path.parent
-    elif (root_path / ".agent").exists():
-        source_root = root_path
-    else:
-        master_path = get_master_agent_dir()
-        if master_path.exists():
-            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
-            source_root = master_path.parent
-        else:
-            print(f"{Colors.RED}❌ Error: No agent source found. Run 'agent-bridge update' first.{Colors.ENDC}")
-            return
-
-    # Confirmation for OpenCode Overwrite
-    opencode_dir = Path(".opencode").resolve()
-    if opencode_dir.exists() and not force:
-        if not ask_user("Found existing '.opencode'. Update agents & commands?", default=True):
-            print(f"{Colors.YELLOW}⏭️  Skipping OpenCode update.{Colors.ENDC}")
-            return
-
-    print(f"{Colors.HEADER}🏗️  Converting to OpenCode Format (Professional Spec)...{Colors.ENDC}")
-    convert_to_opencode(source_root, Path("."), verbose=True)
-
-    # Special: Generate AGENTS.md for OpenCode root
-    planner_file = source_root / ".agent" / "agents" / "project-planner.md"
-    if planner_file.exists():
-        try:
-            from .utils import extract_yaml_frontmatter
-
-            _, body = extract_yaml_frontmatter(planner_file.read_text(encoding="utf-8"))
-            Path("AGENTS.md").write_text(f"# Project Instructions\n\n{body}", encoding="utf-8")
-            print(f"{Colors.BLUE}  📜 Generated AGENTS.md (Project Root){Colors.ENDC}")
-        except Exception:
-            pass
-
-    print(f"{Colors.GREEN}✅ OpenCode conversion complete!{Colors.ENDC}")
-
-
-def copy_mcp_opencode(root_path: Path, force: bool = False):
-    """Bridge for CLI compatibility."""
-    # OpenCode MCP is handled within opencode.json in this refactor
-    # But we still need to pull the MCP config to integrate it
     source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
-    from .utils import load_mcp_config
-
     mcp_config = load_mcp_config(source_root)
 
     if mcp_config:
@@ -518,13 +466,10 @@ def copy_mcp_opencode(root_path: Path, force: bool = False):
         if opencode_json_path.exists():
             try:
                 config = json.loads(opencode_json_path.read_text(encoding="utf-8"))
-
-                # Integrate MCP servers into OpenCode format
                 config["mcp"] = {}
                 source_servers = mcp_config.get("mcpServers", {})
                 for name, server_config in source_servers.items():
                     new_config = {}
-                    # Preserve original command/args structure
                     if "command" in server_config:
                         cmd = server_config["command"]
                         args = server_config.get("args", [])
@@ -534,50 +479,13 @@ def copy_mcp_opencode(root_path: Path, force: bool = False):
                             new_config["command"] = cmd
                         else:
                             new_config["command"] = [str(cmd)]
-                    # Copy env if present
                     if "env" in server_config:
                         new_config["env"] = server_config["env"]
-                    # OpenCode-specific fields
                     new_config["type"] = server_config.get("type", "local")
                     new_config["enabled"] = server_config.get("enabled", True)
                     config["mcp"][name] = new_config
-
                 opencode_json_path.write_text(json.dumps(config, indent=2, ensure_ascii=False), encoding="utf-8")
-                print(f"{Colors.BLUE}  🔌 Integrated MCP config into opencode.json{Colors.ENDC}")
-            except Exception as e:
-                print(f"{Colors.RED}  ❌ Failed to integrate MCP config: {e}{Colors.ENDC}")
-
-
-def init_opencode(project_path: Path = None) -> bool:
-    # Existing user function...
-    """Initialize OpenCode configuration in project."""
-    project_path = project_path or Path.cwd()
-
-    if not (project_path / ".agent").exists():
-        print("Error: .agent directory not found. Run 'agent-bridge update' first.")
-        return False
-
-    stats = convert_to_opencode(project_path, project_path)
-    return len(stats["errors"]) == 0
-
-
-def clean_opencode(project_path: Path = None) -> bool:
-    """Remove OpenCode configuration from project."""
-    project_path = project_path or Path.cwd()
-
-    paths_to_remove = [
-        project_path / ".opencode" / "agents",
-        project_path / ".opencode" / "commands",
-        project_path / ".opencode" / "skills",
-        project_path / ".opencode" / "opencode.json",
-    ]
-
-    for path in paths_to_remove:
-        if path.exists():
-            if path.is_dir():
-                shutil.rmtree(path)
-            else:
-                path.unlink()
-            print(f"  Removed {path}")
-
-    return True
+                return True
+            except Exception:
+                pass
+    return False

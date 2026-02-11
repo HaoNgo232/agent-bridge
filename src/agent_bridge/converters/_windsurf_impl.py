@@ -17,8 +17,6 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
-
 # =============================================================================
 # WINDSURF RULE CONFIGURATION
 # =============================================================================
@@ -457,83 +455,3 @@ def convert_to_windsurf(source_root: Path, dest_root: Path, verbose: bool = True
     return stats
 
 
-# =============================================================================
-# CLI ENTRY POINTS
-# =============================================================================
-
-
-def convert_windsurf(source_dir: str, output_dir: str, force: bool = False):
-    """Bridge for CLI compatibility."""
-    root_path = Path(source_dir).resolve()
-
-    # Check for .agent in local or master
-    if root_path.name == ".agent":
-        source_root = root_path.parent
-    elif (root_path / ".agent").exists():
-        source_root = root_path
-    else:
-        master_path = get_master_agent_dir()
-        if master_path.exists():
-            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
-            source_root = master_path.parent
-        else:
-            print(f"{Colors.RED}❌ Error: No agent source found. Run 'agent-bridge update' first.{Colors.ENDC}")
-            return
-
-    # Confirmation for Windsurf Overwrite
-    windsurf_dir = Path(".windsurf").resolve()
-    if windsurf_dir.exists() and not force:
-        if not ask_user("Found existing '.windsurf'. Update rules & workflows?", default=True):
-            print(f"{Colors.YELLOW}⏭️  Skipping Windsurf update.{Colors.ENDC}")
-            return
-
-    print(f"{Colors.HEADER}🏗️  Converting to Windsurf Format (Professional Spec)...{Colors.ENDC}")
-    convert_to_windsurf(source_root, Path("."), verbose=True)
-    print(f"{Colors.GREEN}✅ Windsurf conversion complete!{Colors.ENDC}")
-
-
-def copy_mcp_windsurf(root_path: Path, force: bool = False):
-    """Bridge for CLI compatibility."""
-    dest_file = root_path / ".windsurf" / "mcp_config.json"
-    if dest_file.exists() and not force:
-        if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
-            print(f"{Colors.YELLOW}🔒 Kept existing Windsurf MCP config.{Colors.ENDC}")
-            return
-
-    source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
-    if install_mcp_for_ide(source_root, root_path, "windsurf"):
-        print(f"{Colors.BLUE}  🔌 Integrated MCP config into Windsurf (.windsurf/mcp_config.json).{Colors.ENDC}")
-
-
-def init_windsurf(project_path: Path = None) -> bool:
-    # Existing user function...
-    """Initialize Windsurf configuration in project."""
-    project_path = project_path or Path.cwd()
-
-    if not (project_path / ".agent").exists():
-        print("Error: .agent directory not found. Run 'agent-bridge update' first.")
-        return False
-
-    stats = convert_to_windsurf(project_path, project_path)
-    return len(stats["errors"]) == 0
-
-
-def clean_windsurf(project_path: Path = None) -> bool:
-    """Remove Windsurf configuration from project."""
-    project_path = project_path or Path.cwd()
-
-    paths_to_remove = [
-        project_path / ".windsurf" / "rules",
-        project_path / ".windsurf" / "workflows",
-        project_path / ".windsurfrules",
-    ]
-
-    for path in paths_to_remove:
-        if path.exists():
-            if path.is_dir():
-                shutil.rmtree(path)
-            else:
-                path.unlink()
-            print(f"  Removed {path}")
-
-    return True

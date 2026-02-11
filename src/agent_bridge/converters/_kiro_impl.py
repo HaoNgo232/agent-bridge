@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 import yaml
 
-from .utils import Colors, ask_user, get_master_agent_dir, install_mcp_for_ide
+from agent_bridge.utils import Colors
 
 # =============================================================================
 # KIRO AGENT CONFIGURATION
@@ -54,7 +54,7 @@ INTERNAL_TO_KIRO_TOOL_MAP = {
 # Instead of a duplicate AGENT_CONFIG_MAP, we derive Kiro config from
 # the central AgentRole definitions in core/agent_registry.py.
 
-from .core.agent_registry import get_agent_role
+from agent_bridge.core.agent_registry import get_agent_role
 
 
 def _role_to_kiro_config(slug: str) -> dict:
@@ -690,87 +690,3 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
     return stats
 
 
-# =============================================================================
-# CLI ENTRY POINTS
-# =============================================================================
-
-
-def convert_kiro(source_dir: str, output_dir: str, force: bool = False):
-    """Bridge for CLI compatibility."""
-    root_path = Path(source_dir).resolve()
-
-    # Check for .agent in local or master
-    if root_path.name == ".agent":
-        source_root = root_path.parent
-    elif (root_path / ".agent").exists():
-        source_root = root_path
-    else:
-        master_path = get_master_agent_dir()
-        if master_path.exists():
-            print(f"{Colors.YELLOW}🔔 Local .agent not found, using Master Vault: {master_path}{Colors.ENDC}")
-            source_root = master_path.parent
-        else:
-            print(f"{Colors.RED}❌ Error: No agent source found. Run 'agent-bridge update' first.{Colors.ENDC}")
-            return
-
-    # Confirmation for Kiro Overwrite
-    if (Path(".").resolve() / ".kiro").exists() and not force:
-        if not ask_user(
-            "Found existing '.kiro'. Update configuration (agents, skills, prompts, steering)?", default=True
-        ):
-            print(f"{Colors.YELLOW}⏭️  Skipping Kiro update.{Colors.ENDC}")
-            return
-
-    print(f"{Colors.HEADER}🏗️  Converting to Kiro Format (Professional Spec)...{Colors.ENDC}")
-    convert_to_kiro(source_root, Path("."), verbose=True)
-    print(f"{Colors.GREEN}✅ Kiro conversion complete!{Colors.ENDC}")
-
-
-def copy_mcp_kiro(root_path: Path, force: bool = False):
-    """Bridge for CLI compatibility."""
-    dest_file = root_path / ".kiro" / "settings" / "mcp.json"
-    if dest_file.exists() and not force:
-        if not ask_user(f"Found existing '{dest_file}'. Overwrite MCP config?", default=False):
-            print(f"{Colors.YELLOW}🔒 Kept existing Kiro MCP config.{Colors.ENDC}")
-            return
-
-    source_root = root_path if (root_path / ".agent").exists() else get_master_agent_dir().parent
-    if install_mcp_for_ide(source_root, root_path, "kiro"):
-        print(f"{Colors.BLUE}  🔌 Integrated MCP config into Kiro settings.{Colors.ENDC}")
-
-
-def init_kiro(project_path: Path = None, force: bool = False) -> bool:
-    """Initialize Kiro configuration in project."""
-    project_path = project_path or Path.cwd()
-
-    if not (project_path / ".agent").exists():
-        print("Error: .agent directory not found. Run 'agent-bridge update' first.")
-        return False
-
-    # Check for existing .kiro directory
-    kiro_dir = project_path / ".kiro"
-    if kiro_dir.exists() and not force:
-        if not ask_user("Found existing '.kiro'. Update configuration?", default=True):
-            print(f"{Colors.YELLOW}⏭️  Skipping Kiro initialization.{Colors.ENDC}")
-            return False
-
-    stats = convert_to_kiro(project_path, project_path)
-    return len(stats["errors"]) == 0
-
-
-def clean_kiro(project_path: Path = None) -> bool:
-    """Remove Kiro configuration from project."""
-    project_path = project_path or Path.cwd()
-
-    paths_to_remove = [
-        project_path / ".kiro" / "agents",
-        project_path / ".kiro" / "skills",
-        project_path / ".kiro" / "steering",
-    ]
-
-    for path in paths_to_remove:
-        if path.exists():
-            shutil.rmtree(path)
-            print(f"  Removed {path}")
-
-    return True

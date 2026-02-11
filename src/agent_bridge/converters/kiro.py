@@ -7,7 +7,7 @@ from pathlib import Path
 
 from agent_bridge.core.converter import BaseConverter, converter_registry
 from agent_bridge.core.types import ConversionResult, IDEFormat
-from agent_bridge.kiro_conv import convert_to_kiro
+from agent_bridge.converters._kiro_impl import convert_to_kiro
 
 
 class KiroConverter(BaseConverter):

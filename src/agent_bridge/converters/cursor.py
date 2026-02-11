@@ -7,7 +7,7 @@ from pathlib import Path
 
 from agent_bridge.core.converter import BaseConverter, converter_registry
 from agent_bridge.core.types import ConversionResult, IDEFormat
-from agent_bridge.cursor_conv import convert_to_cursor
+from agent_bridge.converters._cursor_impl import convert_to_cursor
 
 
 class CursorConverter(BaseConverter):

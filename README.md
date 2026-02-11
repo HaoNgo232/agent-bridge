@@ -82,9 +82,21 @@ agent-bridge vault sync
 
 Download and update all registered vaults.
 
+```bash
+agent-bridge list
+```
+
+List all supported IDE formats.
+
+```bash
+agent-bridge <ide>
+```
+
+Convert directly to a specific IDE (e.g. `agent-bridge kiro`, `agent-bridge cursor`).
+
 ## Knowledge Vaults
 
-Agent Bridge ships with [Antigravity Kit](https://github.com/vudovn/antigravity-kit) as the default vault, but you can register any git repo or local directory that follows the `.agent/` structure:
+Agent Bridge ships with a built-in starter vault (no external deps, works offline). You can also register any git repo or local directory that follows the `.agent/` structure:
 
 ```bash
 # Add your team's private vault
@@ -122,15 +134,24 @@ Agent Bridge reads markdown-based agent definitions from `.agent/` and converts 
 
 ```text
 src/agent_bridge/
-├── cli.py           # CLI entry point and argument parsing
-├── vault.py         # Multi-source vault management
-├── kit_sync.py      # Knowledge synchronization
-├── kiro_conv.py     # Kiro format converter
-├── cursor_conv.py   # Cursor format converter
-├── copilot_conv.py  # GitHub Copilot converter
-├── opencode_conv.py # OpenCode converter
-├── windsurf_conv.py # Windsurf converter
-└── utils.py         # Shared utilities
+├── cli.py           # CLI entry point (thin dispatcher)
+├── tui.py           # Interactive TUI for init
+├── utils.py         # Shared utilities
+├── core/            # Core types and registry
+│   ├── types.py         # AgentRole, ConversionResult, IDEFormat
+│   ├── agent_registry.py # Central agent role definitions
+│   └── converter.py     # BaseConverter + ConverterRegistry
+├── converters/      # IDE-specific converters (self-register)
+│   ├── copilot.py, cursor.py, kiro.py, opencode.py, windsurf.py
+│   └── _*_impl.py       # Conversion logic (internal)
+├── vault/           # Multi-source vault management
+│   ├── manager.py   # VaultManager
+│   ├── sources.py   # GitSource, LocalSource, BuiltinSource
+│   └── merger.py    # Merge strategies
+├── services/        # Business logic
+│   ├── init_service.py  # init command logic
+│   └── sync_service.py  # update command logic
+└── builtin_vault/   # Built-in starter (no external deps)
 ```
 
 ## Credits
