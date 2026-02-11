@@ -1,5 +1,8 @@
 ---
-description: Master Rust 1.75+ with modern async patterns, advanced type system
+description: Master Rust 1.75+ with modern async patterns, advanced type system features,
+  and production-ready systems programming. Expert in the latest Rust ecosystem including
+  Tokio, axum, and cutting-edge crates. Use PROACTIVELY for Rust development, performance
+  optimization, or systems programming.
 name: rust-pro
 ---
 

@@ -185,3 +185,67 @@ def test_agent_tools_map_contains_only_string_lists() -> None:
         assert isinstance(agent_slug, str) and agent_slug
         assert isinstance(tools, list)
         assert all(isinstance(tool, str) and tool for tool in tools)
+
+
+
+def test_copilot_workflow_conversion(tmp_path: Path) -> None:
+    """Test workflow to prompt file conversion."""
+    from agent_bridge.copilot_conv import convert_workflow_to_prompt
+
+    workflow_dir = tmp_path / ".agent" / "workflows"
+    workflow_dir.mkdir(parents=True)
+
+    workflow_content = """---
+description: Test workflow for brainstorming
+agent: ask
+---
+
+# /brainstorm - Brainstorm Ideas
+
+$ARGUMENTS
+
+## Purpose
+
+This helps you brainstorm ideas.
+"""
+    (workflow_dir / "brainstorm.md").write_text(workflow_content)
+
+    dest_file = tmp_path / ".github" / "prompts" / "brainstorm.prompt.md"
+    result = convert_workflow_to_prompt(workflow_dir / "brainstorm.md", dest_file)
+    assert result is True
+    assert dest_file.exists()
+
+    content = dest_file.read_text()
+    assert "description: Test workflow for brainstorming" in content
+    assert "agent: ask" in content
+    assert "$ARGUMENTS" in content
+
+
+def test_copilot_rule_conversion(tmp_path: Path) -> None:
+    """Test rule to instruction file conversion."""
+    from agent_bridge.copilot_conv import convert_rule_to_instruction
+
+    rule_dir = tmp_path / ".agent" / "rules"
+    rule_dir.mkdir(parents=True)
+
+    rule_content = """---
+trigger: always_on
+name: Python Standards
+---
+
+# Python Coding Standards
+
+- Use PEP 8
+- Type hints required
+"""
+    (rule_dir / "python-standards.md").write_text(rule_content)
+
+    dest_file = tmp_path / ".github" / "instructions" / "python-standards.instructions.md"
+    result = convert_rule_to_instruction(rule_dir / "python-standards.md", dest_file)
+    assert result is True
+    assert dest_file.exists()
+
+    content = dest_file.read_text()
+    assert "name: Python Standards" in content
+    assert "applyTo: '**'" in content  # always_on -> **
+    assert "Use PEP 8" in content

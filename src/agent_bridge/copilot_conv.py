@@ -304,7 +304,13 @@ def convert_agent_to_copilot(source_path: Path, dest_path: Path) -> bool:
 
 
 def convert_skill_to_copilot(source_dir: Path, dest_dir: Path) -> bool:
-    """Convert a skill directory to Copilot format with validation."""
+    """
+    Convert a skill directory to Copilot Agent Skills format.
+    
+    Spec: https://agentskills.io/
+    - name: lowercase + hyphens, max 64 chars (required)
+    - description: what + when to use, max 1024 chars (required)
+    """
     try:
         skill_name = source_dir.name
         dest_skill_dir = dest_dir / skill_name
@@ -319,44 +325,60 @@ def convert_skill_to_copilot(source_dir: Path, dest_dir: Path) -> bool:
         if skill_file and skill_file.exists():
             content = skill_file.read_text(encoding="utf-8")
 
-            # Generate skill frontmatter with validation
-            # Agent Skills spec: name must be lowercase + hyphens, max 64 chars
-            normalized_name = re.sub(r"[^a-z0-9-]", "-", skill_name.lower())
-            normalized_name = re.sub(r"-+", "-", normalized_name).strip("-")  # Remove duplicate hyphens
+            # Extract existing frontmatter if present
+            existing_meta = {}
+            frontmatter_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+            if frontmatter_match:
+                try:
+                    existing_meta = yaml.safe_load(frontmatter_match.group(1)) or {}
+                    content = content[frontmatter_match.end():]
+                except yaml.YAMLError:
+                    pass
+
+            # Validate and normalize name (required, max 64 chars, lowercase + hyphens)
+            normalized_name = existing_meta.get("name") or skill_name
+            normalized_name = re.sub(r"[^a-z0-9-]", "-", normalized_name.lower())
+            normalized_name = re.sub(r"-+", "-", normalized_name).strip("-")
             if len(normalized_name) > 64:
                 normalized_name = normalized_name[:64].rstrip("-")
 
-            # Try to extract description from content
-            desc_match = re.search(r"^(?:>|Description:|Purpose:)\s*(.+?)$", content, re.MULTILINE | re.IGNORECASE)
-            skill_description = (
-                desc_match.group(1).strip()
-                if desc_match
-                else f"Skill documentation for {skill_name.replace('-', ' ')}"
-            )
+            # Extract or generate description (required, max 1024 chars)
+            # Must describe WHAT + WHEN to use
+            skill_description = existing_meta.get("description")
+            if not skill_description:
+                # Try to extract from content
+                desc_match = re.search(r"^(?:>|Description:|Purpose:)\s*(.+?)$", content, re.MULTILINE | re.IGNORECASE)
+                skill_description = (
+                    desc_match.group(1).strip()
+                    if desc_match
+                    else f"Skill for {skill_name.replace('-', ' ')}. Use when working with related tasks."
+                )
             
-            # Validate description length (max 1024 chars per spec)
+            # Validate description length
             if len(skill_description) > 1024:
                 skill_description = skill_description[:1021] + "..."
+
+            # Validate required fields
+            if not normalized_name or not skill_description:
+                print(f"  ⚠ Skill {skill_name}: missing required fields (name or description)")
+                return False
 
             frontmatter = {
                 "name": normalized_name,
                 "description": skill_description,
             }
 
-            # Remove existing frontmatter
-            content_clean = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
-
-            output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content_clean.strip()}\n"
+            output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content.strip()}\n"
 
             (dest_skill_dir / "SKILL.md").write_text(output, encoding="utf-8")
 
-        # Copy additional markdown files and safe subdirectories
+        # Copy additional resources (scripts, examples, references)
         SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "dist", "build"}
         for item in source_dir.iterdir():
             if item.is_dir():
                 if item.name not in SKIP_DIRS and not item.name.startswith("."):
                     shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
-            elif item.name != "SKILL.md" and item.suffix in (".md", ".txt", ".json", ".yaml", ".yml"):
+            elif item.name != "SKILL.md" and item.suffix in (".md", ".txt", ".json", ".yaml", ".yml", ".py", ".sh"):
                 shutil.copy2(item, dest_skill_dir / item.name)
 
         return True
@@ -377,13 +399,19 @@ def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True)
     Returns:
         Dict with conversion statistics
     """
-    stats = {"agents": 0, "skills": 0, "errors": []}
+    stats = {"agents": 0, "skills": 0, "workflows": 0, "rules": 0, "errors": []}
 
     agents_src = source_root / ".agent" / "agents"
     agents_dest = dest_root / ".github" / "agents"
 
     skills_src = source_root / ".agent" / "skills"
     skills_dest = dest_root / ".github" / "skills"
+
+    workflows_src = source_root / ".agent" / "workflows"
+    workflows_dest = dest_root / ".github" / "prompts"
+
+    rules_src = source_root / ".agent" / "rules"
+    rules_dest = dest_root / ".github" / "instructions"
 
     # Convert agents
     if agents_src.exists():
@@ -413,12 +441,173 @@ def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True)
                 else:
                     stats["errors"].append(f"skill:{skill_dir.name}")
 
+    # Convert workflows to prompt files
+    if workflows_src.exists():
+        if verbose:
+            print("Converting workflows to Copilot prompt files...")
+
+        for workflow_file in workflows_src.glob("*.md"):
+            dest_file = workflows_dest / workflow_file.name.replace(".md", ".prompt.md")
+            if convert_workflow_to_prompt(workflow_file, dest_file):
+                stats["workflows"] += 1
+                if verbose:
+                    print(f"  ✓ {workflow_file.name}")
+            else:
+                stats["errors"].append(f"workflow:{workflow_file.name}")
+
+    # Convert rules to instructions
+    if rules_src.exists():
+        if verbose:
+            print("Converting rules to Copilot instructions...")
+
+        for rule_file in rules_src.glob("*.md"):
+            dest_file = rules_dest / rule_file.name.replace(".md", ".instructions.md")
+            if convert_rule_to_instruction(rule_file, dest_file):
+                stats["rules"] += 1
+                if verbose:
+                    print(f"  ✓ {rule_file.name}")
+            else:
+                stats["errors"].append(f"rule:{rule_file.name}")
+
     if verbose:
-        print(f"\nCopilot conversion complete: {stats['agents']} agents, {stats['skills']} skills")
+        print(f"\nCopilot conversion complete:")
+        print(f"  {stats['agents']} agents, {stats['skills']} skills")
+        print(f"  {stats['workflows']} workflows, {stats['rules']} rules")
         if stats["errors"]:
             print(f"  Errors: {len(stats['errors'])}")
 
     return stats
+
+
+def convert_workflow_to_prompt(source_path: Path, dest_path: Path) -> bool:
+    """
+    Convert workflow to Copilot prompt file (.prompt.md).
+    
+    Spec: https://code.visualstudio.com/docs/copilot/customization/prompt-files
+    - name: prompt name (optional, defaults to filename)
+    - description: short description (optional)
+    - agent: ask/agent/plan or custom agent name (optional)
+    - model: language model (optional)
+    - tools: list of tool names (optional)
+    - argument-hint: hint text for chat input (optional)
+    """
+    try:
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        content = source_path.read_text(encoding="utf-8")
+
+        # Extract existing frontmatter
+        existing_meta = {}
+        frontmatter_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        if frontmatter_match:
+            try:
+                existing_meta = yaml.safe_load(frontmatter_match.group(1)) or {}
+                content = content[frontmatter_match.end():]
+            except yaml.YAMLError:
+                pass
+
+        # Extract workflow name from filename (e.g., "brainstorm.md" -> "brainstorm")
+        workflow_name = source_path.stem
+
+        # Build frontmatter for prompt file
+        frontmatter = {}
+        
+        # Name (optional, defaults to filename without extension)
+        if "name" in existing_meta:
+            frontmatter["name"] = existing_meta["name"]
+        
+        # Description (optional)
+        if "description" in existing_meta:
+            frontmatter["description"] = existing_meta["description"]
+        elif desc_match := re.search(r"^##?\s*Purpose\s*\n\n(.+?)(?:\n\n|\n##)", content, re.DOTALL):
+            frontmatter["description"] = desc_match.group(1).strip()[:200]
+        
+        # Agent (optional: ask/agent/plan or custom agent)
+        if "agent" in existing_meta:
+            frontmatter["agent"] = existing_meta["agent"]
+        
+        # Model (optional)
+        if "model" in existing_meta:
+            frontmatter["model"] = existing_meta["model"]
+        
+        # Tools (optional)
+        if "tools" in existing_meta:
+            frontmatter["tools"] = existing_meta["tools"]
+        
+        # Argument hint (optional)
+        if "argument-hint" in existing_meta:
+            frontmatter["argument-hint"] = existing_meta["argument-hint"]
+
+        # Write prompt file
+        if frontmatter:
+            output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content.strip()}\n"
+        else:
+            output = content.strip() + "\n"
+
+        dest_path.write_text(output, encoding="utf-8")
+        return True
+
+    except Exception as e:
+        print(f"  Error converting workflow {source_path.name}: {e}")
+        return False
+
+
+def convert_rule_to_instruction(source_path: Path, dest_path: Path) -> bool:
+    """
+    Convert rule to Copilot instruction file (.instructions.md).
+    
+    Spec: https://code.visualstudio.com/docs/copilot/customization/custom-instructions
+    - name: display name (optional, defaults to filename)
+    - description: short description (optional)
+    - applyTo: glob pattern for file matching (optional, e.g., "**/*.py")
+    """
+    try:
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        content = source_path.read_text(encoding="utf-8")
+
+        # Extract existing frontmatter
+        existing_meta = {}
+        frontmatter_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        if frontmatter_match:
+            try:
+                existing_meta = yaml.safe_load(frontmatter_match.group(1)) or {}
+                content = content[frontmatter_match.end():]
+            except yaml.YAMLError:
+                pass
+
+        # Build frontmatter for instruction file
+        frontmatter = {}
+        
+        # Name (optional)
+        if "name" in existing_meta:
+            frontmatter["name"] = existing_meta["name"]
+        
+        # Description (optional)
+        if "description" in existing_meta:
+            frontmatter["description"] = existing_meta["description"]
+        
+        # ApplyTo (optional, glob pattern)
+        if "applyTo" in existing_meta:
+            frontmatter["applyTo"] = existing_meta["applyTo"]
+        elif "trigger" in existing_meta:
+            # Convert trigger to applyTo
+            trigger = existing_meta["trigger"]
+            if trigger == "always_on":
+                frontmatter["applyTo"] = "**"
+            elif isinstance(trigger, str) and "*" in trigger:
+                frontmatter["applyTo"] = trigger
+
+        # Write instruction file
+        if frontmatter:
+            output = f"---\n{yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)}---\n\n{content.strip()}\n"
+        else:
+            output = content.strip() + "\n"
+
+        dest_path.write_text(output, encoding="utf-8")
+        return True
+
+    except Exception as e:
+        print(f"  Error converting rule {source_path.name}: {e}")
+        return False
 
 
 # =============================================================================
