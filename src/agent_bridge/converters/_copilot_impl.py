@@ -290,7 +290,7 @@ def convert_rule_to_instruction(source_path: Path, dest_path: Path) -> bool:
 
 def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True) -> Dict[str, Any]:
     """Main conversion function for GitHub Copilot format."""
-    stats = {"agents": 0, "skills": 0, "workflows": 0, "rules": 0, "errors": []}
+    stats = {"agents": 0, "skills": 0, "workflows": 0, "rules": 0, "errors": [], "warnings": []}
     agents_src = source_root / ".agent" / "agents"
     agents_dest = dest_root / ".github" / "agents"
     skills_src = source_root / ".agent" / "skills"
@@ -347,6 +347,21 @@ def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True)
                     print(f"  {rule_file.name}")
             else:
                 stats["errors"].append(f"rule:{rule_file.name}")
+
+    # Run external skill plugins (declarative, config-driven via .agent/plugins.json)
+    try:
+        from agent_bridge.core.plugins import PluginRunner
+
+        runner = PluginRunner(source_root)
+        plugin_results = runner.run_for_ide("copilot", dest_root, verbose=verbose)
+        for pname, pstatus in plugin_results.items():
+            if pstatus == "ok":
+                if verbose:
+                    print(f"  ✓ Plugin '{pname}' installed")
+            elif pstatus.startswith("error"):
+                stats["warnings"].append(f"Plugin '{pname}': {pstatus}")
+    except ImportError:
+        pass
 
     if verbose:
         print(f"\nCopilot conversion complete:")

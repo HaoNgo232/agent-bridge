@@ -649,17 +649,30 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
         else:
             stats["errors"].append("mcp:copy_failed")
 
-    # Install ui-ux-pro-max skill via uipro CLI (if workflow exists)
-    ui_ux_workflow = workflows_src / "ui-ux-pro-max.md" if workflows_src.exists() else None
-    if ui_ux_workflow and ui_ux_workflow.exists():
-        if verbose:
-            print("Installing ui-ux-pro-max skill...")
+    # Run external skill plugins (declarative, config-driven via .agent/plugins.json)
+    try:
+        from agent_bridge.core.plugins import PluginRunner
 
-        if fetch_external_skill_resources(source_root, verbose):
-            # CLI will auto-create .kiro/skills/ui-ux-pro-max/
-            pass
-        else:
-            stats["warnings"].append("ui-ux-pro-max install failed (install uipro CLI: npm install -g uipro-cli)")
+        runner = PluginRunner(source_root)
+        plugin_results = runner.run_for_ide("kiro", dest_root, verbose=verbose)
+        for pname, pstatus in plugin_results.items():
+            if pstatus == "ok":
+                if verbose:
+                    print(f"  ✓ Plugin '{pname}' installed")
+            elif pstatus.startswith("error"):
+                stats["warnings"].append(f"Plugin '{pname}': {pstatus}")
+    except ImportError:
+        # Fallback: legacy hardcoded ui-ux-pro-max
+        ui_ux_workflow = workflows_src / "ui-ux-pro-max.md" if workflows_src.exists() else None
+        if ui_ux_workflow and ui_ux_workflow.exists():
+            if verbose:
+                print("Installing ui-ux-pro-max skill...")
+            if fetch_external_skill_resources(source_root, verbose):
+                pass
+            else:
+                stats["warnings"].append(
+                    "ui-ux-pro-max install failed (install uipro CLI: npm install -g uipro-cli)"
+                )
 
     # Warnings for components not converted
     if scripts_src.exists():

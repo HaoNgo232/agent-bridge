@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agent-bridge.dev/plugins.schema.json",
+  "plugins": [
+    {
+      "name": "ui-ux-pro-max",
+      "description": "Advanced UI/UX design system skill by NextLevelBuilder",
+      "homepage": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "install": {
+        "requires": "npm",
+        "package": "uipro-cli",
+        "global": true,
+        "commands": {
+          "kiro": "uipro init --ai kiro",
+          "cursor": "uipro init --ai cursor",
+          "copilot": "uipro init --ai copilot",
+          "windsurf": "uipro init --ai windsurf",
+          "opencode": "uipro init --ai opencode"
+        }
+      },
+      "condition": {
+        "file_exists": ".agent/workflows/ui-ux-pro-max.md"
+      },
+      "prompt_before_install": true
+    }
+  ]
+}

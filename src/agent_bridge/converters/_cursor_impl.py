@@ -297,7 +297,7 @@ def convert_to_cursor(source_root: Path, dest_root: Path, verbose: bool = True) 
     """
     Main conversion function for Cursor v2.4+ format.
     """
-    stats = {"agents": 0, "rules": 0, "skills": 0, "workflows": 0, "errors": []}
+    stats = {"agents": 0, "rules": 0, "skills": 0, "workflows": 0, "errors": [], "warnings": []}
 
     # Define paths
     agents_src = source_root / ".agent" / "agents"
@@ -348,6 +348,21 @@ def convert_to_cursor(source_root: Path, dest_root: Path, verbose: bool = True) 
     if create_project_instructions(dest_root, source_root):
         if verbose:
             print("  ✓ project-instructions.mdc created")
+
+    # 5. Run external skill plugins (declarative, config-driven via .agent/plugins.json)
+    try:
+        from agent_bridge.core.plugins import PluginRunner
+
+        runner = PluginRunner(source_root)
+        plugin_results = runner.run_for_ide("cursor", dest_root, verbose=verbose)
+        for pname, pstatus in plugin_results.items():
+            if pstatus == "ok":
+                if verbose:
+                    print(f"  ✓ Plugin '{pname}' installed")
+            elif pstatus.startswith("error"):
+                stats["warnings"].append(f"Plugin '{pname}': {pstatus}")
+    except ImportError:
+        pass
 
     if verbose:
         print("\nCursor v2.4 conversion complete!")

@@ -386,7 +386,7 @@ def convert_to_opencode(source_root: Path, dest_root: Path, verbose: bool = True
     Returns:
         Dict with conversion statistics
     """
-    stats = {"agents": 0, "commands": 0, "skills": 0, "errors": []}
+    stats = {"agents": 0, "commands": 0, "skills": 0, "errors": [], "warnings": []}
 
     agents_src = source_root / ".agent" / "agents"
     agents_dest = dest_root / ".opencode" / "agents"
@@ -443,6 +443,21 @@ def convert_to_opencode(source_root: Path, dest_root: Path, verbose: bool = True
     if generate_opencode_config(source_root, dest_root):
         if verbose:
             print("  ✓ opencode.json")
+
+    # Run external skill plugins (declarative, config-driven via .agent/plugins.json)
+    try:
+        from agent_bridge.core.plugins import PluginRunner
+
+        runner = PluginRunner(source_root)
+        plugin_results = runner.run_for_ide("opencode", dest_root, verbose=verbose)
+        for pname, pstatus in plugin_results.items():
+            if pstatus == "ok":
+                if verbose:
+                    print(f"  ✓ Plugin '{pname}' installed")
+            elif pstatus.startswith("error"):
+                stats["warnings"].append(f"Plugin '{pname}': {pstatus}")
+    except ImportError:
+        pass
 
     if verbose:
         print(
