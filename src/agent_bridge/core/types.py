@@ -48,6 +48,28 @@ class ConversionResult:
 
 
 @dataclass
+class CapturedFile:
+    """Represents a single file that can be captured from IDE config back to .agent/."""
+    ide_path: Path
+    agent_path: Path
+    status: str  # "modified" | "new" | "unchanged"
+    ide_name: str  # "cursor" | "kiro" | "copilot"
+
+
+@dataclass
+class SnapshotInfo:
+    """Metadata about a saved snapshot."""
+    name: str
+    description: str
+    created: str
+    updated: str
+    version: int
+    contents: Dict[str, list]
+    path: Path
+    tags: Dict[str, list] = field(default_factory=dict)
+
+
+@dataclass
 class IDEFormat:
     """Metadata about one IDE format."""
     name: str

@@ -1,6 +1,6 @@
 # Agent Bridge
 
-Convert and sync AI agent knowledge to your IDE — supports multiple knowledge sources.
+Convert and sync AI agent knowledge to your IDE — supports multiple knowledge sources and bidirectional sync.
 
 ## Install
 
@@ -24,21 +24,23 @@ The interactive mode walks you through selecting knowledge sources and target ID
 
 ## Supported IDEs
 
-| IDE | Output Directory | Status |
-| --- | --- | --- |
-| Cursor AI | `.cursor/` | Beta |
-| Kiro CLI | `.kiro/` | Stable |
-| GitHub Copilot | `.github/` | Beta |
-| OpenCode | `.opencode/` | Beta |
-| Windsurf | `.windsurf/` | Beta |
+| IDE            | Output Directory | Status |
+| -------------- | ---------------- | ------ |
+| Cursor AI      | `.cursor/`       | Beta   |
+| Kiro CLI       | `.kiro/`         | Stable |
+| GitHub Copilot | `.github/`       | Beta   |
+| OpenCode       | `.opencode/`     | Beta   |
+| Windsurf       | `.windsurf/`     | Beta   |
 
 ## Commands
 
+### Core Commands
+
 ```bash
-agent-bridge init
+agent-bridge init [--cursor|--kiro|--copilot|--all]
 ```
 
-Set up agent configs for your project. Runs interactive TUI by default. Use flags like `--cursor`, `--kiro`, or `--all` to skip the TUI.
+Set up agent configs for your project. Runs interactive TUI by default. Use flags to skip the TUI.
 
 ```bash
 agent-bridge status
@@ -52,17 +54,44 @@ agent-bridge update
 
 Pull latest knowledge from all registered vaults and refresh any existing IDE configs in the current project.
 
-```bash
-agent-bridge mcp --all
-```
-
-Install MCP (Model Context Protocol) configuration to all IDEs. Use `--cursor`, `--kiro`, etc. to target specific IDEs.
+### Capture & Snapshot Commands
 
 ```bash
-agent-bridge clean --all
+agent-bridge capture [--ide cursor|kiro|copilot] [--strategy ide_wins|agent_wins]
 ```
 
-Remove generated IDE configuration directories.
+Reverse-sync: capture changes from IDE configs back to `.agent/` directory. Useful when you've edited agent files in your IDE and want to preserve those changes.
+
+- `--ide`: Specify which IDE to capture from (default: all initialized IDEs)
+- `--strategy`: Conflict resolution strategy
+  - `ide_wins`: IDE changes overwrite `.agent/` files (default)
+  - `agent_wins`: Skip files that haven't been modified in IDE
+
+```bash
+agent-bridge snapshot save <name> [--description "..."]
+```
+
+Save current `.agent/` state as a named snapshot for later restoration.
+
+```bash
+agent-bridge snapshot list
+```
+
+List all saved snapshots with metadata.
+
+```bash
+agent-bridge snapshot restore <name>
+```
+
+Restore `.agent/` directory from a saved snapshot.
+
+```bash
+agent-bridge snapshot delete <name>
+```
+
+Delete a saved snapshot.
+
+### Vault Management
 
 ```bash
 agent-bridge vault list
@@ -88,6 +117,20 @@ agent-bridge vault sync
 
 Download and update all registered vaults.
 
+### Other Commands
+
+```bash
+agent-bridge mcp --all
+```
+
+Install MCP (Model Context Protocol) configuration to all IDEs. Use `--cursor`, `--kiro`, etc. to target specific IDEs.
+
+```bash
+agent-bridge clean --all
+```
+
+Remove generated IDE configuration directories.
+
 ```bash
 agent-bridge list
 ```
@@ -99,6 +142,30 @@ agent-bridge <ide>
 ```
 
 Convert directly to a specific IDE (e.g. `agent-bridge kiro`, `agent-bridge cursor`).
+
+## Bidirectional Sync Workflow
+
+Agent Bridge supports full bidirectional sync between `.agent/` and IDE configs:
+
+```bash
+# 1. Initialize IDE configs from .agent/
+agent-bridge init --cursor
+
+# 2. Edit agent files in Cursor IDE
+# ... make changes to .cursor/agents/orchestrator.md ...
+
+# 3. Capture changes back to .agent/
+agent-bridge capture --ide cursor
+
+# 4. Save a snapshot before major changes
+agent-bridge snapshot save "before-refactor" --description "Stable state"
+
+# 5. Make experimental changes
+# ... edit .agent/ files ...
+
+# 6. Restore if needed
+agent-bridge snapshot restore "before-refactor"
+```
 
 ## Knowledge Vaults
 
@@ -136,6 +203,8 @@ When multiple vaults are registered, files are merged with project-local files t
 
 Agent Bridge reads markdown-based agent definitions from `.agent/` and converts them to each IDE's native format — JSON configs for Kiro, MDC rules for Cursor, frontmatter-annotated markdown for Copilot, etc. MCP configurations are copied to each IDE's expected location.
 
+**Reverse conversion** allows capturing changes made in IDE configs back to the source `.agent/` format, enabling true bidirectional sync.
+
 ## Project Structure
 
 ```text
@@ -155,9 +224,24 @@ src/agent_bridge/
 │   ├── sources.py   # GitSource, LocalSource, BuiltinSource
 │   └── merger.py    # Merge strategies
 ├── services/        # Business logic
-│   ├── init_service.py  # init command logic
-│   └── sync_service.py  # update command logic
+│   ├── init_service.py    # init command logic
+│   ├── sync_service.py    # update command logic
+│   ├── capture_service.py # reverse sync logic
+│   └── snapshot_service.py # snapshot management
 └── builtin_vault/   # Built-in starter (no external deps)
+```
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run specific test suites
+pytest tests/test_capture_service.py
+pytest tests/test_snapshot_service.py
+pytest tests/test_roundtrip.py
+
 ```
 
 ## Credits

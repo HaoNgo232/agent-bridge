@@ -20,6 +20,7 @@ from typing import Any, Dict, List
 
 import yaml
 
+from agent_bridge.core.types import CapturedFile
 from agent_bridge.utils import Colors
 
 # =============================================================================
@@ -701,5 +702,144 @@ def convert_to_kiro(source_root: Path, dest_root: Path, verbose: bool = True) ->
                 print(f"    - {error}")
 
     return stats
+
+
+# =============================================================================
+# REVERSE CONVERSION (IDE -> .agent/)
+# =============================================================================
+
+
+def reverse_convert_kiro(
+    project_path: Path, agent_dir: Path, verbose: bool = True
+) -> List[CapturedFile]:
+    """Scan .kiro/ va tra ve danh sach file co the capture."""
+    result: List[CapturedFile] = []
+    kiro_root = project_path / ".kiro"
+
+    if not kiro_root.exists():
+        return result
+
+    agents_dir = kiro_root / "agents"
+    if agents_dir.exists():
+        for f in agents_dir.glob("*.json"):
+            agent_path = agent_dir / "agents" / f"{f.stem}.md"
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="kiro",
+                )
+            )
+
+    skills_dir = kiro_root / "skills"
+    if skills_dir.exists():
+        for d in skills_dir.iterdir():
+            if d.is_dir() and (d / "SKILL.md").exists():
+                agent_path = agent_dir / "skills" / d.name / "SKILL.md"
+                result.append(
+                    CapturedFile(
+                        ide_path=d / "SKILL.md",
+                        agent_path=agent_path,
+                        status="new",
+                        ide_name="kiro",
+                    )
+                )
+
+    prompts_dir = kiro_root / "prompts"
+    if prompts_dir.exists():
+        for f in prompts_dir.glob("*.md"):
+            agent_path = agent_dir / "workflows" / f.name
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="kiro",
+                )
+            )
+
+    steering_dir = kiro_root / "steering"
+    if steering_dir.exists():
+        for f in steering_dir.glob("*.md"):
+            agent_path = agent_dir / "rules" / f.name
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="kiro",
+                )
+            )
+
+    mcp_file = kiro_root / "settings" / "mcp.json"
+    if mcp_file.exists():
+        agent_path = agent_dir / "mcp_config.json"
+        result.append(
+            CapturedFile(
+                ide_path=mcp_file,
+                agent_path=agent_path,
+                status="new",
+                ide_name="kiro",
+            )
+        )
+
+    return result
+
+
+def apply_reverse_capture_kiro(
+    captured: CapturedFile, project_path: Path, agent_dir: Path
+) -> bool:
+    """Thuc hien ghi noi dung reverse-converted vao agent_path."""
+    ide_path = captured.ide_path
+    agent_path = captured.agent_path
+    if not ide_path.exists():
+        return False
+
+    kiro_root = project_path / ".kiro"
+
+    if kiro_root / "agents" in ide_path.parents or ide_path.parent == kiro_root / "agents":
+        try:
+            data = json.loads(ide_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+            return False
+        prompt = data.get("prompt", "")
+        # prompt da la full markdown body tu forward conversion, giu nguyen
+        body = prompt
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    if kiro_root / "skills" in ide_path.parents:
+        skill_dir = ide_path.parent
+        dest_skill_dir = agent_dir / "skills" / skill_dir.name
+        dest_skill_dir.mkdir(parents=True, exist_ok=True)
+        for item in skill_dir.iterdir():
+            if item.is_dir():
+                shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dest_skill_dir / item.name)
+        return True
+
+    if kiro_root / "prompts" in ide_path.parents or ide_path.parent == kiro_root / "prompts":
+        content = ide_path.read_text(encoding="utf-8")
+        body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL)
+        body = body.replace("{{args}}", "$ARGUMENTS").strip()
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    if kiro_root / "steering" in ide_path.parents or ide_path.parent == kiro_root / "steering":
+        content = ide_path.read_text(encoding="utf-8")
+        body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    if ide_path == kiro_root / "settings" / "mcp.json":
+        shutil.copy2(ide_path, agent_path)
+        return True
+
+    return False
 
 

@@ -44,6 +44,7 @@ def run_init_tui(registry, project_path: Path, agent_dir: Path) -> bool:
                 questionary.Choice("Use project agents (.agent/)", value="project"),
                 questionary.Choice("Merge vault + project (project wins)", value="merge"),
                 questionary.Choice("Replace with vault agents", value="vault"),
+                questionary.Choice("From saved snapshot...", value="snapshot"),
                 Separator(),
                 questionary.Choice("Add your own vault first...", value="add_vault"),
             ],
@@ -54,6 +55,7 @@ def run_init_tui(registry, project_path: Path, agent_dir: Path) -> bool:
             "No .agent/ found locally. Choose a source:",
             choices=[
                 questionary.Choice("Use default vault (builtin)", value="vault"),
+                questionary.Choice("From saved snapshot...", value="snapshot"),
                 questionary.Choice("Add your own vault...", value="add_vault"),
             ],
             style=CUSTOM_STYLE,
@@ -62,6 +64,22 @@ def run_init_tui(registry, project_path: Path, agent_dir: Path) -> bool:
     if not source_choice:
         print(f"{Colors.YELLOW}Cancelled.{Colors.ENDC}")
         return False
+
+    snapshot_name = None
+    if source_choice == "snapshot":
+        from agent_bridge.services.snapshot_service import list_snapshots
+
+        snapshots = list_snapshots()
+        if not snapshots:
+            print(f"{Colors.YELLOW}No snapshots found. Run 'agent-bridge snapshot save <name>' first.{Colors.ENDC}")
+            return False
+        choices = [
+            questionary.Choice(f"{s.name} (v{s.version}) - {s.description or ''}", value=s.name)
+            for s in snapshots
+        ]
+        snapshot_name = questionary.select("Select snapshot:", choices=choices, style=CUSTOM_STYLE).ask()
+        if not snapshot_name:
+            return False
 
     if source_choice == "add_vault":
         source_choice = _tui_add_vault(has_local_agent)
@@ -124,6 +142,8 @@ def run_init_tui(registry, project_path: Path, agent_dir: Path) -> bool:
 
     # 4. Xac nhan
     print(f"\n  Source:  {Colors.CYAN}{source_choice}{Colors.ENDC}")
+    if snapshot_name:
+        print(f"  Snapshot: {Colors.CYAN}{snapshot_name}{Colors.ENDC}")
     print(f"  Target:  {Colors.CYAN}{', '.join(selected_names)}{Colors.ENDC}")
 
     confirm = questionary.confirm("Proceed?", default=True, style=CUSTOM_STYLE).ask()
@@ -133,7 +153,56 @@ def run_init_tui(registry, project_path: Path, agent_dir: Path) -> bool:
         return False
 
     # 5. Chay init
-    run_init(project_path, selected_names, source_choice, force=False, verbose=True)
+    run_init(
+        project_path,
+        selected_names,
+        source_choice,
+        force=False,
+        verbose=True,
+        snapshot_name=snapshot_name,
+    )
+    return True
+
+
+def run_capture_tui(
+    project_path: Path,
+    files: list,
+    strategy: str = "ask",
+    dry_run: bool = False,
+) -> bool:
+    """
+    TUI flow cho capture: checkbox chon file -> execute.
+
+    Returns:
+        True neu thanh cong
+    """
+    from agent_bridge.services.capture_service import execute_capture
+
+    if not files:
+        return False
+
+    choices = []
+    for cf in files:
+        status_str = f"[{cf.status}]" if cf.status else ""
+        label = f"{status_str} {cf.ide_path.name} ({cf.ide_name})"
+        choices.append(questionary.Choice(label, value=cf, checked=True))
+
+    selected = questionary.checkbox(
+        "Select files to capture:",
+        choices=choices,
+        style=CUSTOM_STYLE,
+        instruction="Space=toggle, Enter=confirm",
+    ).ask()
+
+    if not selected:
+        print(f"{Colors.YELLOW}No files selected.{Colors.ENDC}")
+        return False
+
+    result = execute_capture(project_path, selected, strategy=strategy, dry_run=dry_run)
+    if dry_run:
+        print(f"{Colors.CYAN}Would capture {len(selected)} files.{Colors.ENDC}")
+    else:
+        print(f"{Colors.GREEN}Captured {result.get('captured', 0)} files.{Colors.ENDC}")
     return True
 
 

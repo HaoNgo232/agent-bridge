@@ -7,11 +7,12 @@ Tach rieng de converters/copilot.py chi chua BaseConverter wrapper.
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import yaml
 
 from agent_bridge.core.agent_registry import get_agent_role as _get_role
+from agent_bridge.core.types import CapturedFile
 
 
 def _role_to_copilot_tools(slug: str) -> list[str]:
@@ -370,3 +371,176 @@ def convert_to_copilot(source_root: Path, dest_root: Path, verbose: bool = True)
         if stats["errors"]:
             print(f"  Errors: {len(stats['errors'])}")
     return stats
+
+
+# =============================================================================
+# REVERSE CONVERSION (IDE -> .agent/)
+# =============================================================================
+
+
+def reverse_convert_copilot(
+    project_path: Path, agent_dir: Path, verbose: bool = True
+) -> List[CapturedFile]:
+    """Scan .github/ va tra ve danh sach file co the capture."""
+    result: List[CapturedFile] = []
+    github_root = project_path / ".github"
+
+    if not github_root.exists():
+        return result
+
+    agents_dir = github_root / "agents"
+    if agents_dir.exists():
+        for f in agents_dir.glob("*.md"):
+            agent_path = agent_dir / "agents" / f.name
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="copilot",
+                )
+            )
+
+    skills_dir = github_root / "skills"
+    if skills_dir.exists():
+        for d in skills_dir.iterdir():
+            if d.is_dir() and (d / "SKILL.md").exists():
+                agent_path = agent_dir / "skills" / d.name / "SKILL.md"
+                result.append(
+                    CapturedFile(
+                        ide_path=d / "SKILL.md",
+                        agent_path=agent_path,
+                        status="new",
+                        ide_name="copilot",
+                    )
+                )
+
+    prompts_dir = github_root / "prompts"
+    if prompts_dir.exists():
+        for f in prompts_dir.glob("*.prompt.md"):
+            stem = f.name.replace(".prompt.md", "")
+            agent_path = agent_dir / "workflows" / f"{stem}.md"
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="copilot",
+                )
+            )
+
+    instructions_dir = github_root / "instructions"
+    if instructions_dir.exists():
+        for f in instructions_dir.glob("*.instructions.md"):
+            stem = f.name.replace(".instructions.md", "")
+            agent_path = agent_dir / "rules" / f"{stem}.md"
+            result.append(
+                CapturedFile(
+                    ide_path=f,
+                    agent_path=agent_path,
+                    status="new",
+                    ide_name="copilot",
+                )
+            )
+
+    return result
+
+
+def apply_reverse_capture_copilot(
+    captured: CapturedFile, project_path: Path, agent_dir: Path
+) -> bool:
+    """Thuc hien ghi noi dung reverse-converted vao agent_path."""
+    ide_path = captured.ide_path
+    agent_path = captured.agent_path
+    if not ide_path.exists():
+        return False
+
+    github_root = project_path / ".github"
+
+    if github_root / "agents" in ide_path.parents or ide_path.parent == github_root / "agents":
+        content = ide_path.read_text(encoding="utf-8")
+        body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    if github_root / "skills" in ide_path.parents:
+        skill_dir = ide_path.parent
+        content = ide_path.read_text(encoding="utf-8")
+        fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        if fm_match:
+            try:
+                fm = yaml.safe_load(fm_match.group(1)) or {}
+                body = content[fm_match.end() :].strip()
+                fm_clean = {k: v for k, v in fm.items() if k in ("name", "description")}
+                if fm_clean:
+                    fm_str = yaml.dump(fm_clean, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                    body = f"---\n{fm_str}---\n\n{body}\n"
+            except yaml.YAMLError:
+                body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        else:
+            body = content.strip()
+        dest_skill_dir = agent_dir / "skills" / skill_dir.name
+        dest_skill_dir.mkdir(parents=True, exist_ok=True)
+        (dest_skill_dir / "SKILL.md").write_text(body, encoding="utf-8")
+        for item in skill_dir.iterdir():
+            if item.name != "SKILL.md":
+                if item.is_file():
+                    shutil.copy2(item, dest_skill_dir / item.name)
+                elif item.is_dir():
+                    shutil.copytree(item, dest_skill_dir / item.name, dirs_exist_ok=True)
+        return True
+
+    if github_root / "prompts" in ide_path.parents or ide_path.parent == github_root / "prompts":
+        content = ide_path.read_text(encoding="utf-8")
+        fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        if fm_match:
+            try:
+                fm = yaml.safe_load(fm_match.group(1)) or {}
+                body = content[fm_match.end() :].strip()
+                fm_clean = {k: v for k, v in fm.items() if k not in ("tools", "argument-hint")}
+                if fm_clean:
+                    fm_str = yaml.dump(fm_clean, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                    body = f"---\n{fm_str}---\n\n{body}\n"
+            except yaml.YAMLError:
+                body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        else:
+            body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    if github_root / "instructions" in ide_path.parents or ide_path.parent == github_root / "instructions":
+        content = ide_path.read_text(encoding="utf-8")
+        fm_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        if fm_match:
+            try:
+                fm = yaml.safe_load(fm_match.group(1)) or {}
+                body = content[fm_match.end() :].strip()
+                
+                # Strip IDE-specific fields
+                apply_to = fm.pop("applyTo", None)
+                fm.pop("name", None)
+                fm.pop("description", None)
+                
+                # Convert applyTo to trigger
+                if apply_to == "**":
+                    fm["trigger"] = "always_on"
+                elif apply_to:
+                    fm["trigger"] = apply_to
+                
+                # Only write frontmatter if there are remaining fields
+                if fm:
+                    fm_str = yaml.dump(fm, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                    body = f"---\n{fm_str}---\n\n{body}\n"
+                else:
+                    body = f"{body}\n"
+            except yaml.YAMLError:
+                body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        else:
+            body = re.sub(r"^---\n.*?\n---\n*", "", content, flags=re.DOTALL).strip()
+        agent_path.parent.mkdir(parents=True, exist_ok=True)
+        agent_path.write_text(body, encoding="utf-8")
+        return True
+
+    return False

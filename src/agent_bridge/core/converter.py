@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List, Optional, Type
 
-from .types import ConversionResult, IDEFormat
+from .types import CapturedFile, ConversionResult, IDEFormat
 
 
 class BaseConverter(ABC):
@@ -23,6 +23,23 @@ class BaseConverter(ABC):
 
     @abstractmethod
     def clean(self, project_path: Path) -> bool: ...
+
+    def reverse_convert(
+        self,
+        project_path: Path,
+        agent_dir: Path,
+        verbose: bool = True,
+    ) -> List[CapturedFile]:
+        """
+        Reverse-convert IDE files back to .agent/ format.
+
+        Dry-run style: tra ve danh sach file se capture, KHONG ghi vao .agent/.
+        Capture service se goi va thuc hien ghi.
+
+        Default: tra ve [] (no reverse support).
+        Cursor, Kiro, Copilot override method nay.
+        """
+        return []
 
     @property
     def name(self) -> str:

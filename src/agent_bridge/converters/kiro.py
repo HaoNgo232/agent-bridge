@@ -4,10 +4,11 @@ Kiro CLI converter — chuyen doi .agent/ sang dang .kiro/agents, skills, prompt
 
 import shutil
 from pathlib import Path
+from typing import List
 
 from agent_bridge.core.converter import BaseConverter, converter_registry
-from agent_bridge.core.types import ConversionResult, IDEFormat
-from agent_bridge.converters._kiro_impl import convert_to_kiro
+from agent_bridge.core.types import CapturedFile, ConversionResult, IDEFormat
+from agent_bridge.converters._kiro_impl import convert_to_kiro, reverse_convert_kiro
 
 
 class KiroConverter(BaseConverter):
@@ -57,6 +58,15 @@ class KiroConverter(BaseConverter):
             if p.exists():
                 shutil.rmtree(p)
         return True
+
+    def reverse_convert(
+        self,
+        project_path: Path,
+        agent_dir: Path,
+        verbose: bool = True,
+    ) -> List[CapturedFile]:
+        """Reverse-convert .kiro/ files back to .agent/ format."""
+        return reverse_convert_kiro(project_path, agent_dir, verbose)
 
 
 converter_registry.register(KiroConverter)
