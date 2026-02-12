@@ -77,6 +77,8 @@ def _main():
     p_snap_info.add_argument("name", help="Snapshot name")
     p_snap_delete = snap_sub.add_parser("delete")
     p_snap_delete.add_argument("name", help="Snapshot name")
+    p_snap_restore = snap_sub.add_parser("restore", help="Restore .agent/ from snapshot")
+    p_snap_restore.add_argument("name", help="Snapshot name")
 
     # --- list ---
     sub.add_parser("list", help="List supported IDE formats")
@@ -227,6 +229,7 @@ def _handle_snapshot(args):
         delete_snapshot,
         get_snapshot,
         list_snapshots,
+        restore_snapshot,
         save_snapshot,
     )
 
@@ -279,8 +282,17 @@ def _handle_snapshot(args):
             print(f"{Colors.GREEN}Snapshot '{name}' deleted.{Colors.ENDC}")
         else:
             print(f"{Colors.RED}Snapshot '{name}' not found.{Colors.ENDC}")
+    elif action == "restore":
+        name = getattr(args, "name", None)
+        if not name:
+            print(f"{Colors.RED}Usage: agent-bridge snapshot restore <name>{Colors.ENDC}")
+            return
+        if restore_snapshot(agent_dir, name):
+            print(f"{Colors.GREEN}Restored .agent/ from snapshot '{name}'.{Colors.ENDC}")
+        else:
+            print(f"{Colors.RED}Snapshot '{name}' not found.{Colors.ENDC}")
     else:
-        print("Usage: agent-bridge snapshot {save|list|info|delete}")
+        print("Usage: agent-bridge snapshot {save|list|info|delete|restore}")
 
 
 def _handle_update(args):

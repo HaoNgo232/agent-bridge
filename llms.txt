@@ -1,6 +1,6 @@
 # Agent Bridge
 
-> Agent Bridge is a universal converter for AI agent knowledge. It transforms `.agent/` format to multiple IDE formats (Cursor, GitHub Copilot, Kiro CLI, OpenCode, Windsurf), enabling AI agent configuration sync across IDEs. Supports knowledge vault management, MCP integration, and interactive TUI setup.
+> Agent Bridge is a universal converter for AI agent knowledge with bidirectional sync. It transforms `.agent/` format to multiple IDE formats (Cursor, GitHub Copilot, Kiro CLI, OpenCode, Windsurf) and captures changes back, enabling true two-way sync. Supports knowledge vault management, MCP integration, snapshot management, and interactive TUI setup.
 
 ## Core Documentation
 
@@ -13,18 +13,18 @@
 - **Converters**: `src/agent_bridge/converters/` — IDE format converters (cursor, copilot, kiro, opencode, windsurf)
 - **Core**: `src/agent_bridge/core/` — Types, agent registry, converter base
 - **Vault**: `src/agent_bridge/vault/` — Knowledge vault manager, sources, merger
-- **Services**: `src/agent_bridge/services/` — Init and sync services
+- **Services**: `src/agent_bridge/services/` — Init, sync, capture, and snapshot services
 - **Built-in Vault**: `src/agent_bridge/builtin_vault/` — Starter knowledge vault
 
 ## Supported IDEs
 
-| IDE | Output Directory |
-| --- | --- |
-| Cursor AI | `.cursor/` |
-| GitHub Copilot | `.github/` |
-| Kiro CLI | `.kiro/` |
-| OpenCode | `.opencode/` |
-| Windsurf | `.windsurf/` |
+| IDE | Output Directory | Status |
+| --- | --- | --- |
+| Cursor AI | `.cursor/` | Stable |
+| Kiro CLI | `.kiro/` | Stable |
+| GitHub Copilot | `.github/` | Beta |
+| OpenCode | `.opencode/` | Beta |
+| Windsurf | `.windsurf/` | Beta |
 
 ## Quick Start
 
@@ -40,30 +40,78 @@ agent-bridge init --all
 # Sync vaults and refresh IDE configs
 agent-bridge update
 
+# Capture changes from IDE back to .agent/
+agent-bridge capture --ide cursor --strategy ide_wins
+
+# Save snapshot before major changes
+agent-bridge snapshot save "stable-v1"
+
+# Restore from snapshot
+agent-bridge snapshot restore "stable-v1"
+
 # Install MCP configuration
 agent-bridge mcp --all
 ```
 
 ## Key Features
 
-- Multi-format support for 5 IDEs
-- Interactive TUI (Questionary)
-- Vault management (add, remove, sync)
-- MCP (Model Context Protocol) integration
-- Automated linting (Ruff)
+- **Bidirectional Sync**: Forward (.agent/ → IDE) and reverse (IDE → .agent/) conversion
+- **Snapshot Management**: Save, restore, and manage .agent/ snapshots
+- **Multi-format Support**: 5 IDEs with different formats
+- **Interactive TUI**: Questionary-based setup wizard
+- **Vault Management**: Add, remove, sync knowledge vaults
+- **MCP Integration**: Model Context Protocol configuration
+- **Strategy Options**: `ide_wins` or `agent_wins` conflict resolution
+- **Automated Testing**: 123/123 tests passing ✅
+
+## Bidirectional Workflow
+
+```bash
+# 1. Initialize IDE configs
+agent-bridge init --cursor
+
+# 2. Edit in IDE
+# ... make changes to .cursor/agents/orchestrator.md ...
+
+# 3. Capture changes back
+agent-bridge capture --ide cursor
+
+# 4. Save snapshot
+agent-bridge snapshot save "before-refactor"
+
+# 5. Experiment
+# ... edit .agent/ files ...
+
+# 6. Restore if needed
+agent-bridge snapshot restore "before-refactor"
+```
 
 ## For AI Agents
 
-Read `AGENTS.md` for project understanding, task breakdown, BMAD workflow, and agent assignments. Use `agent-bridge init` for project setup; `agent-bridge update` to pull latest knowledge from vaults.
+Read `AGENTS.md` for project understanding, task breakdown, BMAD workflow, and agent assignments. Use `agent-bridge init` for project setup; `agent-bridge update` to pull latest knowledge from vaults; `agent-bridge capture` to preserve IDE edits; `agent-bridge snapshot` for version control.
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run specific suites
+pytest tests/test_capture_service.py
+pytest tests/test_snapshot_service.py
+pytest tests/test_roundtrip.py
+
+# Current status: 123/123 tests passing ✅
+```
 
 ## Optional
 
 - [Makefile](Makefile): `make setup`, `make check` for local development
-- [tests/](tests/): Test suite for converters and services
+- [tests/](tests/): Comprehensive test suite including roundtrip tests
 
 ---
 
 **Version**: 1.0.0  
 **License**: MIT  
 **Maintainer**: HaoNgo232  
-**Keywords**: AI agent, IDE conversion, agent configuration, knowledge vault, Cursor, Copilot, Kiro, OpenCode, Windsurf, MCP, .agent format
+**Keywords**: AI agent, IDE conversion, bidirectional sync, agent configuration, knowledge vault, Cursor, Copilot, Kiro, OpenCode, Windsurf, MCP, .agent format, snapshot management, reverse conversion

@@ -115,3 +115,26 @@ def test_snapshot_contents_accurate(tmp_project):
     assert "clean-code" in info.contents["skills"]
     assert "plan" in info.contents["workflows"]
     assert "global" in info.contents["rules"]
+
+
+def test_restore_snapshot(tmp_project):
+    """Restore snapshot writes .agent/ contents to target dir."""
+    agent_dir = tmp_project / ".agent"
+    snapshot_service.save_snapshot("restore-test", agent_dir)
+
+    restore_dir = tmp_project / "restored" / ".agent"
+    restore_dir.parent.mkdir(parents=True, exist_ok=True)
+    ok = snapshot_service.restore_snapshot(restore_dir, "restore-test")
+
+    assert ok is True
+    assert (restore_dir / "agents" / "orchestrator.md").exists()
+    assert (restore_dir / "skills" / "clean-code" / "SKILL.md").exists()
+    assert (restore_dir / "mcp_config.json").exists()
+
+
+def test_restore_snapshot_nonexistent(tmp_project):
+    """Restore nonexistent snapshot returns False."""
+    agent_dir = tmp_project / ".agent"
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    ok = snapshot_service.restore_snapshot(agent_dir, "nonexistent")
+    assert ok is False

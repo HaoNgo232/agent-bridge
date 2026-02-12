@@ -204,3 +204,25 @@ def get_snapshot_agent_dir(name: str) -> Optional[Path]:
         return None
     agent_dir = info.path / ".agent"
     return agent_dir if agent_dir.exists() else None
+
+
+def restore_snapshot(agent_dir: Path, name: str) -> bool:
+    """
+    Restore .agent/ directory tu snapshot.
+
+    Ghi de toan bo noi dung agent_dir voi noi dung snapshot.
+
+    Args:
+        agent_dir: Duong dan den .agent/ cua project (target)
+        name: Ten snapshot
+
+    Returns:
+        True neu thanh cong, False neu snapshot khong ton tai
+    """
+    snapshot_agent = get_snapshot_agent_dir(name)
+    if not snapshot_agent:
+        return False
+    if agent_dir.exists():
+        shutil.rmtree(agent_dir)
+    shutil.copytree(snapshot_agent, agent_dir)
+    return True
