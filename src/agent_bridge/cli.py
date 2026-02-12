@@ -32,6 +32,7 @@ def _main():
     # --- init ---
     p_init = sub.add_parser("init", help="Initialize AI in current project")
     p_init.add_argument("--source", default=".agent", help="Source directory")
+    p_init.add_argument("--from", dest="from_snapshot", metavar="SNAPSHOT", help="Initialize from saved snapshot")
     p_init.add_argument("--force", "-f", action="store_true", help="Force overwrite")
     p_init.add_argument("--no-interactive", action="store_true", help="Disable TUI")
     p_init.add_argument("--all", action="store_true", help="Init all formats")
@@ -54,6 +55,28 @@ def _main():
     p_mcp.add_argument("--force", "-f", action="store_true")
     for name in converter_registry.names():
         p_mcp.add_argument(f"--{name}", action="store_true")
+
+    # --- capture ---
+    p_capture = sub.add_parser("capture", help="Reverse-convert IDE configs back to .agent/")
+    p_capture.add_argument("--cursor", action="store_true", help="Only capture from Cursor")
+    p_capture.add_argument("--kiro", action="store_true", help="Only capture from Kiro")
+    p_capture.add_argument("--copilot", action="store_true", help="Only capture from Copilot")
+    p_capture.add_argument("--all", action="store_true", help="Capture from all detected IDEs")
+    p_capture.add_argument("--dry-run", action="store_true", help="Show what would be captured, don't write")
+    p_capture.add_argument("--strategy", choices=["ide_wins", "agent_wins", "ask"], default="ask", help="Conflict resolution strategy")
+
+    # --- snapshot ---
+    p_snapshot = sub.add_parser("snapshot", help="Save/manage .agent/ snapshots")
+    snap_sub = p_snapshot.add_subparsers(dest="snapshot_action")
+    p_snap_save = snap_sub.add_parser("save", help="Save current .agent/ as snapshot")
+    p_snap_save.add_argument("name", help="Snapshot name")
+    p_snap_save.add_argument("--desc", "-d", dest="description", default="", help="Description")
+    p_snap_save.add_argument("--tag", "-t", action="append", dest="tags", help="Tag (format: key:value)")
+    p_snap_list = snap_sub.add_parser("list")
+    p_snap_info = snap_sub.add_parser("info")
+    p_snap_info.add_argument("name", help="Snapshot name")
+    p_snap_delete = snap_sub.add_parser("delete")
+    p_snap_delete.add_argument("name", help="Snapshot name")
 
     # --- list ---
     sub.add_parser("list", help="List supported IDE formats")
@@ -86,6 +109,10 @@ def _main():
 
     if args.format == "init":
         _handle_init(args, converter_registry)
+    elif args.format == "capture":
+        _handle_capture(args)
+    elif args.format == "snapshot":
+        _handle_snapshot(args)
     elif args.format == "update":
         _handle_update(args)
     elif args.format == "clean":
@@ -124,7 +151,9 @@ def _handle_init(args, registry):
     )
     use_tui = not has_flags and not getattr(args, "no_interactive", False) and not getattr(args, "force", False)
 
-    if use_tui:
+    from_snapshot = getattr(args, "from_snapshot", None)
+
+    if use_tui and not from_snapshot:
         print(f"{Colors.HEADER}Initializing AI for current project...{Colors.ENDC}")
         print(f"\n{Colors.CYAN}Agent Bridge - Interactive Setup{Colors.ENDC}\n")
         success = run_init_tui(registry, project_path, agent_dir)
@@ -132,7 +161,12 @@ def _handle_init(args, registry):
             print(f"\n{Colors.GREEN}Initialization complete!{Colors.ENDC}")
     else:
         formats = _get_selected_formats(args, registry)
-        source_choice = "vault" if not agent_dir.exists() else "project"
+        if from_snapshot:
+            source_choice = "snapshot"
+            snapshot_name = from_snapshot
+        else:
+            source_choice = "vault" if not agent_dir.exists() else "project"
+            snapshot_name = None
         print(f"{Colors.HEADER}Initializing AI for current project...{Colors.ENDC}")
         print(f"\n{Colors.CYAN}Converting agents...{Colors.ENDC}\n")
 
@@ -142,6 +176,7 @@ def _handle_init(args, registry):
             source_choice,
             force=getattr(args, "force", False),
             verbose=True,
+            snapshot_name=snapshot_name,
         )
 
         if "error" in result:
@@ -151,6 +186,101 @@ def _handle_init(args, registry):
                 if conv_result and getattr(conv_result, "ok", True):
                     print(f"{Colors.GREEN}{name} format created{Colors.ENDC}")
             print(f"\n{Colors.GREEN}Initialization complete!{Colors.ENDC}")
+
+
+def _handle_capture(args):
+    from agent_bridge.services.capture_service import execute_capture, scan_for_captures
+    from agent_bridge.tui import run_capture_tui
+
+    project_path = Path.cwd()
+    has_flags = getattr(args, "cursor", False) or getattr(args, "kiro", False) or getattr(args, "copilot", False) or getattr(args, "all", False)
+
+    ide_names = None
+    if has_flags:
+        if getattr(args, "all", False):
+            ide_names = ["cursor", "kiro", "copilot"]
+        else:
+            ide_names = [n for n in ["cursor", "kiro", "copilot"] if getattr(args, n, False)]
+
+    files = scan_for_captures(project_path, ide_names=ide_names)
+    if not files:
+        print(f"{Colors.YELLOW}No IDE configs found to capture.{Colors.ENDC}")
+        return
+
+    dry_run = getattr(args, "dry_run", False)
+    strategy = getattr(args, "strategy", "ask")
+
+    if not has_flags or strategy == "ask":
+        success = run_capture_tui(project_path, files, strategy, dry_run)
+        if success:
+            print(f"\n{Colors.GREEN}Capture complete!{Colors.ENDC}")
+    else:
+        result = execute_capture(project_path, files, strategy=strategy, dry_run=dry_run)
+        if dry_run:
+            print(f"{Colors.CYAN}Would capture {result.get('would_capture', 0)} files.{Colors.ENDC}")
+        else:
+            print(f"{Colors.GREEN}Captured: {result.get('captured', 0)} files.{Colors.ENDC}")
+
+
+def _handle_snapshot(args):
+    from agent_bridge.services.snapshot_service import (
+        delete_snapshot,
+        get_snapshot,
+        list_snapshots,
+        save_snapshot,
+    )
+
+    action = getattr(args, "snapshot_action", None)
+    project_path = Path.cwd()
+    agent_dir = project_path / ".agent"
+
+    if action == "save":
+        if not agent_dir.exists():
+            print(f"{Colors.RED}No .agent/ found. Run 'agent-bridge init' first.{Colors.ENDC}")
+            return
+        tags = {}
+        for t in getattr(args, "tags", None) or []:
+            if ":" in t:
+                k, _, v = t.partition(":")
+                tags[k.strip()] = [x.strip() for x in v.split(",")]
+        info = save_snapshot(args.name, agent_dir, getattr(args, "description", ""), tags)
+        print(f"{Colors.GREEN}Snapshot '{info.name}' saved (v{info.version}).{Colors.ENDC}")
+    elif action == "list":
+        snapshots = list_snapshots()
+        if not snapshots:
+            print(f"{Colors.YELLOW}No snapshots found.{Colors.ENDC}")
+        else:
+            print(f"{Colors.HEADER}Saved Snapshots:{Colors.ENDC}\n")
+            for s in snapshots:
+                print(f"  {Colors.BOLD}{s.name}{Colors.ENDC} (v{s.version}) - {s.description or '(no description)'}")
+                print(f"    Created: {s.created}")
+                print()
+    elif action == "info":
+        name = getattr(args, "name", None)
+        if not name:
+            print(f"{Colors.RED}Usage: agent-bridge snapshot info <name>{Colors.ENDC}")
+            return
+        info = get_snapshot(name)
+        if not info:
+            print(f"{Colors.RED}Snapshot '{name}' not found.{Colors.ENDC}")
+        else:
+            print(f"{Colors.HEADER}Snapshot: {info.name}{Colors.ENDC}")
+            print(f"  Description: {info.description}")
+            print(f"  Version: {info.version}")
+            print(f"  Created: {info.created}")
+            print(f"  Updated: {info.updated}")
+            print(f"  Contents: {info.contents}")
+    elif action == "delete":
+        name = getattr(args, "name", None)
+        if not name:
+            print(f"{Colors.RED}Usage: agent-bridge snapshot delete <name>{Colors.ENDC}")
+            return
+        if delete_snapshot(name):
+            print(f"{Colors.GREEN}Snapshot '{name}' deleted.{Colors.ENDC}")
+        else:
+            print(f"{Colors.RED}Snapshot '{name}' not found.{Colors.ENDC}")
+    else:
+        print("Usage: agent-bridge snapshot {save|list|info|delete}")
 
 
 def _handle_update(args):

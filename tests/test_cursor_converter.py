@@ -8,7 +8,7 @@ from agent_bridge.converters.cursor import CursorConverter
 def test_convert_agent_creates_md(tmp_project):
     """Verify .cursor/agents/ files created."""
     converter = CursorConverter()
-    source_root = tmp_project / ".agent"
+    source_root = tmp_project
     dest_root = tmp_project
     
     result = converter.convert(source_root, dest_root, verbose=False)
@@ -22,7 +22,7 @@ def test_convert_agent_creates_md(tmp_project):
 def test_convert_skill_to_mdc_rule(tmp_project):
     """For 'clean-code' skill, verify .mdc file with correct frontmatter."""
     converter = CursorConverter()
-    source_root = tmp_project / ".agent"
+    source_root = tmp_project
     dest_root = tmp_project
     
     result = converter.convert(source_root, dest_root, verbose=False)
@@ -44,7 +44,7 @@ def test_convert_skill_to_cursor_skill(tmp_project):
     (skill_dir / "SKILL.md").write_text("# Custom Skill\n\nCustom content\n")
     
     converter = CursorConverter()
-    source_root = tmp_project / ".agent"
+    source_root = tmp_project
     dest_root = tmp_project
     
     result = converter.convert(source_root, dest_root, verbose=False)
@@ -57,7 +57,7 @@ def test_convert_skill_to_cursor_skill(tmp_project):
 def test_mdc_frontmatter_format(tmp_project):
     """Verify description, globs, alwaysApply fields."""
     converter = CursorConverter()
-    source_root = tmp_project / ".agent"
+    source_root = tmp_project
     dest_root = tmp_project
     
     result = converter.convert(source_root, dest_root, verbose=False)
@@ -74,7 +74,7 @@ def test_mdc_frontmatter_format(tmp_project):
 def test_convert_to_cursor_full(tmp_project):
     """End-to-end with tmp_project."""
     converter = CursorConverter()
-    source_root = tmp_project / ".agent"
+    source_root = tmp_project
     dest_root = tmp_project
     
     result = converter.convert(source_root, dest_root, verbose=False)

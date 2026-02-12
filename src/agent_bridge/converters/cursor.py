@@ -4,10 +4,11 @@ Cursor AI converter — chuyen doi .agent/ sang dang .cursor/agents, rules, skil
 
 import shutil
 from pathlib import Path
+from typing import List
 
 from agent_bridge.core.converter import BaseConverter, converter_registry
-from agent_bridge.core.types import ConversionResult, IDEFormat
-from agent_bridge.converters._cursor_impl import convert_to_cursor
+from agent_bridge.core.types import CapturedFile, ConversionResult, IDEFormat
+from agent_bridge.converters._cursor_impl import convert_to_cursor, reverse_convert_cursor
 
 
 class CursorConverter(BaseConverter):
@@ -53,6 +54,15 @@ class CursorConverter(BaseConverter):
             if p.exists():
                 shutil.rmtree(p)
         return True
+
+    def reverse_convert(
+        self,
+        project_path: Path,
+        agent_dir: Path,
+        verbose: bool = True,
+    ) -> List[CapturedFile]:
+        """Reverse-convert .cursor/ files back to .agent/ format."""
+        return reverse_convert_cursor(project_path, agent_dir, verbose)
 
 
 converter_registry.register(CursorConverter)
